@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow English — Home Dashboard</title>
+<script async src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" onerror="window.__chartFailed=true"></script>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0d0b1f;
+  --bg-2: #14122b;
+  --card: #1a1838;
+  --card-2: #221f43;
+  --border: #2a2750;
+  --text: #ffffff;
+  --text-2: #a8a6c8;
+  --text-3: #6b6890;
+  --purple: #7c5cff;
+  --purple-2: #5b3dff;
+  --green: #22c55e;
+  --green-2: #16a34a;
+  --orange: #ff8a3d;
+  --red: #ef4444;
+  --yellow: #facc15;
+  --blue: #3b82f6;
+  --pink: #ec4899;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+body { display: flex; min-height: 100vh; }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 220px;
+  background: var(--bg-2);
+  border-right: 1px solid var(--border);
+  padding: 18px 12px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 18px;
+  font-weight: 700;
+  font-size: 15px;
+}
+.brand-icon { color: var(--purple); font-size: 18px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  color: var(--text-2);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12.5px;
+}
+.nav-item:hover { background: var(--card); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(124,92,255,0.25), rgba(124,92,255,0.05));
+  color: var(--text);
+  border-left: 3px solid var(--purple);
+  padding-left: 7px;
+}
+.nav-section {
+  color: var(--text-3);
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  padding: 14px 10px 4px;
+}
+.sidebar-card {
+  margin-top: auto;
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2b1f5e, #1a1245);
+  font-size: 11.5px;
+  color: var(--text-2);
+  position: relative;
+  overflow: hidden;
+}
+.sidebar-card::before {
+  content: "✨";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+}
+.sidebar-card-title {
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+/* ===== MAIN ===== */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.breadcrumb .home { color: var(--text-2); }
+.breadcrumb .current { color: var(--text); font-weight: 600; }
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.search {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--text-2);
+  font-size: 12px;
+  width: 220px;
+}
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* ===== CONTENT GRID ===== */
+.content {
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--text-2);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.card-title .icon { font-size: 14px; }
+
+/* ===== TOP STAT CARDS ===== */
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.stat-unit {
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.stat-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+.spark {
+  height: 30px;
+  margin-top: 6px;
+}
+.gauge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--green-2));
+  border-radius: 3px;
+}
+
+/* ===== TODAY FOCUS ===== */
+.today-focus { grid-column: span 2; }
+.today-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+.subcard {
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.subcard-label {
+  font-size: 10.5px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.topic-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.topic-pill .emoji-box {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, #ff8a3d, #ff5a3d);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.day-tag {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.day-0 { background: rgba(156,163,175,0.2); color: #d1d5db; }
+.day-1 { background: rgba(239,68,68,0.2); color: #fca5a5; }
+.day-3 { background: rgba(255,138,61,0.2); color: #fbbf76; }
+.day-7 { background: rgba(250,204,21,0.2); color: #fde68a; }
+.day-21 { background: rgba(34,197,94,0.2); color: #86efac; }
+.day-60 { background: rgba(59,130,246,0.2); color: #93c5fd; }
+
+.review-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.review-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 5px 0;
+}
+.review-item .name { display: flex; gap: 6px; align-items: center; }
+.start-btn {
+  margin-top: 12px;
+  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  border: none;
+  color: white;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(124,92,255,0.35);
+}
+.start-btn-caption {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 6px;
+}
+
+.goal-row { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; padding: 4px 0; color: var(--text-2); }
+.goal-row.done { color: var(--text); }
+.goal-row .check {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  margin-right: 6px;
+  vertical-align: middle;
+  position: relative;
+}
+.goal-row.done .check {
+  background: var(--green);
+  border-color: var(--green);
+}
+.goal-row.done .check::after {
+  content: "✓";
+  color: white;
+  font-size: 10px;
+  position: absolute;
+  top: -2px; left: 1.5px;
+}
+
+.time-split {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 11px;
+}
+.time-split .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+/* ===== MEMORY DONUT ===== */
+.memory-card { grid-column: span 2; }
+.donut-row { display: flex; align-items: center; gap: 16px; }
+.donut-wrap { position: relative; width: 150px; height: 150px; flex-shrink: 0; }
+.donut-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.donut-center .num { font-size: 32px; font-weight: 700; }
+.donut-center .label { font-size: 10px; color: var(--text-2); }
+.legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.legend-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+.legend-left { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.legend-val { color: var(--text-2); }
+
+/* ===== HEATMAP ===== */
+.heatmap-card { grid-column: span 3; }
+.heatmap {
+  display: grid;
+  grid-template-columns: 30px repeat(28, 1fr);
+  gap: 3px;
+  margin-top: 6px;
+}
+.hm-label { font-size: 9.5px; color: var(--text-3); display: flex; align-items: center; }
+.hm-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+}
+.hm-0 { background: #2d2a55; }
+.hm-1 { background: rgba(34,197,94,0.35); }
+.hm-2 { background: rgba(34,197,94,0.6); }
+.hm-3 { background: rgba(34,197,94,0.85); }
+.hm-4 { background: rgba(34,197,94,1); }
+.heatmap-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 10.5px; color: var(--text-3); }
+.heatmap-foot-right { display: flex; align-items: center; gap: 4px; }
+.heatmap-foot-right .hm-cell { width: 10px; height: 10px; }
+
+/* ===== LEVEL MAP ===== */
+.level-map { grid-column: span 5; }
+.levels-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 6px;
+}
+.level-card {
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+.level-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.level-dot { width: 10px; height: 10px; border-radius: 50%; }
+.level-name { font-weight: 600; font-size: 13px; }
+.level-sub { font-size: 11px; color: var(--text-2); display: flex; justify-content: space-between; margin: 2px 0 8px; }
+.level-pct { color: var(--text); font-weight: 600; }
+.topics-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.topic-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-2);
+}
+.topic-icon .bubble {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  background: linear-gradient(135deg, rgba(124,92,255,0.3), rgba(124,92,255,0.1));
+  border: 1px solid var(--border);
+}
+.topic-icon.done .bubble { background: linear-gradient(135deg, rgba(34,197,94,0.35), rgba(34,197,94,0.1)); }
+.topic-icon.locked { opacity: 0.4; }
+
+/* ===== REVIEW QUEUE ===== */
+.queue-card { grid-column: span 2; }
+.queue-tabs {
+  display: flex; gap: 6px; margin: 4px 0 10px;
+  font-size: 11px;
+}
+.queue-tab {
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: var(--card-2);
+  color: var(--text-2);
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+.queue-tab.active { background: var(--purple); color: white; border-color: var(--purple); }
+.queue-table { width: 100%; font-size: 11.5px; border-collapse: collapse; }
+.queue-table th { text-align: left; color: var(--text-3); font-weight: 500; font-size: 10px; text-transform: uppercase; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+.queue-table td { padding: 8px 4px; border-bottom: 1px solid rgba(42,39,80,0.5); color: var(--text); }
+.priority { display: inline-block; width: 14px; }
+.priority.high { color: var(--red); }
+.priority.med { color: var(--orange); }
+.priority.low { color: var(--text-3); }
+.mem-bar {
+  display: inline-block;
+  width: 50px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+}
+.mem-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--yellow), var(--green));
+}
+.queue-link { margin-top: 8px; font-size: 11px; color: var(--purple); cursor: pointer; }
+
+/* ===== CALENDAR ===== */
+.calendar-card { grid-column: span 2; }
+.cal-head { display: flex; justify-content: space-between; align-items: center; }
+.cal-head .arrows { font-size: 11px; color: var(--text-2); }
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 4px; margin-top: 8px;
+}
+.cal-dow {
+  font-size: 10px;
+  text-align: center;
+  color: var(--text-3);
+  padding: 4px 0;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: 6px;
+  color: var(--text);
+  background: rgba(42,39,80,0.4);
+  position: relative;
+  font-weight: 500;
+}
+.cal-day.today {
+  background: var(--card-2);
+  border: 1px solid var(--purple);
+  color: var(--text);
+}
+.cal-day.has-events { color: var(--text); }
+.cal-day .badge {
+  font-size: 8.5px;
+  background: var(--green);
+  color: #04210d;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  margin-top: 1px;
+}
+.cal-day.dim { color: var(--text-3); }
+.cal-legend { display: flex; justify-content: space-around; font-size: 9.5px; color: var(--text-3); margin-top: 8px; }
+.cal-legend-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 4px; vertical-align: middle; }
+.cal-legend-dot.med { background: rgba(34,197,94,0.6); }
+.cal-legend-dot.dark { background: rgba(34,197,94,1); }
+
+/* ===== PROGRESS TRACKER ===== */
+.progress-card { grid-column: span 2; }
+.progress-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+.mini-stat { background: var(--card-2); border-radius: 8px; padding: 8px; text-align: left; }
+.mini-stat .lbl { font-size: 9.5px; color: var(--text-3); text-transform: uppercase; font-weight: 600; }
+.mini-stat .val { font-size: 18px; font-weight: 700; margin-top: 2px; }
+
+/* ===== MISSIONS ===== */
+.missions-card { grid-column: span 2; }
+.mission-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; padding: 5px 0; }
+.mission-check {
+  width: 14px; height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+}
+.mission-row.done .mission-check { background: var(--green); border-color: var(--green); }
+.mission-row.done .mission-check::after { content: "✓"; color: white; font-size: 9px; position: absolute; top: -2px; left: 1.5px; }
+.mission-row.done .name { color: var(--text-2); }
+.streak-row { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-2); margin-top: 10px; }
+
+/* ===== NEXT UP ===== */
+.next-card { grid-column: span 1; }
+.next-section { background: var(--card-2); border-radius: 8px; padding: 10px; margin-top: 6px; }
+.next-label { font-size: 9.5px; color: var(--text-3); text-transform: uppercase; font-weight: 600; }
+.next-title { font-weight: 600; font-size: 12px; margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+
+.footer-quote {
+  text-align: center;
+  font-style: italic;
+  color: var(--text-2);
+  font-size: 12.5px;
+  padding: 16px 24px 24px;
+  background: linear-gradient(180deg, transparent, rgba(124,92,255,0.05));
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+}
+.footer-quote .author { display: block; color: var(--purple); margin-top: 4px; font-size: 11px; }
+
+/* ===== LIVE BADGE ===== */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(34,197,94,0.15);
+  color: #86efac;
+  font-weight: 600;
+  margin-left: auto;
+}
+.live-badge::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.connection-bar {
+  font-size: 11px;
+  padding: 6px 24px;
+  background: rgba(124,92,255,0.1);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.refresh-btn {
+  margin-left: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.refresh-btn:hover { background: var(--purple); border-color: var(--purple); }
+
+/* ===== XP / LEVEL BAR ===== */
+.xp-bar {
+  background: linear-gradient(90deg, rgba(124,92,255,0.18), rgba(59,130,246,0.10), rgba(124,92,255,0.18));
+  border-bottom: 1px solid rgba(124,92,255,0.3);
+  padding: 10px 24px;
+}
+.level-chip {
+  background: linear-gradient(135deg, #ffd700, #ff8a3d);
+  color: #1a0f00;
+  font-weight: 800;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+}
+.xp-progress {
+  width: 200px;
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.xp-fill {
+  display: block;
+  height: 100%;
+  width: 83%;
+  background: linear-gradient(90deg, #ffd700, #ff8a3d, #ec4899);
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(255,138,61,0.6);
+}
+
+/* ===== PREMIUM CARD GLOWS ===== */
+.card { transition: transform .2s ease, box-shadow .2s ease; }
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(124,92,255,0.18), 0 0 0 1px rgba(124,92,255,0.3);
+}
+.stat-card { position: relative; overflow: hidden; }
+.stat-card::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(124,92,255,0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+.today-focus { background: linear-gradient(135deg, var(--card), #1f1b3e); border-color: rgba(124,92,255,0.25); }
+.memory-card { background: linear-gradient(135deg, var(--card), #1f1b3e); }
+.level-map  { background: linear-gradient(180deg, var(--card), #1c193a); }
+
+/* ===== SPACED REPETITION ENGINE ===== */
+.sr-engine { grid-column: span 5; }
+.sr-timeline {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+  position: relative;
+  margin-top: 16px;
+  padding: 0 18px;
+}
+.sr-connector {
+  position: absolute;
+  top: 26px;
+  left: 18%;
+  right: 18%;
+  height: 2px;
+  background: linear-gradient(90deg, #6b7280, #ef4444, #ff8a3d, #facc15, #22c55e, #a78bfa);
+  border-radius: 2px;
+  z-index: 0;
+}
+.sr-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+.sr-node {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  border: 3px solid var(--border);
+  background: var(--card-2);
+  box-shadow: 0 0 16px rgba(0,0,0,0.4);
+  position: relative;
+}
+.sr-stage.s-0 .sr-node { border-color: #6b7280; background: linear-gradient(135deg, #2a2750, #1a1838); }
+.sr-stage.s-1 .sr-node { border-color: #ef4444; background: linear-gradient(135deg, #3a1a1d, #1a1838); }
+.sr-stage.s-3 .sr-node { border-color: #ff8a3d; background: linear-gradient(135deg, #3a261a, #1a1838); }
+.sr-stage.s-7 .sr-node { border-color: #facc15; background: linear-gradient(135deg, #3a311a, #1a1838); box-shadow: 0 0 20px rgba(250,204,21,0.5); }
+.sr-stage.s-7 .sr-node::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(250,204,21,0.4);
+  animation: pulse 2s ease-in-out infinite;
+}
+.sr-stage.s-21 .sr-node { border-color: #22c55e; background: linear-gradient(135deg, #1a3a26, #1a1838); }
+.sr-stage.s-60 .sr-node { border-color: #a78bfa; background: linear-gradient(135deg, #2a1f4d, #1a1838); }
+.sr-stage .day { font-size: 9px; color: var(--text-3); font-weight: 600; }
+.sr-stage .day-num { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1; }
+.sr-stage .label { font-size: 10.5px; color: var(--text-2); font-weight: 600; margin-top: 4px; }
+.sr-stage .count {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.sr-stage.s-0 .count { color: #d1d5db; }
+.sr-stage.s-1 .count { color: #fca5a5; }
+.sr-stage.s-3 .count { color: #fbbf76; }
+.sr-stage.s-7 .count { color: #fde047; }
+.sr-stage.s-21 .count { color: #86efac; }
+.sr-stage.s-60 .count { color: #c4b5fd; }
+.sr-stage .topics-mini { font-size: 9.5px; color: var(--text-3); margin-top: 2px; }
+.sr-current-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fde047;
+  background: rgba(250,204,21,0.15);
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+}
+.sr-current-badge::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #facc15; animation: pulse 1s ease-in-out infinite; }
+
+/* ===== START SESSION BUTTON ENHANCEMENT ===== */
+.start-btn {
+  position: relative;
+  overflow: hidden;
+}
+.start-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+/* ===== CHART ICON ===== */
+.live-badge {
+  background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(167,139,250,0.18));
+  border: 1px solid rgba(34,197,94,0.3);
+}
+
+/* ===== MISSION HERO (ACTION CLARITY) ===== */
+.mission-hero {
+  grid-column: span 5;
+  background: linear-gradient(135deg, #1f1845 0%, #2a1f5e 50%, #1a1f5e 100%);
+  border: 1px solid rgba(124,92,255,0.4);
+  border-radius: 16px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(124,92,255,0.25);
+}
+.mission-hero::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 50%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(167,139,250,0.25), transparent 60%);
+  pointer-events: none;
+}
+.mission-hero::after {
+  content: "✨";
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-size: 14px;
+  opacity: 0.5;
+}
+.mission-emoji {
+  font-size: 52px;
+  filter: drop-shadow(0 8px 18px rgba(255,138,61,0.45));
+}
+.mission-body { flex: 1; }
+.mission-label {
+  font-size: 10.5px;
+  color: #c4b5fd;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mission-label .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #facc15; animation: pulse 1.5s ease-in-out infinite; box-shadow: 0 0 10px #facc15; }
+.mission-title { font-size: 22px; font-weight: 700; margin-top: 6px; }
+.mission-sub { color: var(--text-2); margin-top: 4px; font-size: 12.5px; }
+.mission-chips { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.mission-chip {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mission-chip.xp { background: linear-gradient(135deg, #ffd700, #ff8a3d); color: #1a0f00; font-weight: 700; border: none; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+.mission-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.mission-btn {
+  background: linear-gradient(135deg, #ffd700, #ff8a3d, #ec4899);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(236,72,153,0.4);
+  position: relative;
+  overflow: hidden;
+}
+.mission-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+.mission-btn-sub { font-size: 10px; color: #c4b5fd; }
+
+/* ===== CLOSE TO LEVEL UP CARD ===== */
+.close-card {
+  background: linear-gradient(135deg, #1f3a26, #1a1838);
+  border: 1px solid rgba(34,197,94,0.35);
+}
+.close-card-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.close-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(34,197,94,0.1);
+  font-size: 11.5px;
+}
+.close-item:last-child { border-bottom: none; }
+.close-item .emoji-tile {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(34,197,94,0.25), rgba(34,197,94,0.05));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.close-item .name { flex: 1; }
+.close-item .meta { color: var(--text-3); font-size: 10px; }
+.close-item .next-stage {
+  font-size: 9px;
+  font-weight: 700;
+  color: #86efac;
+  background: rgba(34,197,94,0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.close-progress-mini {
+  width: 50px; height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.close-progress-mini-fill { height: 100%; background: linear-gradient(90deg, #facc15, #22c55e); }
+
+/* ===== XP TAG (Action Rewards) ===== */
+.xp-tag {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  background: linear-gradient(135deg, #ffd700, #ff8a3d);
+  color: #1a0f00;
+  border-radius: 8px;
+  margin-left: 6px;
+  letter-spacing: 0.3px;
+}
+
+/* ===== MOTIVATIONAL NUDGE ===== */
+.coach-card {
+  background: linear-gradient(135deg, #2a1f4d 0%, #1a1838 100%);
+  border-color: rgba(167,139,250,0.3);
+  position: relative;
+  overflow: hidden;
+}
+.coach-card::after {
+  content: "🧠";
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  font-size: 60px;
+  opacity: 0.08;
+}
+.coach-quote {
+  font-size: 13px;
+  color: var(--text);
+  font-style: italic;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+.coach-quote::before { content: "\""; color: var(--purple); font-size: 24px; font-weight: 700; }
+.coach-quote::after { content: "\""; color: var(--purple); font-size: 24px; font-weight: 700; }
+.coach-sub { font-size: 11px; color: var(--text-3); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand"><span class="brand-icon">⚡</span> Shadow English</div>
+
+  <div class="nav-item active">🏠 Home Dashboard</div>
+
+  <div class="nav-section">LEARNING ENGINE</div>
+  <div class="nav-item">▶️ Today Session</div>
+  <div class="nav-item">🔁 Review Engine</div>
+  <div class="nav-item">📚 Topics Database</div>
+  <div class="nav-item">💬 Phrases Bank</div>
+  <div class="nav-item">🎯 Missions</div>
+
+  <div class="nav-section">KNOWLEDGE WORLD</div>
+  <div class="nav-item">🔵 Level 1 — Survival</div>
+  <div class="nav-item">🟢 Level 2 — Social</div>
+  <div class="nav-item">🟣 Level 3 — Advanced</div>
+  <div class="nav-item">📖 All Topics</div>
+
+  <div class="nav-section">TRACKING</div>
+  <div class="nav-item">📅 Calendar View</div>
+  <div class="nav-item">📈 Progress Tracker</div>
+  <div class="nav-item">🧠 Memory Log</div>
+  <div class="nav-item">📊 Statistics</div>
+
+  <div class="nav-section">RESOURCES</div>
+  <div class="nav-item">🗣️ Real English</div>
+  <div class="nav-item">📝 Grammar Hub</div>
+  <div class="nav-item">🎙️ Pronunciation</div>
+  <div class="nav-item">🎧 Listening Library</div>
+
+  <div class="sidebar-card">
+    <div class="sidebar-card-title">Every day</div>
+    is a step closer to fluency.
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="breadcrumb">
+      <span class="home">⚡ Shadow English</span>
+      <span style="color:var(--text-3)">›</span>
+      <span class="current">🏠 Home Dashboard</span>
+    </div>
+    <div class="topbar-actions">
+      <input class="search" placeholder="🔍 Search anything..." />
+      <div class="icon-btn">💬</div>
+      <div class="icon-btn">🔔</div>
+      <div class="avatar">DT</div>
+    </div>
+  </div>
+
+  <!-- USER PROGRESSION BAR -->
+  <div class="connection-bar xp-bar">
+    <span style="display:flex;align-items:center;gap:10px;">
+      <span class="level-chip">LV 12</span>
+      <span style="font-weight:600;color:var(--text)">Welcome back, Dương</span>
+      <span style="color:var(--text-3)">·</span>
+      <span style="color:var(--text-2)">Shadow Apprentice</span>
+    </span>
+    <span style="display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end;">
+      <span style="color:var(--text-3);font-size:11px">XP</span>
+      <span style="color:var(--text);font-weight:600">1,247</span>
+      <span class="xp-progress"><span class="xp-fill"></span></span>
+      <span style="color:var(--text-3);font-size:11px">1,500</span>
+    </span>
+  </div>
+
+  <!-- CONTENT GRID -->
+  <div class="content">
+
+    <!-- ROW 0: MISSION HERO — ACTION CLARITY -->
+    <div class="mission-hero">
+      <div class="mission-emoji">🍔</div>
+      <div class="mission-body">
+        <div class="mission-label"><span class="pulse-dot"></span> YOUR NEXT MOVE  ·  Most important thing today</div>
+        <div class="mission-title">Shadow "Ordering Food" — 18 min until first win</div>
+        <div class="mission-sub">Anh chỉ cần 1 buổi shadow đầy đủ là <b style="color:#fde047">Ordering Food</b> chuyển từ <span class="day-tag day-0">Day 0</span> → <span class="day-tag day-1">Day 1 — Weak</span>. Bước đầu tiên là bước dễ nhất.</div>
+        <div class="mission-chips">
+          <span class="mission-chip">⏱️ 18 min</span>
+          <span class="mission-chip">🎯 1 topic</span>
+          <span class="mission-chip">🎧 Shadow ×3</span>
+          <span class="mission-chip xp">+150 XP</span>
+        </div>
+      </div>
+      <div class="mission-cta">
+        <button class="mission-btn">▶  START NOW</button>
+        <div class="mission-btn-sub">Streak +1 ngay sau khi hoàn thành 🔥</div>
+      </div>
+    </div>
+
+    <!-- ROW 1: 5 TOP STATS -->
+    <div class="card stat-card">
+      <div class="card-title"><span class="icon">🔥</span> STREAK</div>
+      <div class="stat-value">17 <span class="stat-unit">days</span></div>
+      <div class="stat-sub">You're on fire! 🔥</div>
+      <canvas class="spark" id="spark-streak"></canvas>
+    </div>
+
+    <div class="card stat-card">
+      <div class="card-title"><span class="icon">🧠</span> BRAIN LOAD</div>
+      <div class="stat-value" style="color:var(--yellow)">Medium</div>
+      <div class="stat-sub" id="brain-load-sub">6 reviews today</div>
+      <canvas class="spark" id="spark-load"></canvas>
+    </div>
+
+    <div class="card stat-card">
+      <div class="card-title"><span class="icon">📚</span> TOPICS MASTERED</div>
+      <div class="stat-value" id="topics-count">32</div>
+      <div class="stat-sub">Stable / Automatic</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:38%"></div></div>
+      <div class="stat-sub" style="text-align:right">38%</div>
+    </div>
+
+    <div class="card stat-card">
+      <div class="card-title"><span class="icon">📋</span> REVIEW DUE</div>
+      <div class="stat-value" id="review-due">6</div>
+      <div class="stat-sub">topics today</div>
+      <canvas class="spark" id="spark-due"></canvas>
+    </div>
+
+    <div class="card stat-card">
+      <div class="card-title"><span class="icon">📈</span> WEEKLY PROGRESS</div>
+      <div class="stat-value">68 <span class="stat-unit">%</span></div>
+      <div class="stat-sub">+12% vs last week</div>
+      <canvas class="spark" id="spark-week"></canvas>
+    </div>
+
+    <!-- ROW 2: TODAY FOCUS (span 2) + MEMORY DONUT (span 2) + HEATMAP (span 1 narrow) -->
+    <div class="card today-focus">
+      <div class="card-title"><span class="icon">🔥</span> TODAY FOCUS <span class="live-badge">LIVE</span></div>
+
+      <div class="today-grid">
+        <div class="subcard">
+          <div class="subcard-label">🆕 NEW TOPIC</div>
+          <div class="topic-pill">
+            <div class="emoji-box">🍔</div>
+            <div>
+              <div style="font-weight:600;font-size:12.5px" id="new-topic-name">Ordering Food</div>
+              <div style="font-size:10.5px;color:var(--text-3)">Level 1 — Restaurant</div>
+            </div>
+            <span class="day-tag day-0" style="margin-left:auto">Day 0</span>
+          </div>
+
+          <div class="subcard-label" style="margin-top:14px">📋 REVIEW TODAY <span style="color:var(--green);font-weight:700">(6)</span></div>
+          <div class="review-list" id="review-list">
+            <div class="review-item"><span class="name">🏨 Hotel Check-in</span><span class="day-tag day-7">Day 7</span></div>
+            <div class="review-item"><span class="name">☕ Small Talk</span><span class="day-tag day-3">Day 3</span></div>
+            <div class="review-item"><span class="name">🗺️ Directions</span><span class="day-tag day-1">Day 1</span></div>
+            <div class="review-item"><span class="name">🛍️ Shopping</span><span class="day-tag day-1">Day 1</span></div>
+            <div class="review-item"><span class="name">🚌 Taxi</span><span class="day-tag day-1">Day 1</span></div>
+            <div class="review-item"><span class="name">✈️ At the Airport</span><span class="day-tag day-3">Day 3</span></div>
+          </div>
+        </div>
+
+        <div class="subcard">
+          <div class="subcard-label">⏱️ ESTIMATED TIME</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+            <div style="font-size:28px;font-weight:700">58 <span style="font-size:13px;color:var(--text-2)">min</span></div>
+            <div class="gauge"><canvas id="time-gauge" width="60" height="60"></canvas></div>
+          </div>
+          <div class="time-split">
+            <div><span class="dot" style="background:var(--blue)"></span>New (30%) — 18 min</div>
+          </div>
+          <div class="time-split" style="margin-top:0">
+            <div><span class="dot" style="background:var(--green)"></span>Review (70%) — 40 min</div>
+          </div>
+
+          <div class="subcard-label" style="margin-top:14px">🎯 TODAY GOAL</div>
+          <div class="goal-row done"><span><span class="check"></span> Finish new topic</span></div>
+          <div class="goal-row"><span><span class="check"></span> Complete all reviews</span></div>
+          <div class="goal-row done"><span><span class="check"></span> Do 1 real life mission</span></div>
+          <div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:66%"></div></div>
+          <div style="text-align:right;font-size:11px;color:var(--text-3);margin-top:4px">2 / 3</div>
+
+          <button class="start-btn">▶ START SESSION</button>
+          <div class="start-btn-caption">Let's go! You've got this 💪</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card memory-card">
+      <div class="card-title"><span class="icon">🧠</span> MEMORY STATUS OVERVIEW</div>
+      <div class="donut-row">
+        <div class="donut-wrap">
+          <canvas id="memory-donut" width="150" height="150"></canvas>
+          <div class="donut-center">
+            <div class="num">68</div>
+            <div class="label">Average</div>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--red)"></span>Fragile</span><span class="legend-val">5 (8%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--orange)"></span>Weak</span><span class="legend-val">12 (18%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--yellow)"></span>Building</span><span class="legend-val">21 (31%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--green)"></span>Stable</span><span class="legend-val">24 (35%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:#a78bfa"></span>Automatic</span><span class="legend-val">6 (8%)</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="card-title" style="margin-bottom:6px"><span class="icon">📅</span> REVIEW HEATMAP <span style="font-weight:400;color:var(--text-3);text-transform:none;letter-spacing:0">(This Month)</span></div>
+        <div class="heatmap" id="heatmap"></div>
+        <div class="heatmap-foot">
+          <span></span>
+          <div class="heatmap-foot-right">Less <span class="hm-cell hm-0"></span><span class="hm-cell hm-1"></span><span class="hm-cell hm-2"></span><span class="hm-cell hm-3"></span><span class="hm-cell hm-4"></span> More</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="grid-column: span 1">
+      <div class="card-title"><span class="icon">⏰</span> TODAY GOAL</div>
+      <div style="display:flex;align-items:center;justify-content:center;flex-direction:column;height:80%;gap:6px">
+        <div style="font-size:42px;font-weight:700;color:var(--purple)">2/3</div>
+        <div style="color:var(--text-2);font-size:11px">Missions completed</div>
+        <div class="progress-bar" style="width:100%"><div class="progress-fill" style="width:66%;background:var(--purple)"></div></div>
+        <div style="text-align:center;font-size:10.5px;color:var(--text-3);margin-top:8px">Streak active 🔥 17 days</div>
+      </div>
+    </div>
+
+    <!-- ROW 3: LEVEL MAP (full width) -->
+    <div class="card level-map">
+      <div class="card-title"><span class="icon">🗺️</span> LEVEL MAP — YOUR PROGRESS <span class="live-badge">LIVE FROM NOTION</span></div>
+
+      <div class="levels-grid">
+        <!-- LEVEL 1 -->
+        <div class="level-card">
+          <div class="level-head">
+            <span class="level-dot" style="background:var(--blue)"></span>
+            <span class="level-name" style="color:#93c5fd">LEVEL 1 — Survival Communication</span>
+          </div>
+          <div class="level-sub"><span>12 topics</span><span class="level-pct">71%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:71%;background:var(--blue)"></div></div>
+          <div class="topics-row">
+            <div class="topic-icon done"><div class="bubble">🍔</div>Restaurant</div>
+            <div class="topic-icon done"><div class="bubble">🚖</div>Taxi</div>
+            <div class="topic-icon done"><div class="bubble">🛍️</div>Shopping</div>
+            <div class="topic-icon done"><div class="bubble">🏨</div>Hotel</div>
+            <div class="topic-icon done"><div class="bubble">✈️</div>Airport</div>
+            <div class="topic-icon"><div class="bubble">🗺️</div>Directions</div>
+            <div class="topic-icon"><div class="bubble">🚨</div>Emergency</div>
+            <div class="topic-icon locked"><div class="bubble">⋯</div>More...</div>
+          </div>
+        </div>
+
+        <!-- LEVEL 2 -->
+        <div class="level-card">
+          <div class="level-head">
+            <span class="level-dot" style="background:var(--green)"></span>
+            <span class="level-name" style="color:#86efac">LEVEL 2 — Social Communication</span>
+          </div>
+          <div class="level-sub"><span>10 topics</span><span class="level-pct">42%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:42%;background:var(--green)"></div></div>
+          <div class="topics-row">
+            <div class="topic-icon done"><div class="bubble">☕</div>Small Talk</div>
+            <div class="topic-icon done"><div class="bubble">💼</div>Work</div>
+            <div class="topic-icon"><div class="bubble">🤝</div>Friendship</div>
+            <div class="topic-icon"><div class="bubble">✈️</div>Travel</div>
+            <div class="topic-icon locked"><div class="bubble">🍜</div>Culture</div>
+            <div class="topic-icon locked"><div class="bubble">❤️</div>Dating</div>
+            <div class="topic-icon locked"><div class="bubble">👨‍👩‍👧</div>Family</div>
+            <div class="topic-icon locked"><div class="bubble">⋯</div>More...</div>
+          </div>
+        </div>
+
+        <!-- LEVEL 3 -->
+        <div class="level-card">
+          <div class="level-head">
+            <span class="level-dot" style="background:#a78bfa"></span>
+            <span class="level-name" style="color:#c4b5fd">LEVEL 3 — Advanced Communication</span>
+          </div>
+          <div class="level-sub"><span>10 topics</span><span class="level-pct">18%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:18%;background:#a78bfa"></div></div>
+          <div class="topics-row">
+            <div class="topic-icon done"><div class="bubble">🎤</div>Presenting</div>
+            <div class="topic-icon"><div class="bubble">🤝</div>Negotiate</div>
+            <div class="topic-icon locked"><div class="bubble">🗣️</div>Debate</div>
+            <div class="topic-icon locked"><div class="bubble">📚</div>Stories</div>
+            <div class="topic-icon locked"><div class="bubble">👔</div>Interview</div>
+            <div class="topic-icon locked"><div class="bubble">💼</div>Business</div>
+            <div class="topic-icon locked"><div class="bubble">🎙️</div>Speaking</div>
+            <div class="topic-icon locked"><div class="bubble">⋯</div>More...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3.5: SPACED REPETITION ENGINE -->
+    <div class="card sr-engine">
+      <div class="card-title"><span class="icon">🔁</span> SPACED REPETITION ENGINE  ·  Day 0 → Day 60 <span class="live-badge">PERSONALIZED</span></div>
+      <div style="font-size:11.5px;color:var(--text-2);margin-top:4px">Hệ thống tự tính khi nào ôn từng topic — anh chỉ cần học theo danh sách hôm nay.</div>
+
+      <div class="sr-timeline">
+        <div class="sr-connector"></div>
+
+        <div class="sr-stage s-0">
+          <div class="sr-node"><span class="day">DAY</span><span class="day-num">0</span></div>
+          <div class="label">New</div>
+          <div class="count">1</div>
+          <div class="topics-mini">topic mới</div>
+        </div>
+
+        <div class="sr-stage s-1">
+          <div class="sr-node"><span class="day">DAY</span><span class="day-num">1</span></div>
+          <div class="label">Quick Review</div>
+          <div class="count">3</div>
+          <div class="topics-mini">15' / topic</div>
+        </div>
+
+        <div class="sr-stage s-3">
+          <div class="sr-node"><span class="day">DAY</span><span class="day-num">3</span></div>
+          <div class="label">Deep Shadow</div>
+          <div class="count">2</div>
+          <div class="topics-mini">25' / topic</div>
+        </div>
+
+        <div class="sr-stage s-7">
+          <div class="sr-node"><span class="day">DAY</span><span class="day-num">7</span></div>
+          <div class="label">Recall + Speak</div>
+          <div class="count">1</div>
+          <div class="topics-mini">30' / topic</div>
+          <div class="sr-current-badge">TODAY FOCUS</div>
+        </div>
+
+        <div class="sr-stage s-21">
+          <div class="sr-node"><span class="day">DAY</span><span class="day-num">21</span></div>
+          <div class="label">Reinforce</div>
+          <div class="count">4</div>
+          <div class="topics-mini">trong tuần</div>
+        </div>
+
+        <div class="sr-stage s-60">
+          <div class="sr-node"><span class="day">DAY</span><span class="day-num">60</span></div>
+          <div class="label">Automatic</div>
+          <div class="count">6</div>
+          <div class="topics-mini">đã mastered</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:10px 16px;background:var(--card-2);border-radius:10px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+          <span style="font-size:18px">💡</span>
+          <span style="color:var(--text-2)"><span style="color:var(--text);font-weight:600">Insight:</span> Tỉ lệ topics đạt Automatic (Day 60) là <span style="color:#a78bfa;font-weight:700">35%</span> — vượt mục tiêu tháng (30%)</span>
+        </div>
+        <div style="display:flex;gap:6px;font-size:11px">
+          <span class="day-tag day-7" style="cursor:pointer">Filter: Day 7</span>
+          <span style="color:var(--text-3);padding:2px 4px">↗ Xem flow đầy đủ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 4: REVIEW QUEUE (span 2) + CALENDAR (span 2) -->
+    <div class="card queue-card">
+      <div class="card-title"><span class="icon">⚙️</span> REVIEW ENGINE — TODAY QUEUE <span class="live-badge">LIVE</span></div>
+      <div class="queue-tabs">
+        <span class="queue-tab active">All (6)</span>
+        <span class="queue-tab">Day 1 (4)</span>
+        <span class="queue-tab">Day 3 (1)</span>
+        <span class="queue-tab">Day 7 (1)</span>
+        <span class="queue-tab">Overdue (0)</span>
+      </div>
+      <table class="queue-table">
+        <thead><tr><th>Priority</th><th>Topic</th><th>Stage</th><th>Memory</th><th>Last Review</th></tr></thead>
+        <tbody id="queue-tbody">
+          <tr><td><span class="priority high">🔥</span></td><td>Hotel Check-in</td><td><span class="day-tag day-7">Day 7</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:72%"></span></span> 72%</td><td style="color:var(--text-2)">3 days ago</td></tr>
+          <tr><td><span class="priority high">↑</span></td><td>Small Talk</td><td><span class="day-tag day-3">Day 3</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:58%"></span></span> 58%</td><td style="color:var(--text-2)">Yesterday</td></tr>
+          <tr><td><span class="priority high">↑</span></td><td>At the Airport</td><td><span class="day-tag day-3">Day 3</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:65%"></span></span> 65%</td><td style="color:var(--text-2)">Yesterday</td></tr>
+          <tr><td><span class="priority med">•</span></td><td>Directions</td><td><span class="day-tag day-1">Day 1</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:38%"></span></span> 38%</td><td style="color:var(--text-2)">Today</td></tr>
+          <tr><td><span class="priority med">•</span></td><td>Shopping</td><td><span class="day-tag day-1">Day 1</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:45%"></span></span> 45%</td><td style="color:var(--text-2)">Today</td></tr>
+          <tr><td><span class="priority med">•</span></td><td>Taxi</td><td><span class="day-tag day-1">Day 1</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:40%"></span></span> 40%</td><td style="color:var(--text-2)">Today</td></tr>
+        </tbody>
+      </table>
+      <div class="queue-link">View all in Review Engine →</div>
+    </div>
+
+    <div class="card calendar-card">
+      <div class="card-title"><span class="icon">📅</span> CALENDAR — JUNE 2026</div>
+      <div class="cal-head">
+        <div class="arrows">‹ ›</div>
+        <div style="font-size:11px;color:var(--text-2);font-weight:600">Today</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend">
+        <span><span class="cal-legend-dot"></span> 1–2 topics</span>
+        <span><span class="cal-legend-dot med"></span> 3–5 topics</span>
+        <span><span class="cal-legend-dot dark"></span> 6+ topics</span>
+      </div>
+    </div>
+
+    <div class="card" style="grid-column: span 1">
+      <div class="card-title"><span class="icon">📈</span> PROGRESS TRACKER</div>
+      <canvas id="progress-chart" style="height:140px"></canvas>
+      <div class="progress-stats">
+        <div class="mini-stat"><div class="lbl">New This Week</div><div class="val">5</div></div>
+        <div class="mini-stat"><div class="lbl">Reviews Done</div><div class="val">28</div></div>
+        <div class="mini-stat"><div class="lbl">Study Time</div><div class="val">6h 24m</div></div>
+        <div class="mini-stat"><div class="lbl">Accuracy</div><div class="val">78%</div></div>
+      </div>
+    </div>
+
+    <!-- ROW 4.5: NEXT SMALL WIN (Close to Level Up) + COACH NUDGE -->
+    <div class="card close-card" style="grid-column: span 2">
+      <div class="card-title"><span class="icon">🌟</span> NEXT SMALL WIN  ·  Close to level up <span class="live-badge">+5 XP each</span></div>
+      <div style="font-size:11.5px;color:var(--text-2);margin-top:2px">3 topics đang gần chuyển sang trạng thái cao hơn — chỉ cần 1 buổi review đúng cách.</div>
+      <div class="close-card-list">
+        <div class="close-item">
+          <div class="emoji-tile">🏨</div>
+          <div class="name"><b>Hotel Check-in</b> <span style="color:var(--text-3);font-size:10px">· Level 1</span></div>
+          <div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:88%"></div></div>
+          <div class="meta">88%</div>
+          <span class="next-stage">🟩→🟦 Stable → Automatic</span>
+        </div>
+        <div class="close-item">
+          <div class="emoji-tile">☕</div>
+          <div class="name"><b>Small Talk</b> <span style="color:var(--text-3);font-size:10px">· Level 2</span></div>
+          <div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:75%"></div></div>
+          <div class="meta">75%</div>
+          <span class="next-stage">🟨→🟩 Building → Stable</span>
+        </div>
+        <div class="close-item">
+          <div class="emoji-tile">✈️</div>
+          <div class="name"><b>At the Airport</b> <span style="color:var(--text-3);font-size:10px">· Level 1</span></div>
+          <div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:62%"></div></div>
+          <div class="meta">62%</div>
+          <span class="next-stage">🟧→🟨 Weak → Building</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card coach-card" style="grid-column: span 2">
+      <div class="card-title"><span class="icon">🧠</span> COACH SAYS  ·  Today's insight</div>
+      <div class="coach-quote">17 ngày liên tiếp. Đây không phải may mắn — đây là HỆ THỐNG. Hôm nay anh chỉ cần lặp lại đúng quy trình.</div>
+      <div class="coach-sub">Dựa trên data của anh: <b style="color:#86efac">Thứ Hai</b> là ngày anh học tập trung nhất (avg 78 phút). Hôm nay là Thứ Hai → tận dụng thời gian này.</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <div style="flex:1;background:var(--card-2);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9.5px;color:var(--text-3);text-transform:uppercase;font-weight:600">Today's win goal</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px">1 topic → Day 1</div>
+        </div>
+        <div style="flex:1;background:var(--card-2);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9.5px;color:var(--text-3);text-transform:uppercase;font-weight:600">XP needed</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;color:#fde047">253 → LV 13</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="grid-column: span 1">
+      <div class="card-title"><span class="icon">🔥</span> STREAK GUARD</div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding-top:6px">
+        <div style="font-size:46px;font-weight:800;background:linear-gradient(135deg,#ff8a3d,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">17</div>
+        <div style="font-size:11px;color:var(--text-2)">day streak 🔥</div>
+        <div style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px;line-height:1.4">Mất 1 ngày = reset.<br>Học hôm nay = <b style="color:#fde047">Day 18</b></div>
+        <div style="display:flex;gap:3px;margin-top:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:rgba(255,138,61,0.2);animation:pulse 1.5s ease-in-out infinite"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 5: MISSIONS (span 2) + NEXT UP (span 1) -->
+    <div class="card missions-card">
+      <div class="card-title"><span class="icon">🎯</span> REAL LIFE MISSIONS</div>
+      <div class="mission-row done"><span class="mission-check"></span><span class="name">Dùng 1 cụm từ trong bữa ăn thật</span></div>
+      <div class="mission-row done"><span class="mission-check"></span><span class="name">Chat với AI về chủ đề này 3 phút</span></div>
+      <div class="mission-row"><span class="mission-check"></span><span class="name">Xem video hội thoại nhà hàng</span></div>
+      <div class="mission-row"><span class="mission-check"></span><span class="name">Ghi âm đoạn hội thoại 1 phút</span></div>
+      <div class="mission-row"><span class="mission-check"></span><span class="name">Rủ bạn đóng vai đi nhà hàng</span></div>
+
+      <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;font-weight:600;margin-top:14px">MISSION STREAK</div>
+      <div class="streak-row">
+        🔥🔥🔥🔥🔥⚪⚪
+        <span style="margin-left:auto;color:var(--text)">3 / 7 missions</span>
+      </div>
+    </div>
+
+    <div class="card next-card">
+      <div class="card-title"><span class="icon">⏭️</span> NEXT UP <span style="font-weight:400;color:var(--text-3);text-transform:none;letter-spacing:0">(TOMORROW PREVIEW)</span></div>
+
+      <div class="next-section">
+        <div class="next-label">🆕 NEW TOPIC</div>
+        <div class="next-title">🗺️ Asking for Directions <span class="day-tag day-0" style="margin-left:auto">Day 0</span></div>
+      </div>
+
+      <div class="next-section">
+        <div class="next-label">🔁 REVIEWS</div>
+        <div style="font-size:11.5px;margin-top:4px">• Ordering Food <span class="day-tag day-1">Day 1</span></div>
+        <div style="font-size:11.5px;margin-top:4px">• Shopping <span class="day-tag day-3">Day 3</span></div>
+      </div>
+
+      <div style="font-size:11px;color:var(--purple);margin-top:10px;cursor:pointer">View full schedule →</div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER QUOTE -->
+  <div class="footer-quote">
+    "The more you review, the more natural it becomes."
+    <span class="author">— Shadow today, speak naturally tomorrow.</span>
+  </div>
+
+</div>
+
+
+<script>
+console.log('INLINE-SCRIPT-START');
+
+// ============= CONFIG =============
+var txtMute = '#6b6890';
+var gridColor = 'rgba(42,39,80,0.5)';
+var cardBg = '#1a1838';
+
+// ============= SVG SPARKLINE =============
+function svgSpark(canvas, data, color) {
+  if (!canvas) return;
+  var w = 180, h = 32;
+  var min = Math.min.apply(null, data), max = Math.max.apply(null, data);
+  var pts = data.map(function(v, i) {
+    var x = (i / (data.length - 1)) * w;
+    var y = h - ((v - min) / (max - min || 1)) * (h - 4) - 2;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  var svg = '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+    '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<polygon points="0,' + h + ' ' + pts + ' ' + w + ',' + h + '" fill="' + color + '" opacity="0.18"/>' +
+    '</svg>';
+  canvas.outerHTML = '<div class="spark">' + svg + '</div>';
+}
+
+svgSpark(document.getElementById('spark-streak'), [3,5,4,6,8,7,10,12,11,15,14,17], '#a78bfa');
+svgSpark(document.getElementById('spark-load'), [4,5,3,7,8,6,9,7,8,6,5,7], '#facc15');
+svgSpark(document.getElementById('spark-due'), [2,4,3,5,4,6,5,7,6,5,7,6], '#ef4444');
+svgSpark(document.getElementById('spark-week'), [40,45,50,55,52,60,65,62,68,70,66,68], '#3b82f6');
+
+// ============= SVG DONUT =============
+function svgDonut(canvas, segments, size) {
+  if (!canvas) return;
+  var r = size/2 - 2;
+  var cx = size/2, cy = size/2;
+  var total = 0;
+  segments.forEach(function(s){ total += s.value; });
+  var acc = 0;
+  var parts = '';
+  segments.forEach(function(sg) {
+    var start = (acc / total) * 2 * Math.PI - Math.PI/2;
+    acc += sg.value;
+    var end = (acc / total) * 2 * Math.PI - Math.PI/2;
+    var x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+    var x2 = cx + r * Math.cos(end), y2 = cy + r * Math.sin(end);
+    var large = (end - start) > Math.PI ? 1 : 0;
+    parts += '<path d="M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2 + ' Z" fill="' + sg.color + '"/>';
+  });
+  var inner = r * 0.7;
+  var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+    parts + '<circle cx="' + cx + '" cy="' + cy + '" r="' + inner + '" fill="' + cardBg + '"/></svg>';
+  canvas.outerHTML = svg;
+}
+
+svgDonut(document.getElementById('memory-donut'),
+  [{value:5,color:'#ef4444'},{value:12,color:'#ff8a3d'},{value:21,color:'#facc15'},{value:24,color:'#22c55e'},{value:6,color:'#a78bfa'}], 150);
+
+svgDonut(document.getElementById('time-gauge'),
+  [{value:58,color:'#7c5cff'},{value:42,color:'#2a2750'}], 60);
+
+// ============= SVG LINE CHART =============
+function svgLineChart(canvas, labels, data, color) {
+  if (!canvas) return;
+  var w = 280, h = 140, pad = 30;
+  var xs = data.map(function(_, i){ return pad + (i/(data.length-1))*(w-pad-10); });
+  var max = 100;
+  var ys = data.map(function(v){ return h - 20 - (v/max)*(h-pad-10); });
+  var pathPts = xs.map(function(x, i){ return x + ',' + ys[i]; }).join(' ');
+  var gridLines = '';
+  [0,25,50,75,100].forEach(function(p) {
+    var y = h - 20 - (p/100)*(h-pad-10);
+    gridLines += '<line x1="' + pad + '" y1="' + y + '" x2="' + (w-10) + '" y2="' + y + '" stroke="' + gridColor + '" stroke-width="0.5"/>';
+    gridLines += '<text x="' + (pad-4) + '" y="' + (y+3) + '" fill="' + txtMute + '" font-size="9" text-anchor="end">' + p + '%</text>';
+  });
+  var xLabels = '';
+  labels.forEach(function(lbl, i) {
+    xLabels += '<text x="' + xs[i] + '" y="' + (h-5) + '" fill="' + txtMute + '" font-size="9" text-anchor="middle">' + lbl + '</text>';
+  });
+  var dots = xs.map(function(x, i){ return '<circle cx="' + x + '" cy="' + ys[i] + '" r="3" fill="' + color + '"/>'; }).join('');
+  var svg = '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet">' +
+    gridLines +
+    '<polygon points="' + xs[0] + ',' + (h-20) + ' ' + pathPts + ' ' + xs[xs.length-1] + ',' + (h-20) + '" fill="' + color + '" opacity="0.15"/>' +
+    '<polyline points="' + pathPts + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    dots + xLabels + '</svg>';
+  canvas.outerHTML = svg;
+}
+
+svgLineChart(document.getElementById('progress-chart'),
+  ['Jun 2','Jun 3','Jun 4','Jun 5','Jun 6','Jun 7','Jun 9'],
+  [25, 32, 45, 50, 58, 62, 68], '#a78bfa');
+
+// ============= HEATMAP =============
+var heatmap = document.getElementById('heatmap');
+var dows = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var heatData = [];
+for (var d=0; d<7; d++) {
+  var row = [];
+  for (var w=0; w<28; w++) row.push(Math.floor(Math.random()*5));
+  heatData.push(row);
+}
+for (var di=0; di<dows.length; di++) {
+  var lbl = document.createElement('div');
+  lbl.className = 'hm-label';
+  lbl.textContent = dows[di];
+  heatmap.appendChild(lbl);
+  for (var wi=0; wi<28; wi++) {
+    var c = document.createElement('div');
+    c.className = 'hm-cell hm-' + heatData[di][wi];
+    heatmap.appendChild(c);
+  }
+}
+
+// ============= CALENDAR =============
+var calGrid = document.getElementById('cal-grid');
+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(d) {
+  var el = document.createElement('div');
+  el.className = 'cal-dow';
+  el.textContent = d;
+  calGrid.appendChild(el);
+});
+var todayDate = 9;
+var events = {2:4, 3:7, 4:3, 5:6, 6:5, 7:2, 8:3, 9:6, 10:5, 11:4, 12:6, 13:5, 14:2};
+for (var dd=1; dd<=30; dd++) {
+  var el = document.createElement('div');
+  el.className = 'cal-day';
+  if (dd === todayDate) el.className += ' today';
+  if (events[dd]) el.className += ' has-events';
+  el.innerHTML = '<span>' + dd + '</span>' + (events[dd] ? '<span class="badge">' + events[dd] + '</span>' : '');
+  calGrid.appendChild(el);
+}
+
+// ============= NOTION LIVE =============
+function callNotion(name, args) {
+  if (typeof window.cowork === 'undefined' || !window.cowork.callMcpTool) {
+    return Promise.resolve(null);
+  }
+  return window.cowork.callMcpTool(name, args).catch(function(e){ console.error(e); return null; });
+}
+
+function loadNotionData() {
+  var status = document.getElementById('notion-status');
+  callNotion('mcp__7c824ada-5f4c-4879-9190-379cd9baf1fe__notion-search', {
+    query: 'topics',
+    data_source_url: 'collection://b8c8cbce-2a07-4587-924f-a79dc9d85743',
+    page_size: 25,
+    max_highlight_length: 0
+  }).then(function(result) {
+    if (result && result.results) {
+      var topics = result.results;
+      status.textContent = '✅ Đã kết nối — ' + topics.length + ' topics từ workspace "Ngoại Ngữ Shadowing | 2026"';
+      status.style.color = '#86efac';
+      document.getElementById('topics-count').textContent = topics.length;
+    } else {
+      status.textContent = '⚠️ Hiển thị dữ liệu demo — kết nối Notion không khả dụng trong môi trường này';
+      status.style.color = '#fbbf76';
+    }
+  });
+}
+
+function refreshFromNotion() {
+  var status = document.getElementById('notion-status');
+  status.textContent = 'Đang refresh từ Notion...';
+  status.style.color = '#a8a6c8';
+  loadNotionData();
+}
+window.refreshFromNotion = refreshFromNotion;
+
+loadNotionData();
+console.log('INLINE-SCRIPT-DONE');
+</script>
+</body>
+</html>
