@@ -6,7 +6,135 @@
 **Live URL:** https://truongcrm.github.io/shadow-english-dashboard/
 **Owner:** TruongCRM (Dương Trường — solopreneur, non-technical)
 **Started:** 2026-05-25
-**Last update:** 2026-05-26 (post-v11.1 STABILIZE)
+**Last update:** 2026-05-26 (post-v11.1.2 stabilize patches)
+
+---
+
+## v11.1.2 — STABILIZE patch B: Heatmap CSS fix + cache-bust (2026-05-26)
+
+### Goal
+Mid-session bug surface — user noticed REVIEW HEATMAP layout was visually broken on home page (day labels Mon-Sat crammed inline with cells, Sun on dropped row). NOT caused by v11.1.1 nav fix — pre-existing CSS bug since v6/v8 era. STABILIZE-eligible (broken visual ≠ feature).
+
+### Built
+- Extended `nav_polish.js` with `fixHeatmap()` — dynamically computes weeks from `.hm-cell` count and sets `grid-template-columns` correctly via inline style with `!important`
+- Handles both 4-week and 5-week months automatically (`Math.ceil(cells / 7)`)
+- Idempotent via `data-hm-fixed-weeks` flag — re-runs only when week count changes
+- Wired into existing `bindAll()` so runs on initial bind + every render-wrap + every navigate-wrap + 3s safety interval
+
+### Problems
+- **Root cause:** `index.html` inline style had `.heatmap { grid-template-columns: 30px repeat(28, 1fr); }` — the `28` was total cells (7 days × 4 weeks) not the number of week columns. Browser auto-flowed 35 children into 29 cols × 2 rows → catastrophic visual scramble.
+- **Cache-bust gotcha (post-deploy):** Updated `nav_polish.js` deployed successfully (build #26 ✅) but browser kept serving OLD version because `<script src="nav_polish.js?v=11.1.1">` query string didn't change. User-visible: page loaded but heatmap still broken even after Ctrl+Shift+R.
+
+### Fixes
+- Computed CSS column override applied on live ✓
+- Visual confirm: 7 rows × 4 cols layout displays correctly (Mon→Sun vertical, Week1→4 horizontal)
+- Cache-bust resolved by separate commit bumping `?v=11.1.1` → `?v=11.1.2` in index.html
+
+### Architecture
+- No new layer, no new module — extension of existing v11.1.1 stabilize patch
+- Same idempotent + setInterval safety net pattern
+
+### Lessons learned — NEW
+- **🔥 G7 (TECHNICAL_NOTES candidate):** **`?v=N` cache-bust query MUST change every time you update a script file.** Browser caches based on the full URL (including query string). Updating the file on the server without changing the script-tag's query = invisible cache hit, old code keeps running. The user-visible symptom is identical to "fix doesn't work" — but the actual code in source IS correct. Diagnostic: `fetch('/file.js?bust='+Date.now()).then(r=>r.text())` to see what the SERVER returns vs `typeof window.MY_FN` to see what the BROWSER loaded. If server has the new code but browser doesn't expose it → cache bust missing.
+- Bumping the `?v=` query is now part of "ship a JS update" checklist — write into deploy flow.
+- This is similar to G6 (green commit ≠ deployed live) but one tier downstream: green deploy ≠ executed live by browser.
+
+### Touched files
+| File | Change |
+|---|---|
+| `nav_polish.js` | +40 LOC: fixHeatmap function + bindAll integration + _info update |
+| `index.html` | 1-char diff: `?v=11.1.1` → `?v=11.1.2` |
+
+### Deploy
+- Commit 1: `6a8e5a8` — nav_polish.js updated with heatmap fix
+- Commit 2: `e63cce7` — index.html cache-bust bump
+- Build #26: ✅ Success (1m 0s)
+
+### Pending → v11.2+ (unchanged)
+Observation week still active. Sticking to STABILIZE-before-BUILD discipline. Do NOT start v11.2 work until Day 7.
+
+---
+
+## v11.1.1 — STABILIZE patch: Nav clickability fix (2026-05-26)
+
+### Goal
+Sub-version patch — **not** v11.2. Observation week is still active per the v11.1 STABILIZE-before-BUILD rule we locked in 30 minutes ago. This patch fixes **broken navigation affordance** (UI elements that looked clickable but had no handler) — that's a *bug*, not a feature. Sticking strictly to the rule.
+
+### Built
+- `nav_polish.js` — single IIFE, ~150 lines, zero dependencies, pure additive (same pattern as `debug_panel.js`)
+- One DOM-safe wrap of `window.render` + `window.navigate` (idempotent via `__navPolishPatched` flag — no collision with `__v11Patched` used by `app_v11_today.js`)
+- 3s setInterval safety net (matches `app_v11_today.js` v8 lesson — render-wrap alone is unreliable for dynamic content)
+- Two click bindings:
+  1. **`#view-home .level-card` × 3** (LEVEL 1/2/3 summary cards) — click → `navigate('level1'|'level2'|'level3')`
+  2. **`#today-review-list .review-item[data-topic]`** — click → `openTopic(id)`
+- A11y: each bound element gets `role="button"`, `tabindex="0"`, `aria-label`, plus Enter/Space keyboard activation
+- Minimal hover lift CSS (`translateY(-2px)` desktop, disabled on mobile to preserve calm)
+- Cursor pointer where missing
+- Public debug handle: `SHADOW_NAV_POLISH.bind()` / `._info()`
+
+### Problems
+- **Pre-patch verification:**
+  - Home `.level-card` summary cards had no `onclick`, `cursor:auto`, no internal links — **completely dead**
+  - `#today-review-list .review-item[data-topic]` had `cursor:pointer` via CSS (lying about affordance) but **no actual handler** — clicking did nothing
+  - Both elements created via app.js render — not via the v11.1 Today card module (which has its own working handlers in `today.js`)
+- **Brief vs philosophy tension (surfaced before patching):**
+  - User's brief included multiple feature-grade items (mini context-transition card, centralized routing helper, auto-focus review stage, hover glow effects)
+  - Conflict with the rule we committed 30 min earlier: "STABILIZE phase as sacred — no new features during observation week"
+  - Resolved by asking user → user picked path A (STABILIZE-only fixes, defer the rest to v11.2-B)
+
+### Fixes
+- All 4 click tests pass on live (verified via Chrome MCP JS execution):
+  - LEVEL 1 card → `view-level1` ✅
+  - LEVEL 2 card → `view-level2` ✅
+  - LEVEL 3 card → `view-level3` ✅
+  - Review row (forced L1-01 into today's queue) → `view-topic-detail` ✅
+- Binding idempotent across re-renders (verified — no double-binding when render() fires multiple times)
+- A11y: `role="button"`, keyboard nav work
+
+### Deferred to v11.2-B (Daily Loop polish)
+Explicitly NOT in this patch:
+- Mini context-transition card (200–400ms fade with topic icon/name/stage preview before entering detail)
+- Centralized navigation helper / refactor (kill scattered onclicks)
+- Auto-focus current review stage when opening a topic
+- Highlight current memory stage on entry
+- Decorative hover glow beyond minimal lift
+
+These items collectively are v11.2-B feature work — wait for observation week to end (Day 7) before scoping.
+
+### Architecture change
+- None to existing layers
+- Adds nav_polish.js as a new sub-module under the existing **Observability Layer slot** philosophy: pure additive, opt-out by removing one script tag, no edits to app.js / today.js / blocks.js / etc.
+
+### Lessons learned
+- **Affordance lying = stabilize bug, not feature work.** When `cursor:pointer` exists but no handler does, that's broken UX — fixing it is allowed during observation week. Adding NEW hover-glow animations is NOT.
+- **Render-wrap alone insufficient for dynamically-rendered children.** The 3s `setInterval(bindAll)` safety net is what actually catches review-item rows when the queue populates — same lesson as v8.3 audio button auto-attach.
+- **A philosophy is only valuable when honored under pressure.** The user's brief 30min after locking "no features during observation week" was a stress test for the rule. The right move was to surface the tension explicitly, not silently execute. → Captured in TECHNICAL_NOTES (to be added).
+
+### Touched files
+| File | Change | Notes |
+|---|---|---|
+| `nav_polish.js` (NEW) | created | ~150 LOC, zero deps |
+| `index.html` | added 1 script tag (line 2091, same line as debug_panel.js) | Sub-100B diff |
+
+### Test results
+- `SHADOW_NAV_POLISH._info()`: `{level_cards_total:3, level_cards_bound:3, review_items_total:0, review_items_bound:0}` (review_items empty when no topic queued — expected)
+- After forcing L1-01 into today's queue + 3.5s safety net wait: `{review_items_total:1, review_items_bound:1}` ✓
+- Click navigation: 4/4 pass
+
+### Deploy
+- Commit 1: `c080a4a` — index.html script tag added
+- Commit 2: `ade9ba2` — nav_polish.js uploaded
+- Build #25: ✅ Success (1m 31s)
+- Live URL: https://truongcrm.github.io/shadow-english-dashboard/?debug=1&v=11.1.1
+
+### Tech debt status (no change from v11.1)
+- TD-1 Node 20 deprecation: still open (this patch did not address)
+- TD-2 v11 scripts undocumented: still open
+- TD-3 formula divergence: still pending observation week
+- TD-4 `getTodayQueue` not exposed: still open
+
+### Pending → v11.2+
+Unchanged from v11.1 close-loop CHANGELOG. Observation week remains active. Do NOT start v11.2 work until Day 7.
 
 ---
 
