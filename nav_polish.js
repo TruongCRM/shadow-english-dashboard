@@ -38,10 +38,17 @@ var CSS = [
 /* The review row already has cursor:pointer via existing CSS but lacks handler. */
 '#today-review-list .review-item.nav-bound { transition: background 0.15s ease, transform 0.15s ease; }',
 '#today-review-list .review-item.nav-bound:hover { background: rgba(124,92,255,0.05); transform: translateX(2px); }',
+/* Heatmap polish: full-width section + compact square cells */
+'#view-home .heatmap-card { grid-column: 1 / -1 !important; }',
+'.heatmap.nav-polished { justify-content: start !important; align-items: start !important; grid-auto-rows: 32px !important; gap: 4px !important; padding-top: 4px; }',
+'.heatmap.nav-polished .hm-label { font-size: 11px; color: var(--text-3); display: flex; align-items: center; }',
+'.heatmap.nav-polished .hm-cell { border-radius: 4px; min-height: 32px; }',
 /* Mobile — keep tap targets comfortable */
 '@media (max-width: 900px) {',
 '  #view-home .level-card.nav-bound:hover { transform: none; }',
 '  #today-review-list .review-item.nav-bound:hover { transform: none; }',
+'  .heatmap.nav-polished { gap: 3px !important; grid-auto-rows: 28px !important; }',
+'  .heatmap.nav-polished .hm-cell { min-height: 28px; }',
 '}'
 ].join('\n');
 
@@ -162,13 +169,17 @@ function fixHeatmap() {
     if (labels !== 7 || cells === 0) return; // unexpected shape — skip
     var weeks = Math.ceil(cells / 7);
     if (weeks < 1 || weeks > 6) return; // sanity bounds
-    var desired = '30px repeat(' + weeks + ', 1fr)';
-    // The browser-computed gridTemplateColumns expands to pixel values, so we
-    // compare the inline style instead. If we've set it before with same value,
-    // skip; otherwise apply.
-    if (hm.dataset.hmFixedWeeks === String(weeks)) return;
-    hm.style.setProperty('grid-template-columns', desired, 'important');
-    hm.dataset.hmFixedWeeks = String(weeks);
+    // v3: fixed-size cells (32px squares) instead of 1fr — prevents the heatmap
+    // from stretching to fill the parent card width. Combined with the CSS
+    // override `.heatmap-card { grid-column: 1 / -1 }`, this gives a calm,
+    // GitHub-style compact heatmap as its own row.
+    var key = weeks + 'w-v3';
+    if (hm.dataset.hmFixedWeeks === key) return;
+    // Fixed-size cells (32px) instead of 1fr — prevents stretching to full container width
+    var desiredV3 = '30px repeat(' + weeks + ', 32px)';
+    hm.style.setProperty('grid-template-columns', desiredV3, 'important');
+    hm.classList.add('nav-polished');
+    hm.dataset.hmFixedWeeks = key;
     fixed++;
   });
   return fixed;
