@@ -1,0 +1,1223 @@
+{
+  "schema": "shadow-english-content-v1",
+  "generatedAt": "2026-05-26T08:40:53.198Z",
+  "source": "manual",
+  "topics": {
+    "L1-01": {
+      "why": "Ăn uống là tình huống giao tiếp xảy ra hàng ngày khi du lịch, làm việc với khách nước ngoài, hoặc đi nhà hàng. Không biết gọi món = bỏ lỡ trải nghiệm.",
+      "scene": "Nhà hàng, quán ăn, du lịch trong và ngoài nước, đi cùng gia đình/bạn bè, tiệc công việc, fast food/casual/fine dining.",
+      "phrases": {
+        "before": [
+          [
+            "Can we see the menu, please?",
+            "Cho tôi xem menu"
+          ],
+          [
+            "We'd like a table for two.",
+            "Cho chúng tôi bàn 2 người"
+          ],
+          [
+            "Do you have any recommendations?",
+            "Có món gì gợi ý không?"
+          ],
+          [
+            "What's this dish?",
+            "Món này là gì?"
+          ],
+          [
+            "Is it spicy?",
+            "Có cay không?"
+          ]
+        ],
+        "during": [
+          [
+            "I'd like to order...",
+            "Tôi muốn gọi..."
+          ],
+          [
+            "Could I have some water, please?",
+            "Cho tôi xin nước"
+          ],
+          [
+            "This is delicious!",
+            "Ngon quá!"
+          ],
+          [
+            "It's a little too salty.",
+            "Hơi mặn"
+          ],
+          [
+            "Can you make it less spicy?",
+            "Bớt cay được không?"
+          ]
+        ],
+        "after": [
+          [
+            "Can we have the bill, please?",
+            "Cho tôi xin hóa đơn"
+          ],
+          [
+            "How much do we owe?",
+            "Tổng bao nhiêu?"
+          ],
+          [
+            "Can I pay by card/cash?",
+            "Thanh toán thẻ/tiền mặt được không?"
+          ],
+          [
+            "Everything was great.",
+            "Mọi thứ tuyệt vời"
+          ],
+          [
+            "Thank you so much.",
+            "Cảm ơn rất nhiều"
+          ]
+        ]
+      },
+      "real_english": [
+        "I would like → I'd like",
+        "Can I have → Can I get",
+        "Let me see → Lemme see",
+        "I want to → I wanna"
+      ],
+      "dialogues": [
+        {
+          "title": "Gọi món cơ bản",
+          "lines": [
+            [
+              "You",
+              "Can we see the menu, please?"
+            ],
+            [
+              "Staff",
+              "Of course, here you are."
+            ],
+            [
+              "You",
+              "I'd like the grilled salmon, please."
+            ],
+            [
+              "Staff",
+              "How would you like it cooked?"
+            ],
+            [
+              "You",
+              "Medium, please."
+            ]
+          ]
+        }
+      ],
+      "shadow_script": "Can we see the menu, please? I'd like to order. Could I have some water, please? This is delicious. Can we have the bill, please? Thank you so much.",
+      "missions": [
+        "Dùng 1 cụm từ trong bữa ăn thật hôm nay",
+        "Order 1 món bằng tiếng Anh tại quán",
+        "Hỏi recommend món bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you ask for the menu?",
+        "What do you say when the food is too salty?",
+        "How do you ask for the bill?"
+      ]
+    },
+    "L1-02": {
+      "why": "Lạc đường ở nước ngoài là tình huống stress nhất. Hỏi đường = bước cứu nguy số 1.",
+      "scene": "Du lịch, đường phố, taxi, metro station, lúc lạc đường, hỏi địa điểm.",
+      "phrases": {
+        "before": [
+          [
+            "Excuse me, could you help me?",
+            "Xin lỗi, anh/chị giúp được không?"
+          ],
+          [
+            "I'm a bit lost.",
+            "Tôi hơi lạc đường"
+          ],
+          [
+            "Do you know where ... is?",
+            "Anh có biết ... ở đâu không?"
+          ]
+        ],
+        "during": [
+          [
+            "How do I get to ...?",
+            "Đi tới ... thế nào?"
+          ],
+          [
+            "Is it far from here?",
+            "Có xa không?"
+          ],
+          [
+            "How long does it take?",
+            "Mất bao lâu?"
+          ],
+          [
+            "Can I walk there?",
+            "Đi bộ được không?"
+          ]
+        ],
+        "after": [
+          [
+            "Thank you so much for your help.",
+            "Cảm ơn anh đã giúp"
+          ],
+          [
+            "I really appreciate it.",
+            "Tôi rất biết ơn"
+          ],
+          [
+            "Have a great day!",
+            "Chúc một ngày tốt lành"
+          ]
+        ]
+      },
+      "real_english": [
+        "Go straight → Keep going",
+        "Turn right → Take a right",
+        "It's far → It's a bit far"
+      ],
+      "dialogues": [
+        {
+          "title": "Hỏi đường tới khách sạn",
+          "lines": [
+            [
+              "You",
+              "Excuse me, how do I get to Hilton Hotel?"
+            ],
+            [
+              "Local",
+              "Go straight for two blocks, then turn left."
+            ],
+            [
+              "You",
+              "Is it far?"
+            ],
+            [
+              "Local",
+              "About 10 minutes walk."
+            ],
+            [
+              "You",
+              "Thank you so much!"
+            ]
+          ]
+        }
+      ],
+      "shadow_script": "Excuse me, could you help me? How do I get to the station? Is it far from here? Thank you so much.",
+      "missions": [
+        "Hỏi đường đến 1 địa điểm bằng tiếng Anh",
+        "Cho người khác chỉ đường bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you politely ask for directions?",
+        "How do you say you're lost?"
+      ]
+    },
+    "L1-03": {
+      "why": "Mua sắm là tình huống có TIỀN — không hiểu = bị tính sai giá, không thương lượng được.",
+      "scene": "Shopping mall, chợ, online shopping, return/exchange.",
+      "phrases": {
+        "before": [
+          [
+            "I'm just looking, thanks.",
+            "Tôi chỉ xem thôi"
+          ],
+          [
+            "Do you have this in another size?",
+            "Có size khác không?"
+          ],
+          [
+            "How much is this?",
+            "Cái này bao nhiêu?"
+          ]
+        ],
+        "during": [
+          [
+            "Can I try this on?",
+            "Tôi thử được không?"
+          ],
+          [
+            "It's too tight/loose.",
+            "Chật/rộng quá"
+          ],
+          [
+            "Do you accept credit cards?",
+            "Có nhận thẻ không?"
+          ],
+          [
+            "Is there a discount?",
+            "Có giảm giá không?"
+          ]
+        ],
+        "after": [
+          [
+            "I'll take it.",
+            "Tôi lấy cái này"
+          ],
+          [
+            "Can I have a receipt?",
+            "Cho tôi hóa đơn"
+          ],
+          [
+            "Can I return this if it doesn't fit?",
+            "Trả lại được không nếu không vừa?"
+          ]
+        ]
+      },
+      "real_english": [
+        "I would like → I'll take",
+        "Do you have → Got any",
+        "Discount → A deal"
+      ],
+      "dialogues": [
+        {
+          "title": "Mua quần áo",
+          "lines": [
+            [
+              "You",
+              "How much is this shirt?"
+            ],
+            [
+              "Staff",
+              "It's $45."
+            ],
+            [
+              "You",
+              "Can I try it on?"
+            ],
+            [
+              "Staff",
+              "Of course, the fitting room is over there."
+            ]
+          ]
+        }
+      ],
+      "shadow_script": "How much is this? Can I try it on? I'll take it. Can I have a receipt?",
+      "missions": [
+        "Hỏi giá 1 món tại shop bằng tiếng Anh",
+        "Thử đồ tại fitting room"
+      ],
+      "active_recall": [
+        "How do you ask the price?",
+        "How do you ask to try on clothes?"
+      ]
+    },
+    "L1-06": {
+      "why": "Sân bay là nơi tiếng Anh là LANGUAGE OF DEFAULT. Sai 1 từ = miss flight.",
+      "scene": "Check-in, security, gate, immigration, customs, baggage claim.",
+      "phrases": {
+        "before": [
+          [
+            "I'd like to check in, please.",
+            "Tôi muốn check-in"
+          ],
+          [
+            "I have one bag to check.",
+            "Tôi gửi 1 vali"
+          ],
+          [
+            "Can I have a window/aisle seat?",
+            "Cho ghế cửa sổ/lối đi"
+          ]
+        ],
+        "during": [
+          [
+            "Where's gate B12?",
+            "Cổng B12 ở đâu?"
+          ],
+          [
+            "Is the flight on time?",
+            "Chuyến bay đúng giờ chứ?"
+          ],
+          [
+            "I'm here for tourism.",
+            "Tôi đi du lịch"
+          ]
+        ],
+        "after": [
+          [
+            "I can't find my luggage.",
+            "Tôi không tìm thấy vali"
+          ],
+          [
+            "Where can I get a taxi?",
+            "Taxi ở đâu?"
+          ]
+        ]
+      },
+      "real_english": [
+        "I would like → I'd like",
+        "Where's → Where is"
+      ],
+      "dialogues": [
+        {
+          "title": "Check-in counter",
+          "lines": [
+            [
+              "You",
+              "Hi, I'd like to check in for flight VN123."
+            ],
+            [
+              "Staff",
+              "Passport please."
+            ],
+            [
+              "You",
+              "Here you go. Could I get a window seat?"
+            ],
+            [
+              "Staff",
+              "Sure, you're in 24A."
+            ]
+          ]
+        }
+      ],
+      "shadow_script": "I'd like to check in. I have one bag. Window seat please. Where's gate B12?",
+      "missions": [
+        "Check-in bằng tiếng Anh next flight",
+        "Hỏi gate bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you ask for a window seat?",
+        "How do you ask about flight status?"
+      ]
+    },
+    "L1-08": {
+      "why": "Hotel check-in/check-out là test nhanh kỹ năng giao tiếp. Wrong room = wrong vacation.",
+      "scene": "Reception, room service, check-in, check-out, complaint.",
+      "phrases": {
+        "before": [
+          [
+            "I have a reservation under...",
+            "Tôi có đặt phòng tên..."
+          ],
+          [
+            "I'd like to check in, please.",
+            "Tôi muốn check-in"
+          ]
+        ],
+        "during": [
+          [
+            "What time is breakfast?",
+            "Mấy giờ ăn sáng?"
+          ],
+          [
+            "Could I have an extra towel?",
+            "Cho tôi thêm khăn"
+          ],
+          [
+            "The wifi isn't working.",
+            "Wifi không hoạt động"
+          ]
+        ],
+        "after": [
+          [
+            "I'd like to check out, please.",
+            "Tôi muốn check-out"
+          ],
+          [
+            "Could you call me a taxi?",
+            "Gọi taxi giúp tôi được không?"
+          ]
+        ]
+      },
+      "real_english": [
+        "I would like → I'd like",
+        "Could you → Can you"
+      ],
+      "dialogues": [
+        {
+          "title": "Check-in",
+          "lines": [
+            [
+              "You",
+              "Hi, I have a reservation under Truong."
+            ],
+            [
+              "Staff",
+              "Welcome! Let me see... yes, you're in room 408."
+            ],
+            [
+              "You",
+              "What time is breakfast?"
+            ],
+            [
+              "Staff",
+              "From 6 to 10 AM."
+            ]
+          ]
+        }
+      ],
+      "shadow_script": "I have a reservation. I'd like to check in. What time is breakfast? Could I have an extra towel?",
+      "missions": [
+        "Check-in bằng tiếng Anh",
+        "Order room service bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you check in?",
+        "How do you ask about breakfast time?"
+      ]
+    },
+    "L1-04": {
+      "why": "First impression = lasting impression.",
+      "scene": "Networking, work, school.",
+      "phrases": {
+        "before": [
+          [
+            "Hi, I'm ...",
+            "Tôi là ..."
+          ]
+        ],
+        "during": [
+          [
+            "Nice to meet you!",
+            "Rất vui được gặp"
+          ],
+          [
+            "Where are you from?",
+            "Bạn từ đâu?"
+          ]
+        ],
+        "after": [
+          [
+            "Talk to you later!",
+            "Hẹn gặp lại"
+          ]
+        ]
+      },
+      "shadow_script": "Hi, I'm Duong. Nice to meet you. Where are you from?",
+      "missions": [
+        "Giới thiệu bản thân bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you introduce yourself?"
+      ]
+    },
+    "L1-05": {
+      "why": "Numbers/time = không hiểu = không biết giá, lịch hẹn.",
+      "scene": "Anywhere with prices, schedules.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "What time is it?",
+            "Mấy giờ?"
+          ],
+          [
+            "How much?",
+            "Bao nhiêu?"
+          ],
+          [
+            "When?",
+            "Khi nào?"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "What time is it? It's three thirty. How much? Twenty dollars.",
+      "missions": [
+        "Dùng số tiếng Anh khi mua đồ"
+      ],
+      "active_recall": [
+        "How do you ask for the time?"
+      ]
+    },
+    "L1-07": {
+      "why": "Đi xe buýt/metro = di chuyển rẻ nhất ở nước ngoài.",
+      "scene": "Bus, train, metro, taxi.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "Does this bus go to ...?",
+            "Bus này đi ... không?"
+          ],
+          [
+            "One ticket to ..., please.",
+            "1 vé đến ..."
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "Does this bus go to downtown? One ticket to the airport, please.",
+      "missions": [
+        "Mua vé bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you ask if a bus goes somewhere?"
+      ]
+    },
+    "L1-09": {
+      "why": "Gọi điện = tình huống không thấy mặt = cần rõ ràng nhất.",
+      "scene": "Phone calls, booking, customer service.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "Hello, this is ...",
+            "Xin chào, tôi là..."
+          ],
+          [
+            "Can I speak to ...?",
+            "Cho tôi gặp..."
+          ],
+          [
+            "I'd like to book...",
+            "Tôi muốn đặt..."
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "Hello, this is Duong. Can I speak to John? I'd like to book a table.",
+      "missions": [
+        "Gọi 1 cuộc bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you start a phone call?"
+      ]
+    },
+    "L1-10": {
+      "why": "Sức khỏe = không nói được = nguy hiểm.",
+      "scene": "Hospital, clinic, pharmacy.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "I don't feel well.",
+            "Tôi không khỏe"
+          ],
+          [
+            "I have a headache/fever.",
+            "Tôi bị đau đầu/sốt"
+          ],
+          [
+            "Where does it hurt?",
+            "Đau ở đâu?"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "I don't feel well. I have a headache and a fever.",
+      "missions": [
+        "Mô tả 1 triệu chứng bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you describe pain?"
+      ]
+    },
+    "L1-11": {
+      "why": "Xin help = social skill cơ bản nhất.",
+      "scene": "Anywhere you need assistance.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "Excuse me, could you help me?",
+            "Xin lỗi giúp tôi được không?"
+          ],
+          [
+            "I'm sorry to bother you.",
+            "Xin lỗi làm phiền"
+          ]
+        ],
+        "after": [
+          [
+            "Thank you so much.",
+            "Cảm ơn rất nhiều"
+          ]
+        ]
+      },
+      "shadow_script": "Excuse me, could you help me? I'm sorry to bother you. Thank you so much.",
+      "missions": [
+        "Xin help bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you politely ask for help?"
+      ]
+    },
+    "L1-12": {
+      "why": "Khẩn cấp = vài giây quyết định sống chết.",
+      "scene": "Emergency, accident, lost, danger.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "Help!",
+            "Cứu!"
+          ],
+          [
+            "Call the police!",
+            "Gọi cảnh sát!"
+          ],
+          [
+            "I need a doctor.",
+            "Tôi cần bác sĩ"
+          ],
+          [
+            "Where's the hospital?",
+            "Bệnh viện ở đâu?"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "Help! Call the police! I need a doctor. Where's the hospital?",
+      "missions": [
+        "Học thuộc 4 câu emergency"
+      ],
+      "active_recall": [
+        "What do you say in an emergency?"
+      ]
+    },
+    "L2-01": {
+      "why": "Small talk = khóa mở mọi mối quan hệ phương Tây.",
+      "scene": "Networking, coffee shop, work, party.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "How's your day going?",
+            "Hôm nay thế nào?"
+          ],
+          [
+            "Did you have a good weekend?",
+            "Cuối tuần vui chứ?"
+          ],
+          [
+            "The weather is nice today.",
+            "Thời tiết đẹp"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "How's your day going? Did you have a good weekend? The weather is nice today.",
+      "missions": [
+        "Small talk với 1 native speaker 3 phút"
+      ],
+      "active_recall": [
+        "What's a good small talk question?"
+      ]
+    },
+    "L2-02": {
+      "why": "Talk about yourself = networking 101.",
+      "scene": "Job interviews, dating, parties.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "I work as a ...",
+            "Tôi làm ..."
+          ],
+          [
+            "I'm originally from ...",
+            "Tôi từ ..."
+          ],
+          [
+            "In my free time I ...",
+            "Lúc rảnh tôi ..."
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "I work as a coach. I'm originally from Vietnam. In my free time, I read and run.",
+      "missions": [
+        "Self-intro 1 phút bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you introduce yourself professionally?"
+      ]
+    },
+    "L2-03": {
+      "why": "Career talk = mở cửa job opportunities.",
+      "scene": "LinkedIn calls, conferences, networking.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "What do you do for a living?",
+            "Bạn làm nghề gì?"
+          ],
+          [
+            "I'm in the ... industry.",
+            "Tôi làm trong ngành ..."
+          ],
+          [
+            "I've been doing it for ... years.",
+            "Tôi làm ... năm rồi"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "What do you do for a living? I'm in the coaching industry. I've been doing it for 5 years.",
+      "missions": [
+        "Talk về work với 1 người"
+      ],
+      "active_recall": [
+        "How do you describe your job?"
+      ]
+    },
+    "L2-04": {
+      "why": "Plans = social currency. Không plan = không kết nối.",
+      "scene": "Friends, dates, work.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "Are you free on ...?",
+            "Rảnh ... không?"
+          ],
+          [
+            "Would you like to ...?",
+            "Có muốn ...?"
+          ],
+          [
+            "How about ...?",
+            "Hay là ...?"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "Are you free on Friday? Would you like to grab coffee? How about 3 PM?",
+      "missions": [
+        "Lên kế hoạch với 1 người bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you invite someone?"
+      ]
+    },
+    "L2-05": {
+      "why": "Opinions = bản sắc cá nhân.",
+      "scene": "Debates, discussions, meetings.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "I think ...",
+            "Tôi nghĩ ..."
+          ],
+          [
+            "In my opinion ...",
+            "Theo tôi ..."
+          ],
+          [
+            "I disagree because ...",
+            "Tôi không đồng ý vì ..."
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "I think this is a good idea. In my opinion, we should try it. I disagree because of cost.",
+      "missions": [
+        "Express 1 opinion với reason"
+      ],
+      "active_recall": [
+        "How do you start an opinion?"
+      ]
+    },
+    "L2-06": {
+      "why": "Party talk = vibe culture skill.",
+      "scene": "Parties, gatherings, weddings.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "Cheers!",
+            "Cạn ly!"
+          ],
+          [
+            "How do you know the host?",
+            "Bạn quen chủ nhà sao?"
+          ],
+          [
+            "The food is great!",
+            "Đồ ăn ngon!"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "Cheers! How do you know the host? The food is great here.",
+      "missions": [
+        "Tham gia party + small talk"
+      ],
+      "active_recall": [
+        "What do you say at a party?"
+      ]
+    },
+    "L2-07": {
+      "why": "Travel stories = bonding fast.",
+      "scene": "Dinner table, road trips.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "Where did you go on vacation?",
+            "Đi du lịch đâu?"
+          ],
+          [
+            "I've always wanted to visit ...",
+            "Tôi luôn muốn đi ..."
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "Where did you go on vacation? I've always wanted to visit Japan.",
+      "missions": [
+        "Kể 1 chuyến đi bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you ask about travel?"
+      ]
+    },
+    "L2-08": {
+      "why": "Food culture = entry to deep conversation.",
+      "scene": "Restaurants, dinner parties.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "Have you ever tried ...?",
+            "Bạn ăn ... bao giờ chưa?"
+          ],
+          [
+            "This is a popular dish in my country.",
+            "Đây là món phổ biến ở nước tôi"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "Have you ever tried pho? This is a popular dish in Vietnam.",
+      "missions": [
+        "Giới thiệu 1 món Việt"
+      ],
+      "active_recall": [
+        "How do you describe a dish?"
+      ]
+    },
+    "L2-09": {
+      "why": "Compliments = social glue.",
+      "scene": "Work, dates, parties.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "I love your outfit!",
+            "Quần áo đẹp quá!"
+          ],
+          [
+            "You did a great job.",
+            "Làm tốt lắm"
+          ],
+          [
+            "Thanks, that means a lot.",
+            "Cảm ơn, ý nghĩa lắm"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "I love your outfit. You did a great job. Thanks, that means a lot.",
+      "missions": [
+        "Compliment 3 người bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you accept a compliment?"
+      ]
+    },
+    "L2-10": {
+      "why": "Conflict = test thật của EQ + ngôn ngữ.",
+      "scene": "Work, friends, family.",
+      "phrases": {
+        "before": [],
+        "during": [
+          [
+            "I see where you're coming from.",
+            "Tôi hiểu ý anh"
+          ],
+          [
+            "I respectfully disagree.",
+            "Tôi không đồng ý nhưng tôn trọng"
+          ],
+          [
+            "Let's find a middle ground.",
+            "Tìm điểm chung đi"
+          ]
+        ],
+        "after": []
+      },
+      "shadow_script": "I see where you're coming from. I respectfully disagree. Let's find a middle ground.",
+      "missions": [
+        "Bất đồng quan điểm 1 lần bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you disagree politely?"
+      ]
+    },
+    "L3-01": {
+      "why": "Presenting = elevator to leadership.",
+      "scene": "Meetings, conferences.",
+      "phrases": {
+        "during": [
+          [
+            "Let me walk you through ...",
+            "Tôi sẽ dẫn anh qua ..."
+          ],
+          [
+            "The key takeaway is ...",
+            "Điểm chính là ..."
+          ],
+          [
+            "Any questions?",
+            "Có câu hỏi không?"
+          ]
+        ]
+      },
+      "shadow_script": "Let me walk you through this. The key takeaway is X. Any questions?",
+      "missions": [
+        "Present 1 ý 3 phút"
+      ],
+      "active_recall": [
+        "How do you start a presentation?"
+      ]
+    },
+    "L3-02": {
+      "why": "Negotiation = money skill.",
+      "scene": "Business deals, salary.",
+      "phrases": {
+        "during": [
+          [
+            "I was hoping we could discuss ...",
+            "Tôi mong chúng ta bàn về ..."
+          ],
+          [
+            "What's your bottom line?",
+            "Mức tối thiểu của anh?"
+          ],
+          [
+            "Let's meet in the middle.",
+            "Gặp nhau ở giữa"
+          ]
+        ]
+      },
+      "shadow_script": "I was hoping we could discuss the price. What's your bottom line? Let's meet in the middle.",
+      "missions": [
+        "Thương lượng 1 deal"
+      ],
+      "active_recall": [
+        "How do you start a negotiation?"
+      ]
+    },
+    "L3-03": {
+      "why": "Interviews = make-or-break career moments.",
+      "scene": "Job interviews.",
+      "phrases": {
+        "during": [
+          [
+            "Tell me about yourself.",
+            "Giới thiệu bản thân"
+          ],
+          [
+            "What's your greatest strength?",
+            "Điểm mạnh nhất?"
+          ],
+          [
+            "Where do you see yourself in 5 years?",
+            "5 năm nữa bạn thấy mình ở đâu?"
+          ]
+        ]
+      },
+      "shadow_script": "Tell me about yourself. My greatest strength is X. In 5 years I see myself...",
+      "missions": [
+        "Mock interview 5 phút"
+      ],
+      "active_recall": [
+        "How do you answer 'tell me about yourself'?"
+      ]
+    },
+    "L3-04": {
+      "why": "Meetings = office political game.",
+      "scene": "Corporate meetings.",
+      "phrases": {
+        "during": [
+          [
+            "Could we circle back to ...?",
+            "Quay lại ... được không?"
+          ],
+          [
+            "I'd like to add something.",
+            "Tôi muốn bổ sung"
+          ],
+          [
+            "Let's table this for now.",
+            "Tạm gác lại đã"
+          ]
+        ]
+      },
+      "shadow_script": "Could we circle back to the budget? I'd like to add something. Let's table this for now.",
+      "missions": [
+        "Tham gia 1 meeting tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you contribute in a meeting?"
+      ]
+    },
+    "L3-05": {
+      "why": "Storytelling = leadership currency.",
+      "scene": "Presentations, interviews.",
+      "phrases": {
+        "during": [
+          [
+            "So here's what happened...",
+            "Đây là chuyện đã xảy ra..."
+          ],
+          [
+            "The funny thing is...",
+            "Buồn cười là..."
+          ],
+          [
+            "Long story short...",
+            "Tóm lại..."
+          ]
+        ]
+      },
+      "shadow_script": "So here's what happened. The funny thing is, I didn't know. Long story short, it worked out.",
+      "missions": [
+        "Kể 1 câu chuyện 2 phút"
+      ],
+      "active_recall": [
+        "How do you start a story?"
+      ]
+    },
+    "L3-06": {
+      "why": "Debate = intellectual sharpening.",
+      "scene": "Discussions, online.",
+      "phrases": {
+        "during": [
+          [
+            "That's a fair point, however...",
+            "Hợp lý đấy nhưng..."
+          ],
+          [
+            "The data suggests otherwise.",
+            "Dữ liệu cho thấy khác"
+          ],
+          [
+            "Let me play devil's advocate.",
+            "Tôi đóng vai phản biện"
+          ]
+        ]
+      },
+      "shadow_script": "That's a fair point, however the data suggests otherwise. Let me play devil's advocate.",
+      "missions": [
+        "Debate 1 chủ đề 5 phút"
+      ],
+      "active_recall": [
+        "How do you counter an argument politely?"
+      ]
+    },
+    "L3-07": {
+      "why": "EQ = career multiplier.",
+      "scene": "Difficult conversations.",
+      "phrases": {
+        "during": [
+          [
+            "I can see this is important to you.",
+            "Tôi thấy điều này quan trọng với anh"
+          ],
+          [
+            "How are you feeling about this?",
+            "Anh cảm thấy sao?"
+          ],
+          [
+            "I appreciate your honesty.",
+            "Cảm ơn sự thật thà"
+          ]
+        ]
+      },
+      "shadow_script": "I can see this is important to you. How are you feeling? I appreciate your honesty.",
+      "missions": [
+        "Conversation về cảm xúc"
+      ],
+      "active_recall": [
+        "How do you show empathy verbally?"
+      ]
+    },
+    "L3-08": {
+      "why": "Formal writing = professional polish.",
+      "scene": "Emails, reports.",
+      "phrases": {
+        "during": [
+          [
+            "I'm writing to inquire about ...",
+            "Tôi viết để hỏi về ..."
+          ],
+          [
+            "Please find attached ...",
+            "Đính kèm tài liệu ..."
+          ],
+          [
+            "I look forward to your response.",
+            "Mong phản hồi của anh"
+          ]
+        ]
+      },
+      "shadow_script": "I'm writing to inquire about the position. Please find attached my resume. I look forward to your response.",
+      "missions": [
+        "Viết 1 email formal"
+      ],
+      "active_recall": [
+        "How do you close a formal email?"
+      ]
+    },
+    "L3-09": {
+      "why": "Humor = social superpower.",
+      "scene": "Casual conversations.",
+      "phrases": {
+        "during": [
+          [
+            "No way!",
+            "Không thể tin được!"
+          ],
+          [
+            "You're kidding!",
+            "Đùa thôi đúng không?"
+          ],
+          [
+            "That's a good one.",
+            "Đùa hay đấy"
+          ]
+        ]
+      },
+      "shadow_script": "No way! You're kidding! That's a good one.",
+      "missions": [
+        "Tell 1 joke bằng tiếng Anh"
+      ],
+      "active_recall": [
+        "How do you react to a joke?"
+      ]
+    },
+    "L3-10": {
+      "why": "Thinking in English = phản xạ tự nhiên cao nhất.",
+      "scene": "Internal monologue, daydreaming.",
+      "phrases": {
+        "during": [
+          [
+            "What if I tried ...?",
+            "Hay là thử ..."
+          ],
+          [
+            "I should probably ...",
+            "Chắc tôi nên ..."
+          ],
+          [
+            "Let me think about it.",
+            "Để tôi suy nghĩ"
+          ]
+        ]
+      },
+      "shadow_script": "What if I tried this? I should probably check it. Let me think about it.",
+      "missions": [
+        "Suy nghĩ 5 phút bằng tiếng Anh mỗi ngày"
+      ],
+      "active_recall": [
+        "What internal phrases do you use?"
+      ]
+    }
+  }
+}
