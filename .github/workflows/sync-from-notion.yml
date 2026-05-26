@@ -1,0 +1,34 @@
+name: Sync content from Notion
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/sync-from-notion.js'
+      - '.github/workflows/sync-from-notion.yml'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Sync from Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_TOPICS_DB: ${{ secrets.NOTION_TOPICS_DB }}
+        run: node scripts/sync-from-notion.js
+      - name: Commit if changed
+        run: |
+          git config user.name "shadow-english-sync"
+          git config user.email "sync@shadow-english.bot"
+          git add content.json
+          git diff --staged --quiet || git commit -m "🔄 Sync content from Notion"
+          git push
