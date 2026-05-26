@@ -1269,3 +1269,293 @@ function renderStepContent(stepNum, topic, c) {
 }
 
 console.log('Shadow English v4 loaded — Real content + Real views ✨');
+// ============================================================
+// SHADOW ENGLISH v6 — Real Charts + 5-Questions Dashboard + 8-Step Session
+// ============================================================
+
+// ============= REAL HEATMAP (from sessionsLog) =============
+function renderRealHeatmap() {
+  const heatmap = document.getElementById('heatmap');
+  if (!heatmap) return;
+  heatmap.innerHTML = '';
+  const dows = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  // Build sessions-per-day map
+  const sessByDay = {};
+  state.sessionsLog.forEach(s => {
+    const key = new Date(s.at).toDateString();
+    sessByDay[key] = (sessByDay[key] || 0) + 1;
+  });
+  // Generate 28 days back to today
+  const today = new Date();
+  const startMon = new Date(today);
+  startMon.setDate(today.getDate() - 27);
+  // Find Monday of starting week
+  const adj = (startMon.getDay() + 6) % 7;
+  startMon.setDate(startMon.getDate() - adj);
+  // Build matrix
+  const matrix = []; // 7 rows × 4 weeks
+  for (let d = 0; d < 7; d++) matrix.push([]);
+  for (let w = 0; w < 4; w++) {
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(startMon);
+      date.setDate(startMon.getDate() + w*7 + d);
+      const count = sessByDay[date.toDateString()] || 0;
+      let lvl = 0;
+      if (count >= 7) lvl = 4;
+      else if (count >= 4) lvl = 3;
+      else if (count >= 2) lvl = 2;
+      else if (count >= 1) lvl = 1;
+      matrix[d].push({ count, lvl, date });
+    }
+  }
+  // Render
+  for (let d = 0; d < 7; d++) {
+    const lbl = document.createElement('div');
+    lbl.className = 'hm-label';
+    lbl.textContent = dows[d];
+    heatmap.appendChild(lbl);
+    for (let w = 0; w < 4; w++) {
+      const c = matrix[d][w];
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell hm-' + c.lvl;
+      cell.title = c.date.toLocaleDateString('vi-VN') + ': ' + c.count + ' sessions';
+      heatmap.appendChild(cell);
+    }
+  }
+}
+
+// ============= REAL CALENDAR (from nextReview) =============
+function renderRealCalendar() {
+  const calGrid = document.getElementById('cal-grid');
+  if (!calGrid) return;
+  calGrid.innerHTML = '';
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const startDow = (new Date(y, m, 1).getDay() + 6) % 7;
+  // Map reviews per day
+  const events = {};
+  state.topics.forEach(t => {
+    if (t.nextReview) {
+      const d = new Date(t.nextReview);
+      if (d.getMonth() === m && d.getFullYear() === y) {
+        events[d.getDate()] = (events[d.getDate()] || 0) + 1;
+      }
+    }
+  });
+  // DOW labels
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    calGrid.appendChild(el);
+  });
+  // Empty starter
+  for (let i = 0; i < startDow; i++) {
+    const e = document.createElement('div');
+    e.className = 'cal-day dim';
+    e.innerHTML = '<span style="opacity:.4">·</span>';
+    calGrid.appendChild(e);
+  }
+  // Days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    if (d === now.getDate()) el.classList.add('today');
+    if (events[d]) el.classList.add('has-events');
+    el.innerHTML = '<span>' + d + '</span>' + (events[d] ? '<span class="badge">' + events[d] + '</span>' : '');
+    calGrid.appendChild(el);
+  }
+}
+
+// ============= 5-QUESTIONS PANEL =============
+function render5QuestionsPanel() {
+  const container = document.getElementById('questions-5');
+  if (!container) return;
+  const newTopic = getNewTopic();
+  const queue = getTodayQueue();
+  const fragile = state.topics.filter(t => t.memoryStatus === 'Fragile' || t.memoryStatus === 'Weak').length;
+  const weekSessions = state.sessionsLog.filter(s => new Date(s.at).getTime() > Date.now() - 7*86400000).length;
+  const lastWeekSessions = state.sessionsLog.filter(s => {
+    const t = new Date(s.at).getTime();
+    return t > Date.now() - 14*86400000 && t <= Date.now() - 7*86400000;
+  }).length;
+  const trend = weekSessions - lastWeekSessions;
+  const automaticTopics = state.topics.filter(t => t.memoryStatus === 'Automatic').length;
+  const close = getCloseToLevelUp();
+  const closestToAuto = state.topics
+    .filter(t => t.reviewStage !== 'Day 60')
+    .sort((a,b) => STAGES.indexOf(b.reviewStage) - STAGES.indexOf(a.reviewStage))
+    [0];
+
+  container.innerHTML = `
+    <div class="q-card q-1" data-action="start-new">
+      <div class="q-num">1</div>
+      <div class="q-q">Học gì hôm nay?</div>
+      <div class="q-a">${newTopic ? newTopic.emoji + ' ' + newTopic.name : 'Đã hết topic mới — focus reviews'}</div>
+      <div class="q-meta">${newTopic ? 'Day 0 · Bắt đầu shadow' : '0 new topics'}</div>
+    </div>
+    <div class="q-card q-2" data-nav="review">
+      <div class="q-num">2</div>
+      <div class="q-q">Ôn gì hôm nay?</div>
+      <div class="q-a"><b>${queue.length}</b> topic${queue.length !== 1 ? 's' : ''}</div>
+      <div class="q-meta">${queue.slice(0,3).map(t => t.emoji).join(' ') || 'Chưa có review'}</div>
+    </div>
+    <div class="q-card q-3" data-nav="memory">
+      <div class="q-num">3</div>
+      <div class="q-q">Cái gì sắp quên?</div>
+      <div class="q-a"><b>${fragile}</b> topic${fragile !== 1 ? 's' : ''} yếu</div>
+      <div class="q-meta">${fragile > 0 ? '🟥 Fragile + 🟧 Weak' : 'Tất cả đang ổn'}</div>
+    </div>
+    <div class="q-card q-4" data-nav="progress">
+      <div class="q-num">4</div>
+      <div class="q-q">Đang mạnh lên không?</div>
+      <div class="q-a">${trend > 0 ? '↗ +' + trend : trend < 0 ? '↘ ' + trend : '→ 0'} session</div>
+      <div class="q-meta">${weekSessions}/tuần · ${trend >= 0 ? 'tăng' : 'giảm'} vs tuần trước</div>
+    </div>
+    <div class="q-card q-5" data-nav="memory">
+      <div class="q-num">5</div>
+      <div class="q-q">Còn xa Automatic?</div>
+      <div class="q-a"><b>${automaticTopics}</b>/${state.topics.length}</div>
+      <div class="q-meta">${closestToAuto ? 'Gần nhất: ' + closestToAuto.emoji + ' ' + closestToAuto.reviewStage : ''}</div>
+    </div>
+  `;
+  container.querySelectorAll('[data-nav]').forEach(el => el.onclick = () => navigate(el.dataset.nav));
+  const startCard = container.querySelector('[data-action="start-new"]');
+  if (startCard) startCard.onclick = () => { if (newTopic) startSession(newTopic.id); };
+}
+
+// ============= 8-STEP SESSION =============
+function renderSessionView8Steps() {
+  const view = document.getElementById('view-session');
+  if (!view) return;
+  const cs = state.currentSession;
+  const topic = cs ? state.topics.find(t => t.id === cs.topicId) : (getNewTopic() || state.topics[0]);
+  if (!topic) return;
+  const c = SHADOW_CONTENT.getContent(topic.id);
+  const step = cs ? cs.step : 1;
+  const steps = [
+    { num: 1, icon: '☕', name: 'WARM-UP',     time: '2m',  desc: 'Đọc WHY & SCENE · Sẵn sàng tinh thần · Không cần nhớ' },
+    { num: 2, icon: '👂', name: 'LISTEN',      time: '8m',  desc: 'Nghe shadow script · Đọc theo bằng MẮT · Chưa nói' },
+    { num: 3, icon: '🎧', name: 'SHADOW',      time: '15m', desc: 'Nghe + nói cùng lúc ×3 · Bắt chước intonation 100%' },
+    { num: 4, icon: '🔁', name: 'REPEAT',      time: '8m',  desc: 'Đọc to từng phrase · Ghi âm + so sánh giọng' },
+    { num: 5, icon: '🧠', name: 'RECALL',      time: '10m', desc: 'ĐÓNG APP · Trả lời Active Recall · Nói bằng miệng' },
+    { num: 6, icon: '🗣️', name: 'SPEAK',       time: '8m',  desc: 'Dùng phrases trong dialogue · Tự tạo ngữ cảnh mới' },
+    { num: 7, icon: '🌍', name: 'MISSION',     time: '6m',  desc: 'Chọn 1 mission đời thật · Làm NGOÀI app' },
+    { num: 8, icon: '✅', name: 'REFLECTION',  time: '3m',  desc: 'Tự đánh giá: tự nhiên chưa? Phrase nào còn yếu? Confidence 1-5' }
+  ];
+  const pct = ((step-1)/8)*100;
+
+  view.innerHTML = `
+    <div class="session-hero">
+      <div class="session-emoji">${topic.emoji}</div>
+      <div class="session-meta">
+        <div class="session-stage">${topic.reviewStage}  ·  ${topic.memoryStatus.toUpperCase()}  ·  MASTERY ${topic.masteryPct}%</div>
+        <div class="session-title">${topic.name}</div>
+        <div class="session-sub">Level ${topic.level} · 60 phút · ${(c.phrases?.before?.length||0)+(c.phrases?.during?.length||0)+(c.phrases?.after?.length||0)} phrases · ${c.missions?.length||0} missions</div>
+      </div>
+      <div class="session-progress-ring" style="background: conic-gradient(#7c5cff ${pct}%, #2a2750 ${pct}%)">
+        <span>${step-1}/8</span><small>steps</small>
+      </div>
+    </div>
+    <div class="session-steps">
+      ${steps.map(s => `
+        <div class="session-step ${s.num<step?'done':s.num===step?'active':''}">
+          <div class="step-num">${s.num<step?'✓':s.num}</div>
+          <div class="step-body">
+            <div class="step-title">${s.icon} ${s.name}  ·  ${s.time}</div>
+            <div class="step-desc">${s.desc}</div>
+            ${s.num === step ? render8StepContent(s.num, topic, c) : ''}
+          </div>
+          ${s.num < step ? '<button class="step-btn" disabled>✓ Done</button>' :
+            s.num === step ? `<button class="step-btn primary" data-action="next-step">${s.num===8?'Complete Session ✨':'Mark Done · +25 XP'}</button>` :
+            '<button class="step-btn" disabled>Locked</button>'}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  const nextBtn = view.querySelector('[data-action="next-step"]');
+  if (nextBtn) nextBtn.onclick = advanceStep;
+}
+
+function render8StepContent(n, topic, c) {
+  const phraseAll = [...(c.phrases?.before||[]),...(c.phrases?.during||[]),...(c.phrases?.after||[])];
+  if (n === 1) return `<div class="step-content"><div class="step-block"><b>WHY:</b> ${c.why||'(coming)'}</div><div class="step-block"><b>SCENE:</b> ${c.scene||'(coming)'}</div><div class="step-tip">💡 Đọc chậm. Hình dung tình huống. Đừng học gì cả ở step này.</div></div>`;
+  if (n === 2) return `<div class="step-content"><div class="step-block"><b>👂 LISTEN — Just absorb. Don't speak yet.</b></div><div class="shadow-box">"${c.shadow_script||'(no script)'}"</div><div class="step-tip">💡 Nghe đủ 3 lần. Đọc theo bằng mắt — KHÔNG NÓI.</div></div>`;
+  if (n === 3) return `<div class="step-content"><div class="step-block"><b>🎧 SHADOW — Nghe + Nói cùng lúc</b></div><div class="shadow-box">"${c.shadow_script||''}"</div><div class="step-block">Lặp ×3 lần. Bắt chước intonation 100%. Ghi âm lần 3.</div></div>`;
+  if (n === 4) return `<div class="step-content"><div class="step-block"><b>🔁 REPEAT — Speak each phrase out loud, no audio</b></div>${phraseAll.slice(0,8).map(p => `<div class="phrase-row"><span class="phrase-en">${p[0]}</span><span class="phrase-vi">${p[1]||''}</span></div>`).join('') || '(no phrases)'}<div class="step-tip">💡 Đọc to. Ghi âm. So sánh.</div></div>`;
+  if (n === 5) return `<div class="step-content"><div class="step-block"><b>🧠 RECALL — Đóng app, trả lời miệng:</b></div><ul class="mission-list-clean">${(c.active_recall||[]).map(q=>`<li>${q}</li>`).join('')||'<li>Tự nói lại toàn bộ phrases trong 2 phút</li>'}</ul></div>`;
+  if (n === 6) return `<div class="step-content"><div class="step-block"><b>🗣️ SPEAK — Use in dialogue context</b></div>${(c.dialogues||[]).slice(0,1).map(d => d.lines.map(l => `<div class="dialogue-line"><b>${l[0]}:</b> ${l[1]}</div>`).join('')).join('') || 'Tự tạo dialogue dùng 5+ phrases'}</div>`;
+  if (n === 7) return `<div class="step-content"><div class="step-block"><b>🌍 MISSION — Pick 1 to do TODAY in real life:</b></div><ul class="mission-list-clean">${(c.missions||[]).map(m=>`<li>${m}</li>`).join('')||'<li>Dùng phrase này với người thật trong 24h</li>'}</ul></div>`;
+  if (n === 8) return `<div class="step-content"><div class="step-block"><b>✅ REFLECTION — Self-assessment</b></div><div class="step-block">Tự đánh giá confidence 1-5:</div><div class="conf-buttons">${[1,2,3,4,5].map(i => `<button class="conf-btn conf-${i}" onclick="window._sessionConf=${i};document.querySelector('[data-action=next-step]').click()">${i}<small>${['Quên','Yếu','OK','Tốt','Phản xạ'][i-1]}</small></button>`).join('')}</div></div>`;
+  return '';
+}
+// Override completeSession to apply confidence from step 8
+const _origCompleteSession = completeSession;
+window.completeSession = function(topicId) {
+  const conf = window._sessionConf || 3;
+  delete window._sessionConf;
+  // Run normal completeSession then apply confidence adjustment
+  _origCompleteSession(topicId);
+  // Apply confidence (extra mastery boost based on confidence)
+  const t = state.topics.find(x => x.id === topicId);
+  if (t) {
+    if (conf <= 2) {
+      t.reviewStage = 'Day 1';
+      t.memoryStatus = 'Weak';
+      t.masteryPct = Math.max(0, t.masteryPct - 10);
+    } else if (conf >= 5) {
+      t.masteryPct = Math.min(100, t.masteryPct + 15);
+    }
+    awardXP(conf * 20, 'Confidence bonus');
+    saveState();
+    render();
+  }
+};
+
+// ============= HOOK INTO MAIN RENDER =============
+const _origRender = render;
+window.render = function() {
+  _origRender();
+  renderRealHeatmap();
+  render5QuestionsPanel();
+};
+
+// Override session rendering to use 8 steps
+window.renderSessionView = renderSessionView8Steps;
+
+// Override calendar in NAV_RENDERS
+if (typeof NAV_RENDERS !== 'undefined') {
+  const _origCalRender = NAV_RENDERS['calendar'];
+  NAV_RENDERS['calendar'] = function() {
+    if (_origCalRender) _origCalRender();
+    renderRealCalendar();
+  };
+}
+
+// Ensure 5Q panel renders on home
+function inject5QPanel() {
+  const content = document.querySelector('.content');
+  const home = document.getElementById('view-home');
+  if (!home || home.querySelector('#questions-5')) return;
+  const missionHero = home.querySelector('.mission-hero');
+  if (missionHero) {
+    const q5 = document.createElement('div');
+    q5.id = 'questions-5';
+    q5.className = 'questions-5';
+    missionHero.parentNode.insertBefore(q5, missionHero);
+    render5QuestionsPanel();
+  }
+}
+
+// Wait for content + state to be ready, then init v6
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    inject5QPanel();
+    renderRealHeatmap();
+    renderRealCalendar();
+    render5QuestionsPanel();
+    console.log('Shadow English v6 — Real charts + 5Q + 8-step session ✨');
+  }, 500);
+});
+
