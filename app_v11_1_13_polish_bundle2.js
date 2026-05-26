@@ -87,13 +87,12 @@
     ];
     function intensityFor(n) { return !n ? 0 : (n === 1 ? 1 : (n === 2 ? 2 : (n <= 4 ? 3 : 4))); }
 
-    // Compute grid start (first Monday on or before day 1 of month)
+    // ROLLING 28-DAY WINDOW ending today (so today's sessions always visible)
+    // Cell 0 = today - 27 days, Cell 27 = today
     var now = new Date();
-    var first = new Date(now.getFullYear(), now.getMonth(), 1);
-    var dow = first.getDay();
-    var back = dow === 0 ? 6 : dow - 1;
-    var gridStart = new Date(first);
-    gridStart.setDate(first.getDate() - back);
+    var gridStart = new Date(now);
+    gridStart.setDate(now.getDate() - 27);
+    gridStart.setHours(0, 0, 0, 0);
 
     // Step A: CLEAR all polish-1112/1110 styling on LEGEND cells
     var legendCells = document.querySelectorAll('.heatmap-foot-right .hm-cell');
