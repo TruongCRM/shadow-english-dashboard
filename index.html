@@ -1047,29 +1047,29 @@ body { display: flex; min-height: 100vh; }
     <!-- ROW 1: 5 TOP STATS -->
     <div class="card stat-card">
       <div class="card-title"><span class="icon">🔥</span> STREAK</div>
-      <div class="stat-value">17 <span class="stat-unit">days</span></div>
-      <div class="stat-sub">You're on fire! 🔥</div>
+      <div class="stat-value"><span id="stat-streak">17</span> <span class="stat-unit">days</span></div>
+      <div class="stat-sub" id="stat-streak-sub">You're on fire! 🔥</div>
       <canvas class="spark" id="spark-streak"></canvas>
     </div>
 
     <div class="card stat-card">
       <div class="card-title"><span class="icon">🧠</span> BRAIN LOAD</div>
-      <div class="stat-value" style="color:var(--yellow)">Medium</div>
-      <div class="stat-sub" id="brain-load-sub">6 reviews today</div>
+      <div class="stat-value" id="stat-brain-load" style="color:var(--yellow)">Medium</div>
+      <div class="stat-sub" id="stat-brain-sub">6 reviews today</div>
       <canvas class="spark" id="spark-load"></canvas>
     </div>
 
     <div class="card stat-card">
       <div class="card-title"><span class="icon">📚</span> TOPICS MASTERED</div>
-      <div class="stat-value" id="topics-count">32</div>
+      <div class="stat-value"><span id="stat-mastered">32</span></div>
       <div class="stat-sub">Stable / Automatic</div>
-      <div class="progress-bar"><div class="progress-fill" style="width:38%"></div></div>
-      <div class="stat-sub" style="text-align:right">38%</div>
+      <div class="progress-bar"><div class="progress-fill" id="stat-mastered-bar" style="width:38%"></div></div>
+      <div class="stat-sub" style="text-align:right" id="stat-mastered-pct">38%</div>
     </div>
 
     <div class="card stat-card">
       <div class="card-title"><span class="icon">📋</span> REVIEW DUE</div>
-      <div class="stat-value" id="review-due">6</div>
+      <div class="stat-value" id="stat-review-due">6</div>
       <div class="stat-sub">topics today</div>
       <canvas class="spark" id="spark-due"></canvas>
     </div>
@@ -1098,7 +1098,7 @@ body { display: flex; min-height: 100vh; }
           </div>
 
           <div class="subcard-label" style="margin-top:14px">📋 REVIEW TODAY <span style="color:var(--green);font-weight:700">(6)</span></div>
-          <div class="review-list" id="review-list">
+          <div class="review-list" id="today-review-list">
             <div class="review-item"><span class="name">🏨 Hotel Check-in</span><span class="day-tag day-7">Day 7</span></div>
             <div class="review-item"><span class="name">☕ Small Talk</span><span class="day-tag day-3">Day 3</span></div>
             <div class="review-item"><span class="name">🗺️ Directions</span><span class="day-tag day-1">Day 1</span></div>
@@ -1145,11 +1145,11 @@ body { display: flex; min-height: 100vh; }
           </div>
         </div>
         <div class="legend">
-          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--red)"></span>Fragile</span><span class="legend-val">5 (8%)</span></div>
-          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--orange)"></span>Weak</span><span class="legend-val">12 (18%)</span></div>
-          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--yellow)"></span>Building</span><span class="legend-val">21 (31%)</span></div>
-          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--green)"></span>Stable</span><span class="legend-val">24 (35%)</span></div>
-          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:#a78bfa"></span>Automatic</span><span class="legend-val">6 (8%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--red)"></span>Fragile</span><span class="legend-val" id="mem-fragile">5 (8%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--orange)"></span>Weak</span><span class="legend-val" id="mem-weak">12 (18%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--yellow)"></span>Building</span><span class="legend-val" id="mem-building">21 (31%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:var(--green)"></span>Stable</span><span class="legend-val" id="mem-stable">24 (35%)</span></div>
+          <div class="legend-row"><span class="legend-left"><span class="legend-dot" style="background:#a78bfa"></span>Automatic</span><span class="legend-val" id="mem-automatic">6 (8%)</span></div>
         </div>
       </div>
 
@@ -1184,8 +1184,8 @@ body { display: flex; min-height: 100vh; }
             <span class="level-dot" style="background:var(--blue)"></span>
             <span class="level-name" style="color:#93c5fd">LEVEL 1 — Survival Communication</span>
           </div>
-          <div class="level-sub"><span>12 topics</span><span class="level-pct">71%</span></div>
-          <div class="progress-bar"><div class="progress-fill" style="width:71%;background:var(--blue)"></div></div>
+          <div class="level-sub"><span>12 topics</span><span class="level-pct" id="level1-pct">71%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="level1-bar" style="width:71%;background:var(--blue)"></div></div>
           <div class="topics-row">
             <div class="topic-icon done"><div class="bubble">🍔</div>Restaurant</div>
             <div class="topic-icon done"><div class="bubble">🚖</div>Taxi</div>
@@ -1204,8 +1204,8 @@ body { display: flex; min-height: 100vh; }
             <span class="level-dot" style="background:var(--green)"></span>
             <span class="level-name" style="color:#86efac">LEVEL 2 — Social Communication</span>
           </div>
-          <div class="level-sub"><span>10 topics</span><span class="level-pct">42%</span></div>
-          <div class="progress-bar"><div class="progress-fill" style="width:42%;background:var(--green)"></div></div>
+          <div class="level-sub"><span>10 topics</span><span class="level-pct" id="level2-pct">42%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="level2-bar" style="width:42%;background:var(--green)"></div></div>
           <div class="topics-row">
             <div class="topic-icon done"><div class="bubble">☕</div>Small Talk</div>
             <div class="topic-icon done"><div class="bubble">💼</div>Work</div>
@@ -1224,8 +1224,8 @@ body { display: flex; min-height: 100vh; }
             <span class="level-dot" style="background:#a78bfa"></span>
             <span class="level-name" style="color:#c4b5fd">LEVEL 3 — Advanced Communication</span>
           </div>
-          <div class="level-sub"><span>10 topics</span><span class="level-pct">18%</span></div>
-          <div class="progress-bar"><div class="progress-fill" style="width:18%;background:#a78bfa"></div></div>
+          <div class="level-sub"><span>10 topics</span><span class="level-pct" id="level3-pct">18%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="level3-bar" style="width:18%;background:#a78bfa"></div></div>
           <div class="topics-row">
             <div class="topic-icon done"><div class="bubble">🎤</div>Presenting</div>
             <div class="topic-icon"><div class="bubble">🤝</div>Negotiate</div>
@@ -1308,11 +1308,7 @@ body { display: flex; min-height: 100vh; }
     <div class="card close-card" style="grid-column: span 2">
       <div class="card-title"><span class="icon">🌟</span> NEXT SMALL WIN  ·  Close to level up <span class="live-badge">+5 XP each</span></div>
       <div style="font-size:11.5px;color:var(--text-2);margin-top:2px">3 topics đang gần chuyển sang trạng thái cao hơn — chỉ cần 1 buổi review đúng cách.</div>
-      <div class="close-card-list">
-        <div class="close-item"><div class="emoji-tile">🏨</div><div class="name"><b>Hotel Check-in</b> <span style="color:var(--text-3);font-size:10px">· Level 1</span></div><div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:88%"></div></div><div class="meta">88%</div><span class="next-stage">🟩→🟦 Stable → Automatic</span></div>
-        <div class="close-item"><div class="emoji-tile">☕</div><div class="name"><b>Small Talk</b> <span style="color:var(--text-3);font-size:10px">· Level 2</span></div><div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:75%"></div></div><div class="meta">75%</div><span class="next-stage">🟨→🟩 Building → Stable</span></div>
-        <div class="close-item"><div class="emoji-tile">✈️</div><div class="name"><b>At the Airport</b> <span style="color:var(--text-3);font-size:10px">· Level 1</span></div><div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:62%"></div></div><div class="meta">62%</div><span class="next-stage">🟧→🟨 Weak → Building</span></div>
-      </div>
+      <div class="close-card-list" id="close-list"></div>
     </div>
 
     <div class="card coach-card" style="grid-column: span 2">
@@ -1334,31 +1330,19 @@ body { display: flex; min-height: 100vh; }
     <div class="card" style="grid-column: span 1">
       <div class="card-title"><span class="icon">🔥</span> STREAK GUARD</div>
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding-top:6px">
-        <div style="font-size:46px;font-weight:800;background:linear-gradient(135deg,#ff8a3d,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">17</div>
+        <div style="font-size:46px;font-weight:800;background:linear-gradient(135deg,#ff8a3d,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" id="streak-guard-num">17</div>
         <div style="font-size:11px;color:var(--text-2)">day streak 🔥</div>
-        <div style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px;line-height:1.4">Mất 1 ngày = reset.<br>Học hôm nay = <b style="color:#fde047">Day 18</b></div>
-        <div style="display:flex;gap:3px;margin-top:8px">
-          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
-          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
-          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
-          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
-          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
-          <div style="width:8px;height:8px;border-radius:50%;background:#ff8a3d;box-shadow:0 0 8px #ff8a3d"></div>
-          <div style="width:8px;height:8px;border-radius:50%;background:rgba(255,138,61,0.2);animation:pulse 1.5s ease-in-out infinite"></div>
-        </div>
+        <div style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px;line-height:1.4">Mất 1 ngày = reset.<br>Học hôm nay = <b style="color:#fde047" id="streak-guard-next">Day 18</b></div>
+        <div id="streak-dots" style="display:flex;gap:3px;margin-top:8px"></div>
       </div>
     </div>
 
     <!-- ROW 5: MISSIONS + NEXT UP -->
     <div class="card missions-card">
       <div class="card-title"><span class="icon">🎯</span> REAL LIFE MISSIONS</div>
-      <div class="mission-row done"><span class="mission-check"></span><span class="name">Dùng 1 cụm từ trong bữa ăn thật</span></div>
-      <div class="mission-row done"><span class="mission-check"></span><span class="name">Chat với AI về chủ đề này 3 phút</span></div>
-      <div class="mission-row"><span class="mission-check"></span><span class="name">Xem video hội thoại nhà hàng</span></div>
-      <div class="mission-row"><span class="mission-check"></span><span class="name">Ghi âm đoạn hội thoại 1 phút</span></div>
-      <div class="mission-row"><span class="mission-check"></span><span class="name">Rủ bạn đóng vai đi nhà hàng</span></div>
+<div id="missions-list"></div>
       <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;font-weight:600;margin-top:14px">MISSION STREAK</div>
-      <div class="streak-row">🔥🔥🔥🔥🔥⚪⚪<span style="margin-left:auto;color:var(--text)">3 / 7 missions</span></div>
+      <div class="streak-row"><span id="mission-streak-dots">⚪⚪⚪⚪⚪</span><span style="margin-left:auto;color:var(--text)" id="mission-streak-count">0 / 5 missions</span></div>
     </div>
 
     <div class="card next-card">
@@ -1678,5 +1662,14 @@ loadData();
 
 console.log('Shadow English v2 — Operating System loaded ✨');
 </script>
+<style>
+.toast { position: fixed; bottom: 80px; right: 18px; background: linear-gradient(135deg, var(--purple), var(--purple-2)); color: white; padding: 12px 18px; border-radius: 12px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(20px); transition: all .3s ease; z-index: 10000; box-shadow: 0 10px 30px rgba(124,92,255,0.45); pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.session-step.done { opacity: 0.55; }
+.session-step.done .step-num { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border-color: #22c55e; }
+.mission-row { cursor: pointer; user-select: none; }
+.review-item:hover { background: rgba(124,92,255,0.08); border-radius: 6px; padding-left: 6px; padding-right: 6px; }
+</style>
+<script src="app.js?v=3" defer></script>
 </body>
 </html>
