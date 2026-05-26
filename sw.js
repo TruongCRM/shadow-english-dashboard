@@ -1,5 +1,14 @@
-const CACHE = 'shadow-en-v3';
-const ASSETS = ['./', './index.html', './app.js', './manifest.json', './data.json'];
+const CACHE = 'shadow-en-v11';
+const ASSETS = [
+  './',
+  './index.html',
+  './app.js',
+  './manifest.json',
+  './data.json',
+  './phrases.js',
+  './today.js',
+  './app_v11_today.js'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));
