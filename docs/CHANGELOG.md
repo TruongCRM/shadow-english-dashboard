@@ -6,7 +6,78 @@
 **Live URL:** https://truongcrm.github.io/shadow-english-dashboard/
 **Owner:** TruongCRM (Dương Trường — solopreneur, non-technical)
 **Started:** 2026-05-25
-**Last update:** 2026-05-26 (post-v11.1.2 stabilize patches)
+**Last update:** 2026-05-26 (post-v11.1.6 heatmap iteration)
+
+---
+
+## v11.1.3–v11.1.6 — Heatmap visual iteration (2026-05-26)
+
+### Goal
+After v11.1.2 fixed the heatmap **layout** (29 cols → correct 4-week grid), the visual presentation needed multiple rounds of polish to feel calm/premium. User feedback drove 4 sub-versions in one session. Final v11.1.6 layout matches the SPACED REPETITION ENGINE section style: horizontal-first, full-width stretch, GitHub contribution-graph rotation.
+
+### Sub-version timeline
+| Ver | Change | User feedback that triggered next |
+|---|---|---|
+| v11.1.3 | Compact 32px cells + `justify:start` + full-width section override | "có 1 bên trống vậy?" — too much empty whitespace on the right |
+| v11.1.4 | Cells 32→48px + `justify:center` (centered in card) | "để nó ở một section riêng như cái này" / "thử là hàng ngang, ô là hàng dọc" |
+| v11.1.5 | ROTATED: days as columns across, weeks as rows down (GitHub-style) via `grid-auto-flow: column` | "sao ko giãn đều cho full luôn" — cells stuck on left, fixed 38px |
+| **v11.1.6** | **`repeat(7, 1fr)` columns — cells stretch evenly to fill full card width** | (final — accepted) |
+
+### Built (final v11.1.6 state)
+```css
+.heatmap.nav-polished {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr) !important;       /* days across */
+  grid-template-rows: 22px repeat(N, 56px) !important;   /* header + N weeks */
+  grid-auto-flow: column !important;                      /* fill column-first */
+  gap: 6px !important;
+  width: 100% !important;
+}
+```
+DOM children flow column-first → labels naturally land on row 1 (header), cells fill rows 2…N+1 per day-column. Handles 4-week and 5-week months automatically via `Math.ceil(cells / 7)`.
+
+### Problems
+- Each iteration required: edit nav_polish.js → upload → wait for Pages build → bump `?v=N` in index.html → second commit for cache-bust → wait again. 4 iterations × 2 commits each = 8 deploy cycles.
+- Service Worker `shadow-en-v11` aggressively cached old `nav_polish.js?v=11.1.X`, requiring forced unregister + `caches.delete()` + new `?fresh=N` query each verify cycle.
+- `injectCSS()` was idempotent on `<style id="nav-polish-styles">` so once injected, never re-injects. Meant new CSS rules didn't apply in same tab session without a hard reload. Worked fine in new browser windows but confusing during dev.
+
+### Fixes
+- `dataset.hmFixedWeeks` key now encodes version (`4w-v3`, `4w-v4`, `4w-v5`, `4w-v6`) so each new version's fixHeatmap re-applies even though previous version had already set inline style.
+- Hard-reload + SW unregister procedure followed religiously for verify after each version.
+
+### Lessons learned — NEW
+- **🔥 G8 (TECHNICAL_NOTES candidate):** **Visual polish iteration must be scoped BEFORE the first commit, not after.** Asking the user "compact 32px or stretch 1fr?" upfront would have saved 6+ deploy cycles. The pattern that emerges: design proposals before code. In this session, 4 round-trips to user happened because we kept shipping interpretations of "less thô" / "less empty" / "horizontal" without confirming spec first. New rule for v11.2+ visual work: write spec in plain text, get user sign-off on dimensions/orientation/fill-mode, THEN code.
+- **🔥 G9 (TECHNICAL_NOTES candidate):** **Idempotent CSS injection has a stale-style trap.** `if (document.getElementById('nav-polish-styles')) return;` skips re-injection — fine when CSS never changes, broken when CSS rules evolve across script versions in the same tab. Fix pattern: include version in style ID (`nav-polish-styles-v6`) OR always remove + re-inject. Worth refactoring before v11.2.
+- **G7 confirmed (4th time):** Every JS file update requires both file deploy AND `?v=N` bump in index.html. The two-commit dance is annoying but necessary. Better: introduce a build-time hash injection (out of scope for static GitHub Pages).
+- **User feedback shape matters.** "thô" / "trống" / "hợp lý hơn" / "giãn đều cho full" — Vietnamese visual feedback maps to specific CSS properties: thô = cells too large with 1fr stretch; trống = whitespace; ngang/dọc = orientation; giãn đều = stretch with fr units. Building a small mental glossary helps future sessions.
+
+### Touched files
+| File | Change |
+|---|---|
+| `nav_polish.js` | Updated `fixHeatmap()` v3→v4→v5→v6 + CSS rules. ~150 LOC total. |
+| `index.html` | 4× cache-bust query bumps: `?v=11.1.2` → `11.1.3` → `11.1.4` → `11.1.5` → `11.1.6` |
+
+### Deploy commits
+- 6a8e5a8 (v11.1.3 nav_polish heatmap fix)
+- e63cce7 (v11.1.3 cache-bust)
+- 1d11c40 (v11.1.4 nav_polish 48px center)
+- 3e3e39a (v11.1.4 cache-bust)
+- 0ee3e44 (v11.1.3 already noted above)
+- 3774fc4 (v11.1.5 rotate)
+- bdddb24 (v11.1.5 cache-bust)
+- v11.1.6 nav_polish.js upload + cache-bust (this entry)
+- ec3775e (CHANGELOG v11.1.2)
+
+### Tech debt status (after iteration)
+- TD-1 (Node 20 deprecation): still open
+- TD-2 (3 v11 scripts undocumented): still open
+- TD-3 (formula divergence): still pending observation
+- TD-4 (`getTodayQueue` not exposed): still open
+- **NEW TD-5:** Refactor `injectCSS()` to support versioned style IDs (G9 mitigation)
+- **NEW TD-6:** Build a "ship a JS update" checklist into AI_HANDOFF to enforce G7+G9 patterns
+
+### Pending → v11.2
+**Observation week REMAINS active.** All heatmap polish is stabilize-eligible (broken UI affordance and visual quality). No new features added. Resume `docs/V11_1_OBSERVATIONS.md` on Day 7.
 
 ---
 
