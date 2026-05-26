@@ -1,6 +1,7 @@
-// === SHADOW ENGLISH — NAV POLISH (v11.1.1 STABILIZE patch) ===
+// === SHADOW ENGLISH — STABILIZE PATCH (v11.1.1) ===
 //
-// Fixes broken clickability — pure stabilize work, NOT new features.
+// File still named nav_polish.js for backwards compat — actually covers
+// multiple stabilize bug-fixes. Pure additive, no edits to existing code.
 //
 // Scope (matches user-approved STABILIZE-A path):
 // 1. Home `.level-card` summary cards (LEVEL 1/2/3) — currently no onclick.
@@ -8,6 +9,11 @@
 // 2. `#today-review-list .review-item[data-topic]` — cursor:pointer but no handler.
 //    Expected: click → openTopic(id)
 // 3. Cursor + minimal hover lift so affordance matches reality.
+// 4. Review Heatmap CSS bug — original CSS used `grid-template-columns:
+//    30px repeat(28, 1fr)` (28 = total cells, not weeks!) so browser laid
+//    out 29 cols × 2 rows. Fix: compute weeks dynamically (cells/7) and
+//    set grid-template-columns to `30px repeat(weeks, 1fr)`. Handles both
+//    4-week and 5-week months.
 //
 // NOT in scope (deferred to v11.2-B per user decision):
 // - Mini context transition (fade preview card)
@@ -145,11 +151,35 @@ function bindReviewItems() {
   return bound;
 }
 
+// Heatmap CSS fix: compute correct grid-template-columns from actual children.
+// Idempotent — only updates if the inline style would change.
+function fixHeatmap() {
+  var maps = document.querySelectorAll('.heatmap');
+  var fixed = 0;
+  Array.prototype.slice.call(maps).forEach(function(hm) {
+    var labels = hm.querySelectorAll('.hm-label').length;
+    var cells = hm.querySelectorAll('.hm-cell').length;
+    if (labels !== 7 || cells === 0) return; // unexpected shape — skip
+    var weeks = Math.ceil(cells / 7);
+    if (weeks < 1 || weeks > 6) return; // sanity bounds
+    var desired = '30px repeat(' + weeks + ', 1fr)';
+    // The browser-computed gridTemplateColumns expands to pixel values, so we
+    // compare the inline style instead. If we've set it before with same value,
+    // skip; otherwise apply.
+    if (hm.dataset.hmFixedWeeks === String(weeks)) return;
+    hm.style.setProperty('grid-template-columns', desired, 'important');
+    hm.dataset.hmFixedWeeks = String(weeks);
+    fixed++;
+  });
+  return fixed;
+}
+
 function bindAll() {
   injectCSS();
   var lvl = bindLevelCards();
   var rev = bindReviewItems();
-  return { level: lvl, review: rev };
+  var hm = fixHeatmap();
+  return { level: lvl, review: rev, heatmap: hm };
 }
 
 // ---------- Lifecycle ----------
@@ -220,14 +250,18 @@ window.SHADOW_NAV_POLISH = {
   bind: bindAll,
   bindLevelCards: bindLevelCards,
   bindReviewItems: bindReviewItems,
+  fixHeatmap: fixHeatmap,
   _info: function() {
     var lvl = document.querySelectorAll('#view-home .level-card');
     var rev = document.querySelectorAll('#today-review-list .review-item[data-topic]');
+    var hm = document.querySelector('.heatmap');
     return {
       level_cards_total: lvl.length,
       level_cards_bound: document.querySelectorAll('#view-home .level-card.nav-bound').length,
       review_items_total: rev.length,
-      review_items_bound: document.querySelectorAll('#today-review-list .review-item.nav-bound').length
+      review_items_bound: document.querySelectorAll('#today-review-list .review-item.nav-bound').length,
+      heatmap_present: !!hm,
+      heatmap_weeks_fixed: hm ? hm.dataset.hmFixedWeeks : null
     };
   }
 };
