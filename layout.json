@@ -1,0 +1,50 @@
+{
+  "schema": "shadow-english-layout-v1",
+  "version": "1.0",
+  "branding": {
+    "appName": "Shadow English",
+    "appIcon": "⚡",
+    "userName": "Dương",
+    "userTitle": "Shadow Apprentice",
+    "tagline": "Learning Operating System",
+    "footerQuote": "The more you review, the more natural it becomes.",
+    "footerAuthor": "Shadow today, speak naturally tomorrow."
+  },
+  "theme": {
+    "preset": "dark-purple",
+    "customColors": null
+  },
+  "themes": {
+    "dark-purple": { "name": "Dark Purple (default)", "bg": "#0d0b1f", "card": "#1a1838", "primary": "#7c5cff", "accent": "#ec4899" },
+    "dark-blue":   { "name": "Ocean Blue",            "bg": "#0a0f1e", "card": "#13192e", "primary": "#3b82f6", "accent": "#06b6d4" },
+    "dark-green":  { "name": "Forest Green",          "bg": "#0a1410", "card": "#0f1d18", "primary": "#22c55e", "accent": "#10b981" },
+    "dark-orange": { "name": "Sunset Orange",         "bg": "#1a0e08", "card": "#241510", "primary": "#ff8a3d", "accent": "#facc15" },
+    "midnight":    { "name": "Pure Midnight",         "bg": "#000000", "card": "#0a0a14", "primary": "#a78bfa", "accent": "#f472b6" }
+  },
+  "sections": [
+    { "id": "questions-5",       "title": "5 CÂU HỎI HÔM NAY",            "icon": "❓", "enabled": true,  "order": 1,  "span": 5 },
+    { "id": "mission-hero",      "title": "YOUR NEXT MOVE",               "icon": "🎯", "enabled": true,  "order": 2,  "span": 5 },
+    { "id": "hero-stats",        "title": "HERO STATS",                   "icon": "🔥", "enabled": true,  "order": 3,  "span": 5 },
+    { "id": "today-focus",       "title": "TODAY FOCUS",                  "icon": "🎯", "enabled": true,  "order": 4,  "span": 2 },
+    { "id": "memory-overview",   "title": "MEMORY STATUS OVERVIEW",       "icon": "🧠", "enabled": true,  "order": 5,  "span": 2 },
+    { "id": "today-goal",        "title": "TODAY GOAL",                   "icon": "⏰", "enabled": true,  "order": 6,  "span": 1 },
+    { "id": "level-map",         "title": "LEVEL MAP — YOUR PROGRESS",    "icon": "🗺️", "enabled": true,  "order": 7,  "span": 5 },
+    { "id": "sr-engine",         "title": "SPACED REPETITION ENGINE",     "icon": "🔁", "enabled": true,  "order": 8,  "span": 5 },
+    { "id": "review-queue",      "title": "REVIEW ENGINE — TODAY QUEUE",  "icon": "⚙️", "enabled": true,  "order": 9,  "span": 2 },
+    { "id": "calendar",          "title": "CALENDAR",                     "icon": "📅", "enabled": true,  "order": 10, "span": 2 },
+    { "id": "progress-tracker",  "title": "PROGRESS TRACKER",             "icon": "📈", "enabled": true,  "order": 11, "span": 1 },
+    { "id": "close-to-levelup",  "title": "NEXT SMALL WIN",               "icon": "🌟", "enabled": true,  "order": 12, "span": 2 },
+    { "id": "coach",             "title": "COACH SAYS",                   "icon": "🧠", "enabled": true,  "order": 13, "span": 2 },
+    { "id": "streak-guard",      "title": "STREAK GUARD",                 "icon": "🔥", "enabled": true,  "order": 14, "span": 1 },
+    { "id": "missions",          "title": "REAL LIFE MISSIONS",           "icon": "🎯", "enabled": true,  "order": 15, "span": 2 },
+    { "id": "next-up",           "title": "NEXT UP (TOMORROW PREVIEW)",   "icon": "⏭️", "enabled": true,  "order": 16, "span": 2 }
+  ],
+  "features": {
+    "showFooterQuote": true,
+    "showInstallPWA": true,
+    "showCoach": true,
+    "showXPbar": true,
+    "showLevelBadge": true,
+    "compactMode": false
+  }
+}

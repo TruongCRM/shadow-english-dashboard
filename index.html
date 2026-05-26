@@ -999,6 +999,7 @@ body { display: flex; min-height: 100vh; }
     <div class="topbar-actions">
       <input class="search" placeholder="🔍 Search anything..." />
       <div class="icon-btn">💬</div>
+      <div class="icon-btn" onclick="openSettings()" title="Customize dashboard" style="cursor:pointer">⚙️</div>
       <div class="icon-btn">🔔</div>
       <div class="avatar">DT</div>
     </div>
@@ -1025,7 +1026,7 @@ body { display: flex; min-height: 100vh; }
     <div class="view active" id="view-home">
 
     <!-- ROW 0: MISSION HERO — ACTION CLARITY -->
-    <div class="mission-hero">
+    <div class="mission-hero" data-section-id="mission-hero">
       <div class="mission-emoji">🍔</div>
       <div class="mission-body">
         <div class="mission-label"><span class="pulse-dot"></span> YOUR NEXT MOVE  ·  Most important thing today</div>
@@ -1045,7 +1046,7 @@ body { display: flex; min-height: 100vh; }
     </div>
 
     <!-- ROW 1: 5 TOP STATS -->
-    <div class="card stat-card">
+    <div class="card stat-card" data-section-id="hero-stats">
       <div class="card-title"><span class="icon">🔥</span> STREAK</div>
       <div class="stat-value"><span id="stat-streak">17</span> <span class="stat-unit">days</span></div>
       <div class="stat-sub" id="stat-streak-sub">You're on fire! 🔥</div>
@@ -1082,7 +1083,7 @@ body { display: flex; min-height: 100vh; }
     </div>
 
     <!-- ROW 2: TODAY FOCUS (span 2) + MEMORY DONUT (span 2) + HEATMAP (span 1 narrow) -->
-    <div class="card today-focus">
+    <div class="card today-focus" data-section-id="today-focus">
       <div class="card-title"><span class="icon">🔥</span> TODAY FOCUS <span class="live-badge">LIVE</span></div>
 
       <div class="today-grid">
@@ -1134,7 +1135,7 @@ body { display: flex; min-height: 100vh; }
       </div>
     </div>
 
-    <div class="card memory-card">
+    <div class="card memory-card" data-section-id="memory-overview">
       <div class="card-title"><span class="icon">🧠</span> MEMORY STATUS OVERVIEW</div>
       <div class="donut-row">
         <div class="donut-wrap">
@@ -1163,7 +1164,7 @@ body { display: flex; min-height: 100vh; }
       </div>
     </div>
 
-    <div class="card" style="grid-column: span 1">
+    <div class="card" data-section-id="today-goal" style="grid-column: span 1">
       <div class="card-title"><span class="icon">⏰</span> TODAY GOAL</div>
       <div style="display:flex;align-items:center;justify-content:center;flex-direction:column;height:80%;gap:6px">
         <div style="font-size:42px;font-weight:700;color:var(--purple)">2/3</div>
@@ -1174,7 +1175,7 @@ body { display: flex; min-height: 100vh; }
     </div>
 
     <!-- ROW 3: LEVEL MAP (full width) -->
-    <div class="card level-map">
+    <div class="card level-map" data-section-id="level-map">
       <div class="card-title"><span class="icon">🗺️</span> LEVEL MAP — YOUR PROGRESS <span class="live-badge">LIVE FROM NOTION</span></div>
 
       <div class="levels-grid">
@@ -1242,7 +1243,7 @@ body { display: flex; min-height: 100vh; }
 
 
     <!-- ROW 3.5: SPACED REPETITION ENGINE -->
-    <div class="card sr-engine">
+    <div class="card sr-engine" data-section-id="sr-engine">
       <div class="card-title"><span class="icon">🔁</span> SPACED REPETITION ENGINE  ·  Day 0 → Day 60 <span class="live-badge">PERSONALIZED</span></div>
       <div style="font-size:11.5px;color:var(--text-2);margin-top:4px">Hệ thống tự tính khi nào ôn từng topic — anh chỉ cần học theo danh sách hôm nay.</div>
       <div class="sr-timeline">
@@ -1263,7 +1264,7 @@ body { display: flex; min-height: 100vh; }
     </div>
 
     <!-- ROW 4: REVIEW QUEUE + CALENDAR + PROGRESS -->
-    <div class="card queue-card">
+    <div class="card queue-card" data-section-id="review-queue">
       <div class="card-title"><span class="icon">⚙️</span> REVIEW ENGINE — TODAY QUEUE <span class="live-badge">LIVE</span></div>
       <div class="queue-tabs">
         <span class="queue-tab active">All (6)</span><span class="queue-tab">Day 1 (4)</span><span class="queue-tab">Day 3 (1)</span><span class="queue-tab">Day 7 (1)</span><span class="queue-tab">Overdue (0)</span>
@@ -1282,7 +1283,7 @@ body { display: flex; min-height: 100vh; }
       <div class="queue-link" data-nav="review">View all in Review Engine →</div>
     </div>
 
-    <div class="card calendar-card">
+    <div class="card calendar-card" data-section-id="calendar">
       <div class="card-title"><span class="icon">📅</span> CALENDAR — <span id="cal-month">JUNE 2026</span></div>
       <div class="cal-head"><div class="arrows">‹ ›</div><div style="font-size:11px;color:var(--text-2);font-weight:600">Today</div></div>
       <div class="cal-grid" id="cal-grid"></div>
@@ -1293,7 +1294,7 @@ body { display: flex; min-height: 100vh; }
       </div>
     </div>
 
-    <div class="card" style="grid-column: span 1">
+    <div class="card" data-section-id="progress-tracker" style="grid-column: span 1">
       <div class="card-title"><span class="icon">📈</span> PROGRESS TRACKER</div>
       <canvas id="progress-chart" style="height:140px"></canvas>
       <div class="progress-stats">
@@ -1305,13 +1306,13 @@ body { display: flex; min-height: 100vh; }
     </div>
 
     <!-- ROW 4.5: NEXT WIN + COACH + STREAK GUARD -->
-    <div class="card close-card" style="grid-column: span 2">
+    <div class="card close-card" data-section-id="close-to-levelup" style="grid-column: span 2">
       <div class="card-title"><span class="icon">🌟</span> NEXT SMALL WIN  ·  Close to level up <span class="live-badge">+5 XP each</span></div>
       <div style="font-size:11.5px;color:var(--text-2);margin-top:2px">3 topics đang gần chuyển sang trạng thái cao hơn — chỉ cần 1 buổi review đúng cách.</div>
       <div class="close-card-list" id="close-list"></div>
     </div>
 
-    <div class="card coach-card" style="grid-column: span 2">
+    <div class="card coach-card" data-section-id="coach" style="grid-column: span 2">
       <div class="card-title"><span class="icon">🧠</span> COACH SAYS  ·  Today's insight</div>
       <div class="coach-quote" id="coach-quote">17 ngày liên tiếp. Đây không phải may mắn — đây là HỆ THỐNG. Hôm nay anh chỉ cần lặp lại đúng quy trình.</div>
       <div class="coach-sub" id="coach-sub">Dựa trên data của anh: <b style="color:#86efac">Thứ Hai</b> là ngày anh học tập trung nhất (avg 78 phút). Hôm nay là Thứ Hai → tận dụng thời gian này.</div>
@@ -1327,7 +1328,7 @@ body { display: flex; min-height: 100vh; }
       </div>
     </div>
 
-    <div class="card" style="grid-column: span 1">
+    <div class="card" data-section-id="streak-guard" style="grid-column: span 1">
       <div class="card-title"><span class="icon">🔥</span> STREAK GUARD</div>
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding-top:6px">
         <div style="font-size:46px;font-weight:800;background:linear-gradient(135deg,#ff8a3d,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" id="streak-guard-num">17</div>
@@ -1338,14 +1339,14 @@ body { display: flex; min-height: 100vh; }
     </div>
 
     <!-- ROW 5: MISSIONS + NEXT UP -->
-    <div class="card missions-card">
+    <div class="card missions-card" data-section-id="missions">
       <div class="card-title"><span class="icon">🎯</span> REAL LIFE MISSIONS</div>
 <div id="missions-list"></div>
       <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;font-weight:600;margin-top:14px">MISSION STREAK</div>
       <div class="streak-row"><span id="mission-streak-dots">⚪⚪⚪⚪⚪</span><span style="margin-left:auto;color:var(--text)" id="mission-streak-count">0 / 5 missions</span></div>
     </div>
 
-    <div class="card next-card">
+    <div class="card next-card" data-section-id="next-up">
       <div class="card-title"><span class="icon">⏭️</span> NEXT UP <span style="font-weight:400;color:var(--text-3);text-transform:none;letter-spacing:0">(TOMORROW PREVIEW)</span></div>
       <div class="next-section"><div class="next-label">🆕 NEW TOPIC</div><div class="next-title">🗺️ Asking for Directions <span class="day-tag day-0" style="margin-left:auto">Day 0</span></div></div>
       <div class="next-section"><div class="next-label">🔁 REVIEWS</div><div style="font-size:11.5px;margin-top:4px">• Ordering Food <span class="day-tag day-1">Day 1</span></div><div style="font-size:11.5px;margin-top:4px">• Shopping <span class="day-tag day-3">Day 3</span></div></div>
@@ -1656,6 +1657,7 @@ console.log('Shadow English v2 — Operating System loaded ✨');
 </style>
 <script src="content.js?v=6" defer></script>
 <script src="app.js?v=6" defer></script>
+<script src="app_v7_layout.js?v=7" defer></script>
 
 <style>
 /* ===== V4 — REAL VIEWS STYLES ===== */
@@ -1789,6 +1791,47 @@ console.log('Shadow English v2 — Operating System loaded ✨');
 .q-a { font-size: 17px; font-weight: 700; margin-top: 6px; line-height: 1.3; }
 .q-meta { font-size: 11px; color: var(--text-2); margin-top: 6px; }
 @media (max-width: 1300px) { .questions-5 { grid-template-columns: repeat(3, 1fr); } .q-card.q-4, .q-card.q-5 { grid-column: span 1; } }
+</style>
+
+<style>
+/* ===== V7 — SETTINGS PANEL ===== */
+.settings-modal { max-width: 760px !important; }
+.theme-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 6px; }
+.theme-card { cursor: pointer; padding: 10px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-2); transition: all .2s ease; text-align: center; }
+.theme-card:hover { transform: translateY(-2px); }
+.theme-card.active { border-color: var(--purple); box-shadow: 0 0 16px rgba(124,92,255,0.4); }
+.theme-swatch { width: 100%; height: 50px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.theme-name { font-size: 10.5px; margin-top: 6px; color: var(--text-2); }
+
+.section-list { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; }
+.section-row { display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--card-2); border-radius: 8px; transition: all .15s ease; }
+.section-row.disabled { opacity: 0.5; }
+.sec-handle { color: var(--text-3); cursor: grab; font-size: 12px; }
+.sec-icon { font-size: 18px; }
+.sec-name { flex: 1; font-size: 12.5px; font-weight: 500; }
+.sec-controls { display: flex; gap: 6px; align-items: center; }
+.sec-btn { width: 26px; height: 26px; border-radius: 5px; background: var(--card); border: 1px solid var(--border); color: var(--text-2); cursor: pointer; font-size: 12px; padding: 0; }
+.sec-btn:hover { background: var(--purple); color: white; border-color: var(--purple); }
+.sec-size { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 5px; font-size: 11px; cursor: pointer; }
+
+.toggle { position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--card); border: 1px solid var(--border); border-radius: 20px; transition: all .2s ease; }
+.toggle-slider::before { content: ""; position: absolute; left: 2px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; background: var(--text-3); border-radius: 50%; transition: all .2s ease; }
+.toggle input:checked + .toggle-slider { background: var(--purple); border-color: var(--purple); }
+.toggle input:checked + .toggle-slider::before { left: 18px; background: white; }
+
+.branding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.branding-grid label { display: flex; flex-direction: column; gap: 4px; }
+.branding-grid label span { font-size: 10.5px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.branding-grid input { padding: 8px 10px; background: var(--card-2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12.5px; }
+
+.feature-grid { display: flex; flex-direction: column; gap: 4px; }
+.feature-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--card-2); border-radius: 6px; font-size: 12.5px; cursor: pointer; }
+
+body.compact-mode .content { gap: 10px !important; padding: 12px 16px !important; }
+body.compact-mode .card { padding: 10px !important; }
+body.compact-mode .stat-value { font-size: 22px !important; }
 </style>
 </body>
 </html>
