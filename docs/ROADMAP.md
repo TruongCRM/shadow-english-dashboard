@@ -1,10 +1,10 @@
 # 🗺 SHADOW ENGLISH — ROADMAP
 
-> Pending work for v11 and beyond. Priorities reflect user's explicit ranking from v10 brief.
+> Pending work for v11.2 and beyond. Priorities reflect user's STABILIZE-first discipline (no new features until v11.1 observation week ends).
 
 ---
 
-## ✅ DONE (v1–v10)
+## ✅ DONE (v1–v11.1)
 
 | Version | Feature | Date |
 |---|---|---|
@@ -18,12 +18,73 @@
 | v8 | Audio System (TTS, record) + Focus mode + Mobile | 2026-05-26 |
 | v9 | Custom Content Blocks (18 types) | 2026-05-26 |
 | v10 | Adaptive Memory + Real Metrics + AI Coach | 2026-05-26 |
+| v11 | phrases.js + today.js + app_v11_today.js (UNDOCUMENTED — TD-2) | 2026-05-26 |
+| **v11.1** | **STABILIZE: Internal Insight Panel + deploy recovery** | **2026-05-26** |
 
 ---
 
-## 🎯 V11 — PRIORITY ORDER
+## 🧭 CURRENT PHASE — OBSERVATION WEEK (Day 0–6)
 
-### #1 Creator/Admin Mode (CMS UI inside app)
+**Active mode:** Measure-then-build. No new features.
+**Toolkit:** `?debug=1` panel ON during every dashboard use.
+**Deliverable end of Day 7:** `docs/V11_1_OBSERVATIONS.md`
+
+### 5 questions to answer during the week
+1. Are Fragile topics actually getting rescued first? (Rescue ranking #1–3 = Fragile?)
+2. Is `age` weighted too high vs. `memory`? (Adaptive risk 0.014 vs Debug risk 0.27 for the same topic — 19× divergence. Which is "right"?)
+3. Are survival phrases real (cross-topic) or noise (common but not useful)?
+4. Does QUEUED rank align with non-QUEUED rank? (Queue should respect salvageability)
+5. After 5 reviews completed — does memory distribution shift visibly?
+
+### After Day 7 — decision tree
+- Panel formula clearly better → **v11.2-A: back-port to `adaptive.js`**
+- Panel formula same/worse → **v11.2-B: Daily Loop polish (calmer Today card, tighter scan-pattern)**
+
+---
+
+## 🔧 v11.2 — TECHNICAL DEBT CLEARANCE (Day 7–10)
+
+Before any new feature work, address debt from v11.1 STABILIZE phase:
+
+### TD-1 · `technical-debt-v11.2-pre` · Node.js 20 deprecation
+**Source:** Build #22 annotation: `actions/checkout@v4`, `actions/upload-artifact@v4` running on deprecated Node 20.
+**Risk:** When GitHub enforces deprecation (no announced date), `pages-build-deployment` will hard-fail. Same failure mode as the 5 consecutive fails we just recovered from — but permanent.
+**Fix:** Pin actions to Node 22+ versions. For GitHub-managed `pages-build-deployment`, monitor and document workaround.
+**Effort:** 30 min
+
+### TD-2 · Documentation drift — 3 undocumented v11 scripts
+**Files:** `phrases.js?v=11`, `today.js?v=11`, `app_v11_today.js?v=11`
+**Issue:** Live in prod, not in CHANGELOG/ARCHITECTURE.
+**Fix:** Retro-add a `v11.0` CHANGELOG entry documenting these modules' purpose + integration points. Add to ARCHITECTURE.md module dependency graph.
+**Effort:** 1 hour (read the code, write the entry)
+
+### TD-3 · Formula divergence resolved
+Decided at end of observation week. Either:
+- Back-port panel formula to `adaptive.js` (v11.2-A) → eliminates divergence
+- Document as intentional behavioral choice → close TD as "by design"
+
+### TD-4 · API polish: expose `getTodayQueue` on `window.shadowEN`
+**Currently:** Internal to `app_v10_integration.js` or `app_v11_today.js`. Not callable from console.
+**Fix:** Add `getTodayQueue: () => prioritizeReviewQueue(state.topics).filter(t => isQueuedToday(t))` to `window.shadowEN` namespace.
+**Effort:** 15 min
+
+---
+
+## 🎯 V11.3+ — PRIORITY ORDER (post-stabilize)
+
+### #1 Daily Loop polish (v11.2-B candidate)
+**User ask:** Today card calmer, faster scan, less competing attention.
+**Scope:** Small (~1-2 hours)
+**Approach:**
+- Reduce Today card visual weight (color, font size)
+- Move Memory Pulse below Survival Patterns
+- Make Rescue Queue more glanceable (icon + name + time-since)
+- Increase whitespace
+- Use observability data to determine what should lead the eye
+
+---
+
+### #2 Creator/Admin Mode (CMS UI inside app)
 **User ask:** Create topic from inside dashboard, duplicate template, drag-drop sections, upload media.
 **Scope:** Large (~3-5 hours dev)
 **Approach:**
@@ -42,48 +103,40 @@
 
 ---
 
-### #2 Offline-First PWA (cache audio + lessons)
+### #3 Offline-First PWA (cache audio + lessons)
 **User ask:** Cache lessons, audio, work offline, sync when online.
 **Scope:** Medium (~2-3 hours)
 **Approach:**
 - Update sw.js ASSETS list to include all .js modules + .json files
 - Add `BACKGROUND_SYNC` for state push to backend (if backend added)
 - Cache TTS-generated audio? Tricky — Web Speech API doesn't expose raw audio buffer
-- Cache external resources (YouTube thumbnails, images) via SW
+- Cache external resources via SW
 - Add online/offline indicator in UI
 
 **Sub-tasks:**
-- [ ] Update sw.js cache list
+- [ ] Update sw.js cache list (include v11.1 files: `debug_panel.js`, `phrases.js`, `today.js`, `app_v11_today.js`)
 - [ ] Add storage check (`navigator.storage.estimate()`)
 - [ ] UI badge when offline
 - [ ] Test offline mode end-to-end
 
 ---
 
-### #3 Gamification 2.0 (Achievements + Quests + Badges)
+### #4 Gamification 2.0 (Achievements + Quests + Badges)
 **User ask:** Achievements, weekly quests, combo streak, focus rank, monthly challenge, level unlock, rare badges. **CONSTRAINT:** Must serve consistency, not dopamine empty.
 **Scope:** Medium (~3 hours)
 **Approach:**
-- `achievements.js` — list of achievement definitions:
-  ```js
-  { id: 'first-session', name: 'Day Zero', desc: '...', check: s => s.sessionsLog.length >= 1, xp: 50 }
-  ```
+- `achievements.js` — list of achievement definitions
 - Achievement check runs after each `saveState()` — unlocks once, persists
-- Weekly quests: 3-5 challenges per week (e.g. "5 sessions this week", "All Day 1 reviews done")
+- Weekly quests: 3-5 challenges per week
 - UI: Achievements page (in Missions sidebar), badge wall, streak counter
 - **Avoid dopamine empty:**
-  - Achievements unlock SLOWLY (no first-day flood)
+  - Unlock SLOWLY (no first-day flood)
   - Tied to real behavior (consistency, not just usage)
   - Rare badges = genuinely rare (e.g. 60-day streak)
 
-**Sub-tasks:**
-- [ ] Define 20 starter achievements
-- [ ] Build achievement checker (runs after state mutation)
-- [ ] UI: achievement unlock toast + page
-
 ---
 
-### #4 Memory Graph / Topic Connections
+### #5 Memory Graph / Topic Connections
 **User ask:** Restaurant ↔ Travel ↔ Hotel ↔ Small Talk. Phrase appearing in multiple topics = "survival phrase".
 **Scope:** Medium-large (~4 hours)
 **Approach:**
@@ -93,14 +146,11 @@
 - Show "Related topics" section in Topic Detail
 - "Survival Phrases" page — top 50 most-used phrases
 
-**Sub-tasks:**
-- [ ] Phrase frequency analyzer in content.js
-- [ ] Related topics computation
-- [ ] Graph visualization (simple SVG first, force-directed later)
+**Note:** Survival Patterns section in v11.1 debug panel is the first step here. If observation week shows the data is useful, promote it from observability layer to user-facing feature.
 
 ---
 
-### #5 Audio Intelligence (Pronunciation Feedback)
+### #6 Audio Intelligence (Pronunciation Feedback)
 **User ask:** Pronunciation compare, speaking confidence, pause detection, AI feedback.
 **Scope:** LARGE (~6+ hours) — needs external service
 **Approach:**
@@ -129,6 +179,7 @@
 - [ ] Spaced repetition simulator (test what-if scenarios)
 - [ ] Notion → app push (instant sync via webhook)
 - [ ] Mobile app (React Native shell around web app)
+- [ ] Custom workflow for Pages build (escape `jekyll-build-pages` infra dependency)
 
 ---
 
@@ -144,13 +195,15 @@
 
 ## 🎯 GUIDING PRINCIPLES (when prioritizing)
 
-1. **User behavior > flashy features** — features must serve daily-return habit
-2. **Content > Code** — never hardcode; everything via Notion or config
-3. **Real data > fake data** — every metric traces to user action
-4. **Adaptive > Fixed** — system learns from behavior
-5. **Calm > Cluttered** — premium feel, deep work atmosphere
-6. **Scale > Custom** — architecture supports 30 → 300 → 3000 topics
+1. **STABILIZE before BUILD** (v11.1 lesson) — observability + verify before next feature
+2. **User behavior > flashy features** — features must serve daily-return habit
+3. **Content > Code** — never hardcode; everything via Notion or config
+4. **Real data > fake data** — every metric traces to user action
+5. **Adaptive > Fixed** — system learns from behavior
+6. **Calm > Cluttered** — premium feel, deep work atmosphere
+7. **Scale > Custom** — architecture supports 30 → 300 → 3000 topics
+8. **Verify > Assume** (v11.1 deploy-incident lesson) — green commit ≠ deployed live; always check Actions tab
 
 ---
 
-*Last update: 2026-05-26 (post-v10)*
+*Last update: 2026-05-26 (post-v11.1 STABILIZE ship).*

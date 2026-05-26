@@ -41,12 +41,13 @@
 
 ## 🏛 ARCHITECTURE TLDR
 
-3 macro layers + 6 runtime micro layers. See `ARCHITECTURE.md` for diagrams.
+3 macro layers + 6 runtime micro layers + **1 observability layer (v11.1)**. See `ARCHITECTURE.md` for diagrams.
 
 ```
-CONTENT  → Notion CMS (user edits here) → content.json (via GitHub Action hourly sync)
-LOGIC    → app.js + 5 v-modules (state engine, adaptive SR, metrics, coach, blocks)
-UI       → layout.json + Settings panel (theme, sections, branding)
+CONTENT → Notion CMS (user edits here) → content.json (via GitHub Action hourly sync)
+LOGIC → app.js + v7/v8/v9/v10/v11 modules (state engine, adaptive SR, metrics, coach, blocks, phrases, today)
+UI → layout.json + Settings panel (theme, sections, branding)
+OBSERVABILITY → debug_panel.js (v11.1, ?debug=1 toggle, read-only, opt-in)
 ```
 
 **Critical rule:** NEVER hardcode content in code. All English text goes through Notion or content.json.
@@ -55,13 +56,16 @@ UI       → layout.json + Settings panel (theme, sections, branding)
 
 ## 📂 KEY FILES (read these in order)
 
-1. `docs/CHANGELOG.md` — Full v1-v10 history with problems + lessons learned
+1. `docs/CHANGELOG.md` — Full v1–v11.1 history with problems + lessons learned
 2. `docs/ARCHITECTURE.md` — System diagrams + data flow + design decisions
 3. `docs/STATE_SCHEMA.md` — All data structures (state, content, layout, Notion DB)
 4. `docs/TECHNICAL_NOTES.md` — Known issues + workarounds + debugging tips
-5. `docs/ROADMAP.md` — What's next (v11+)
-6. `BLOCKS_GUIDE.md` — User docs for Custom Content Blocks
-7. `SETUP_NOTION_SYNC.md` — User docs for Notion sync
+5. `docs/ROADMAP.md` — What's next (v11.2+)
+6. `docs/V11_1_DEBUG_PANEL.md` — Internal Insight panel architecture + verify checklist
+7. `docs/VERIFY_REPORT_v11_1.md` — v11.1 post-deploy verification record (Day 0)
+8. `docs/V11_1_OBSERVATIONS.md` — (to be filled Day 7 by user + AI)
+9. `BLOCKS_GUIDE.md` — User docs for Custom Content Blocks
+10. `SETUP_NOTION_SYNC.md` — User docs for Notion sync
 
 Then read the code:
 - `index.html` — UI shell
@@ -72,6 +76,8 @@ Then read the code:
 - `audio.js` — v8 audio system
 - `app_v7_layout.js` — v7 UI config
 - `app_v8/9/10_*.js` — version integration patches
+- `phrases.js` + `today.js` + `app_v11_today.js` — v11 (undocumented — see TD-2)
+- `debug_panel.js` — v11.1 observability layer
 
 ---
 
@@ -84,6 +90,7 @@ Then read the code:
 5. **No new dependencies** — only Chart.js, Grid.js (already in use)
 6. **localStorage only for state** — no server DB until v15+
 7. **Mobile-first responsive** — touch targets ≥44px, breakpoint 900px
+8. **v11.1+:** Pure-additive new layers — no state schema migration, observability stays opt-in
 
 ---
 
@@ -96,6 +103,7 @@ Then read the code:
 - **Adaptive** — system learns from his behavior, not rigid
 - **Scalable** — 30 → 300 → 3000 topics without breaking
 - **Mobile-first** — he's busy, often on phone
+- **STABILIZE before BUILD** (v11.1 lesson) — measure, then expand
 
 ### What the user does NOT want
 - "Website học tiếng Anh nhiều màu" (colorful English learning website)
@@ -105,12 +113,13 @@ Then read the code:
 - Dopamine empty (achievements that don't matter)
 - Hardcoded English content in JS
 - Manual deploy steps for content edits
+- New features when v11.1 observation week is still active
 
 ---
 
 ## 🛠 HOW TO MAKE CHANGES
 
-### To add a new feature (e.g. v11 work):
+### To add a new feature (e.g. v11.3 work):
 1. Read user's request carefully — they often give 12-point briefs but expect prioritization
 2. Identify HIGHEST impact items (usually first 2-3 in their list)
 3. Defer the rest with clear rationale in your response
@@ -119,13 +128,14 @@ Then read the code:
 6. Add script tag with `defer` after existing scripts
 7. Test in browser console with debug commands
 8. Deploy via Chrome MCP file upload
-9. Verify on `?v=N-bust` URL
-10. Update `docs/CHANGELOG.md` with date/goal/built/problems/fixes/lessons
+9. **VERIFY DEPLOY:** Check `github.com/<repo>/actions` for latest `pages-build-deployment` = ✅ before claiming "shipped"
+10. Verify on `?v=N-bust` URL
+11. Update `docs/CHANGELOG.md` with date/goal/built/problems/fixes/lessons
 
 ### To deploy:
 - Use `mcp__Claude_in_Chrome__file_upload` with `ref` from `find('choose your files')`
 - Then scroll, fill commit message via `form_input`, click "Commit changes" button
-- Wait 30-60s for GitHub Pages rebuild
+- **Wait + verify Actions tab** before declaring success (v11.1 lesson — see G6 below)
 - Test with `?v=N-bust` query param
 
 ---
@@ -139,6 +149,7 @@ Then read the code:
 - **Don't hide complexity** — explain trade-offs but stay user-friendly
 - **Use system thinking framing** — "Đây không phải lỗi UI, đây là lỗi hệ thống"
 - **Reference Notion workspace ID:** Workspace "Ngoại Ngữ Shadowing | 2026"
+- **v11.1 onwards:** Treat STABILIZE phase as sacred — don't propose new features until observation week ends
 
 ---
 
@@ -147,15 +158,6 @@ Then read the code:
 ```js
 // Full state inspection
 shadowEN.state
-
-// Get metrics
-v10.metrics()
-
-// AI Coach insights
-v10.insights()
-
-// Forget risk ranking
-v10.riskAll().slice(0, 10)
 
 // Force-complete a review
 shadowEN.completeReview('L1-01', 5)
@@ -181,13 +183,26 @@ SHADOW_CONTENT.getContent('L1-01').phrases
 
 // Trigger AI coach toast
 toast(SHADOW_COACH.generate(1)[0].text)
+
+// v11.1 observability
+SHADOW_DEBUG.enable()
+SHADOW_DEBUG.rescueRanking(8)
+SHADOW_DEBUG.forgetRiskBreakdown('L1-01')   // returns {total, components: {age, memory, confidence, adaptive}}
+SHADOW_DEBUG.memoryDistribution()           // {Fragile, Weak, Building, Stable, Automatic}
+SHADOW_DEBUG.survivalPatterns()             // phrases shared ≥2 topics in today's queue
+SHADOW_DEBUG.disable()
+
+// Compare formulas (v11.1 → v11.2 decision data)
+SHADOW_ADAPTIVE.calculateForgetRisk(shadowEN.state.topics[0])
+SHADOW_DEBUG.forgetRiskBreakdown(shadowEN.state.topics[0].id).total
+// (As of 2026-05-26: ~19× divergence for L1-01. Observation week will decide reconciliation.)
 ```
 
 ---
 
 ## 🚨 GOTCHAS DON'T REPEAT
 
-These cost hours during v1-v10. Don't redo:
+These cost hours during v1–v11.1. Don't redo:
 
 1. **File truncation when writing >1000 lines** — use bash heredoc, not Edit tool
 2. **`const X = {}` is NOT on window** — explicitly do `window.X = X`
@@ -200,6 +215,14 @@ These cost hours during v1-v10. Don't redo:
 9. **Form input + click sometimes silently fails** — verify with screenshot before claiming success
 10. **`display: contents` is required for view containers** — don't change to `display: block`
 
+### 🔥 NEW from v11.1 incident:
+
+11. **GREEN COMMIT ≠ DEPLOYED LIVE (G6).** A commit visible in `github.com/<repo>/blob/main/<path>` does NOT mean the file is being served by live URL. If `pages-build-deployment` workflow fails, GitHub Pages keeps serving the LAST successful build. Symptom: "I uploaded the file, but live still doesn't show it." Cure: open `github.com/<repo>/actions`, confirm latest run is ✅ green BEFORE debugging client-side. Add this as **Bước 0** in any future "panel/feature not showing" diagnostic.
+
+12. **GitHub's own infrastructure can fail your deploy.** The `pages-build-deployment` workflow downloads `actions/jekyll-build-pages` from `codeload.github.com`. If that CDN returns 5xx, the build fails in 3 seconds with no obvious cause. There's NO ALERT, NO EMAIL. Recovery = "Re-run failed jobs" (often transient). Long-term: monitor + consider custom workflow.
+
+13. **Diagnostic protocols MUST start at the upstream tier.** v11.1 HANDOFF §4 jumped straight to browser-tier debugging (cache, script-path, runtime, CSS). Real cause was 2 tiers upstream (GitHub Actions infra). When designing diagnostic flow for future bugs: **always include "pipeline status" as Step 0** before any browser-tier step.
+
 ---
 
 ## 🔮 USER'S NORTH STAR
@@ -207,11 +230,15 @@ These cost hours during v1-v10. Don't redo:
 What user said in v10 brief:
 > "Tôi không muốn build 'English learning dashboard'. Tôi muốn build 'Operating System for English Fluency'."
 
+What user added in v11.1 STABILIZE brief:
+> "Trước khi build feature mới, hãy hoàn thành và stabilize v11.1 đúng engineering flow."
+
 What this means for your decisions:
 - Optimize for **long-term retention** over short-term wins
 - Optimize for **real-life speaking transformation** over flashy UI
 - Optimize for **calm deep work** over engagement metrics
 - Optimize for **system-level intelligence** over hardcoded features
+- **Optimize for stability + verification before any new feature ships**
 
 ---
 
@@ -220,26 +247,28 @@ What this means for your decisions:
 When you (next AI) start working on this project:
 
 - [ ] Read this file (AI_HANDOFF.md)
-- [ ] Read CHANGELOG.md (especially last 2-3 versions)
+- [ ] Read CHANGELOG.md (especially last 2-3 versions — v10 + v11.1)
 - [ ] Read ARCHITECTURE.md
 - [ ] Read STATE_SCHEMA.md if changing data structures
 - [ ] Read TECHNICAL_NOTES.md for gotchas
+- [ ] Read VERIFY_REPORT_v11_1.md if observation week not done yet
 - [ ] Check ROADMAP.md for current priorities
 - [ ] Read user's latest message carefully — they often expect prioritization
 - [ ] Plan tasks via TaskCreate before coding
 - [ ] Build per-layer (not mixed concerns)
 - [ ] Test in browser console with debug commands
-- [ ] Deploy + verify with `?v=N-bust`
+- [ ] Deploy + verify with `?v=N-bust` AND CONFIRM ACTIONS TAB ✅
 - [ ] Update CHANGELOG.md with your version entry
 - [ ] Report back to user with concrete deliverables (not just task list)
 
 ---
 
-## 🌟 CURRENT STATE SUMMARY (as of v10)
+## 🌟 CURRENT STATE SUMMARY (as of v11.1 — 2026-05-26 evening)
 
-- **Live URL:** https://truongcrm.github.io/shadow-english-dashboard/
-- **Latest version:** v10
-- **6 active layers:** Content, Blocks, Adaptive, Metrics, Coach, UI
+- **Live URL:** https://truongcrm.github.io/shadow-english-dashboard/?debug=1
+- **Latest version:** **v11.1** (STABILIZE phase active)
+- **Active phase:** Observation week (Day 0 → Day 7)
+- **6 runtime layers + 1 observability layer:** Content, Blocks, Adaptive, Metrics, Coach, UI, **Internal Insight (debug_panel)**
 - **32 topics** seeded (5 rich content, 27 skeletal)
 - **18 block types** available for rich content
 - **5 themes** (dark-purple default, ocean-blue, forest-green, sunset-orange, midnight)
@@ -248,20 +277,38 @@ When you (next AI) start working on this project:
 - **Audio system** functional with 6+ browser TTS voices
 - **AI Coach** generating 10+ rule-based insights
 
-**Major pending:**
-1. User to setup Notion sync (5-min steps in SETUP_NOTION_SYNC.md)
-2. User to add Custom Blocks in Notion topic pages
-3. v11 priorities: Creator Mode · Offline-first · Gamification 2.0
+**v11.1 verified:**
+- State schema intact (11 keys, no new fields)
+- localStorage adds only 1 new key (`shadow-en-debug-mode`)
+- No console errors
+- Single debug_panel.js injection (no duplicate)
+- Toggle `?debug=0/1` works + persists
+- Mobile CSS rules in place (10 rules @ max-width:600px)
+- Build #22 re-run succeeded after 5 consecutive infra fails
+
+**Active technical debt (pre-v11.2):**
+| ID | Item | Class |
+|---|---|---|
+| TD-1 | Node.js 20 deprecation warning on Pages build | `technical-debt-v11.2-pre` |
+| TD-2 | 3 v11 scripts undocumented (phrases.js, today.js, app_v11_today.js) | `documentation-drift` |
+| TD-3 | Adaptive vs Debug formula divergence (~19×) — decision pending observation week | `decision-pending` |
+| TD-4 | `getTodayQueue` not exposed on shadowEN | `api-polish` |
+
+**Major pending (post-observation):**
+1. Day 7: Fill `docs/V11_1_OBSERVATIONS.md` + decide v11.2-A (back-port) vs v11.2-B (Daily Loop polish)
+2. Clear TD-1, TD-2 before v11.2 ships
+3. v11.3+: Daily Loop polish → Creator Mode → Offline → Gamification → Memory Graph
 
 ---
 
 ## 🎤 FINAL NOTES
 
-The user has been VERY patient through 10 iterations. They're now exhausted from re-explaining vision. Your job:
+The user has been VERY patient through 11.1 iterations. They're now exhausted from re-explaining vision. Your job:
 - **Listen carefully** to what they say
 - **Don't over-engineer** — they want results, not perfection
 - **Honest about scope** — if something is 5+ hours, say so upfront
 - **Ship working code** — even if not all polished
+- **Stabilize before build** — v11.1 changed the engineering philosophy. Verify → Observe → Then build.
 
 **The product is alive.** Don't break it. Build on it.
 
@@ -269,4 +316,4 @@ Good luck. 🚀
 
 ---
 
-*Last update: 2026-05-26 (after v10 deploy). Maintain this file with each major handoff.*
+*Last update: 2026-05-26 evening (post-v11.1 STABILIZE ship + deploy recovery). Maintain this file with each major handoff.*
