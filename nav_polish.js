@@ -38,8 +38,8 @@ var CSS = [
 /* The review row already has cursor:pointer via existing CSS but lacks handler. */
 '#today-review-list .review-item.nav-bound { transition: background 0.15s ease, transform 0.15s ease; }',
 '#today-review-list .review-item.nav-bound:hover { background: rgba(124,92,255,0.05); transform: translateX(2px); }',
-/* Heatmap polish v5: GitHub-style rotated — days across top, weeks down */
-'.heatmap.nav-polished { justify-content: center !important; align-items: center !important; gap: 6px !important; padding-top: 6px; max-width: 100%; grid-auto-flow: column !important; }',
+/* Heatmap polish v6: rotated + stretch — fills full card width */
+'.heatmap.nav-polished { justify-content: stretch !important; align-items: stretch !important; gap: 6px !important; padding: 6px 4px 4px; width: 100% !important; grid-auto-flow: column !important; }',
 '.heatmap.nav-polished .hm-label { font-size: 11px; color: var(--text-3); display: flex; align-items: center; justify-content: center; text-transform: none; }',
 '.heatmap.nav-polished .hm-cell { border-radius: 5px; width: 100%; height: 100%; }',
 /* Mobile — keep tap targets comfortable */
@@ -172,13 +172,12 @@ function fixHeatmap() {
     // from stretching to fill the parent card width. Combined with the CSS
     // override `.heatmap-card { grid-column: 1 / -1 }`, this gives a calm,
     // GitHub-style compact heatmap as its own row.
-    var key = weeks + 'w-v5';
+    var key = weeks + 'w-v6';
     if (hm.dataset.hmFixedWeeks === key) return;
-    // v5: ROTATE — days as columns across (Mon-Sun horizontal), weeks as rows down.
-    // GitHub-contribution-graph style. Children flow column-first via grid-auto-flow.
-    // 7 day columns × (1 label header + N week rows).
-    var desiredCols = 'repeat(7, 38px)';
-    var desiredRows = '22px repeat(' + weeks + ', 38px)';
+    // v6: ROTATE + STRETCH — cells use 1fr to fill the card width evenly.
+    // Row height fixed at 56px (close enough to square for typical card widths).
+    var desiredCols = 'repeat(7, 1fr)';
+    var desiredRows = '22px repeat(' + weeks + ', 56px)';
     hm.style.setProperty('grid-template-columns', desiredCols, 'important');
     hm.style.setProperty('grid-template-rows', desiredRows, 'important');
     hm.style.setProperty('grid-auto-flow', 'column', 'important');
