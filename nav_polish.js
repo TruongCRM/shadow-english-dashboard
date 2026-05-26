@@ -38,11 +38,10 @@ var CSS = [
 /* The review row already has cursor:pointer via existing CSS but lacks handler. */
 '#today-review-list .review-item.nav-bound { transition: background 0.15s ease, transform 0.15s ease; }',
 '#today-review-list .review-item.nav-bound:hover { background: rgba(124,92,255,0.05); transform: translateX(2px); }',
-/* Heatmap polish v2: full-width section, centered grid, comfortable cell size */
-'#view-home .heatmap-card { grid-column: 1 / -1 !important; }',
-'.heatmap.nav-polished { justify-content: center !important; align-items: start !important; grid-auto-rows: 48px !important; gap: 5px !important; padding-top: 4px; max-width: 100%; }',
-'.heatmap.nav-polished .hm-label { font-size: 12px; color: var(--text-3); display: flex; align-items: center; padding-right: 4px; }',
-'.heatmap.nav-polished .hm-cell { border-radius: 5px; min-height: 48px; }',
+/* Heatmap polish v5: GitHub-style rotated — days across top, weeks down */
+'.heatmap.nav-polished { justify-content: center !important; align-items: center !important; gap: 6px !important; padding-top: 6px; max-width: 100%; grid-auto-flow: column !important; }',
+'.heatmap.nav-polished .hm-label { font-size: 11px; color: var(--text-3); display: flex; align-items: center; justify-content: center; text-transform: none; }',
+'.heatmap.nav-polished .hm-cell { border-radius: 5px; width: 100%; height: 100%; }',
 /* Mobile — keep tap targets comfortable */
 '@media (max-width: 900px) {',
 '  #view-home .level-card.nav-bound:hover { transform: none; }',
@@ -173,11 +172,16 @@ function fixHeatmap() {
     // from stretching to fill the parent card width. Combined with the CSS
     // override `.heatmap-card { grid-column: 1 / -1 }`, this gives a calm,
     // GitHub-style compact heatmap as its own row.
-    var key = weeks + 'w-v4';
+    var key = weeks + 'w-v5';
     if (hm.dataset.hmFixedWeeks === key) return;
-    // v4: 48px cells (up from 32) — fills card better when full-width, less "empty"
-    var desiredV4 = '36px repeat(' + weeks + ', 48px)';
-    hm.style.setProperty('grid-template-columns', desiredV4, 'important');
+    // v5: ROTATE — days as columns across (Mon-Sun horizontal), weeks as rows down.
+    // GitHub-contribution-graph style. Children flow column-first via grid-auto-flow.
+    // 7 day columns × (1 label header + N week rows).
+    var desiredCols = 'repeat(7, 38px)';
+    var desiredRows = '22px repeat(' + weeks + ', 38px)';
+    hm.style.setProperty('grid-template-columns', desiredCols, 'important');
+    hm.style.setProperty('grid-template-rows', desiredRows, 'important');
+    hm.style.setProperty('grid-auto-flow', 'column', 'important');
     hm.classList.add('nav-polished');
     hm.dataset.hmFixedWeeks = key;
     fixed++;
