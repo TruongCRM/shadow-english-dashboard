@@ -363,7 +363,72 @@ Per-topic editable content blocks (YouTube, Image, Audio, PDF, Quote, Callout, T
 - Checklist blocks save state to `shadow-en-checks-{topicId}-{i}` localStorage
 
 ---
+## v11.1 — STABILIZE: Internal Insight Panel (2026-05-26)
 
+### Goal
+**Phase pivot — không build feature lớn mới trong 7 ngày.**
+Per user vision: tăng **clarity** của learning engine, không tăng complexity. Sau v10 (adaptive + metrics + coach), nhiều logic tinh vi nhưng *invisible*. v11.1 ship một **observability layer** để verify behavior thật trước khi quyết v11+.
+
+### Built
+- `debug_panel.js` — single IIFE module, ~750 dòng, zero dependencies
+- One DOM root `#debug-panel-host` appended to `<body>` — fixed bottom-right
+- Toggle: URL `?debug=1` / `?debug=0`, console `SHADOW_DEBUG.enable/disable/toggle`, close button
+- localStorage key: `shadow-en-debug-mode` (single new key, namespaced)
+- Panel sections:
+  - **Summary bar:** total topics · in queue today · reviewed · never
+  - **Memory distribution:** 5-column grid (Fragile / Weak / Building / Stable / Automatic)
+  - **Rescue ranking (top 8):** salvageability = forget_risk × max(0.1, mastery); each row shows rank, topic, reason, risk/salv/age/mem/stage stats, expandable risk breakdown with 4 bars
+  - **Survival patterns:** phrases appearing in ≥2 topics of today's queue (top 5)
+  - **By status:** collapsible groups Fragile/Weak/Building/Stable/Automatic, sorted by review age desc
+- Risk breakdown (transparent formula):
+  - `age` 0..0.40 (days/30 capped)
+  - `memory` 0.01..0.30 (Fragile=.30 / Weak=.22 / Building=.12 / Stable=.05 / Automatic=.01)
+  - `confidence` 0..0.20 (avg last 3 reviews, inverse)
+  - `adaptive` 0..0.15 (declining trend bonus)
+- Console API: `SHADOW_DEBUG.rescueRanking() / .forgetRiskBreakdown(id) / .survivalPatterns() / .memoryDistribution()`
+- Lifecycle hooks: wraps `window.render` + `shadowEN.saveState` (idempotent via `__dbgWrapped` flag) — panel refreshes on every real state mutation
+- Hook retry: 20× over 10s (handles defer load order)
+- Fallback: setInterval 5s when ON (zero overhead when OFF)
+- Mobile responsive: full-width minus 8px padding, max-height 70vh
+- Style: monospace, dark purple/pink accent matching `--purple`/`--accent`, backdrop blur, no animation
+- Docs: `docs/V11_1_DEBUG_PANEL.md` (architecture, verify checklist, gotchas, console commands, observation week guide, graduation criteria for v11.2)
+
+### Problems
+- (Pre-emptive) Hook race: `defer` order doesn't guarantee `window.render` exists when `debug_panel.js` boots → solved by retry-hook loop
+- (Pre-emptive) `SHADOW_CONTENT.TOPIC_CONTENT` may not be loaded on first render → survival patterns gracefully empty; 5s interval catches it
+- (Pre-emptive) Formula divergence between panel and `adaptive.js` → intentional: panel ships its own formula to allow tuning without breaking prod
+
+### Fixes
+- Hook retry: `setInterval(500)` × 20 tries — ensures wrap eventually attaches
+- Idempotent wrap flag `__dbgWrapped` — wrapping twice is a no-op
+- `getState()` always returns valid `{topics:[], sessionsLog:[]}` shape — never throws, never mutates
+
+### Architecture change
+- **NEW layer concept (orthogonal to 6 runtime layers):** *Observability Layer*
+- Not in load order — runs alongside, read-only
+- May graduate to back-port into adaptive.js at v11.2 (decision pending observation week)
+- Pure additive — zero impact on:
+  - state schema (`shadow-en-state-v3` unchanged)
+  - existing localStorage keys
+  - existing modules (no edits to app.js, adaptive.js, metrics.js, coach.js)
+  - render loop (only wraps it, doesn't replace)
+
+### Lessons learned
+- **Build clarity before complexity.** Adaptive engine got "smart" in v10 but invisible. User shouldn't have to read source code to understand why a topic ranks first.
+- **Observability ≠ debugging.** This panel stays in production behind a flag — useful long-term, not just dev-time.
+- **Duplicate formulas intentionally during stabilize.** Panel ships own risk formula so we can A/B compare against `adaptive.js` without touching prod.
+- **Hook retry > hook once.** When wrapping foreign functions in deferred-load environments, always retry.
+- **One file is enough.** Single ~750-line file > distributed across multiple files for a "drop-in observability" module.
+
+### Pending → v11.2+
+| # | Item | When |
+|---|---|---|
+| 1 | Fill `docs/V11_1_OBSERVATIONS.md` after 7 days using panel | Day 7 |
+| 2 | Decide: back-port panel risk formula into `adaptive.js`? | After observations |
+| 3 | Add daily Loop polish (calmer Today card, tighter scan-pattern) | After v11.2 graduation |
+| 4 | Resume v11 roadmap (Creator Mode / Offline / Gamification 2.0) | After clarity locked in |
+
+---
 ## v10.0 — OS for English Fluency (Adaptive + Metrics + Coach) (2026-05-26)
 
 ### Goal
