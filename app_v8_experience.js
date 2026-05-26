@@ -247,3 +247,42 @@ window.render = function() {
 
 console.log('Shadow English v8 — Real Learning Experience loaded 🎧');
 
+
+// ============= V8.1 FIX — Auto-enhance phrases on navigate =============
+// Override NAV_RENDERS entries to add enhancePhrases after render
+(function() {
+  function wrap(fn, viewId) {
+    return function() {
+      if (fn) fn();
+      setTimeout(() => {
+        const v = document.getElementById('view-' + viewId);
+        if (v) enhancePhrases(v);
+      }, 50);
+    };
+  }
+  if (typeof NAV_RENDERS !== 'undefined') {
+    NAV_RENDERS['topic-detail'] = wrap(NAV_RENDERS['topic-detail'], 'topic-detail');
+    NAV_RENDERS['phrases'] = wrap(NAV_RENDERS['phrases'], 'phrases');
+    NAV_RENDERS['memory'] = wrap(NAV_RENDERS['memory'], 'memory');
+    NAV_RENDERS['topics'] = wrap(NAV_RENDERS['topics'], 'topics');
+    NAV_RENDERS['level1'] = wrap(NAV_RENDERS['level1'], 'level1');
+    NAV_RENDERS['level2'] = wrap(NAV_RENDERS['level2'], 'level2');
+    NAV_RENDERS['level3'] = wrap(NAV_RENDERS['level3'], 'level3');
+  }
+  // MutationObserver fallback for any future renders
+  const observer = new MutationObserver(muts => {
+    muts.forEach(m => {
+      m.addedNodes.forEach(n => {
+        if (n.nodeType === 1) {
+          if (n.classList?.contains('phrase-row')) {
+            enhancePhrases(n.parentElement);
+          } else if (n.querySelector?.('.phrase-row')) {
+            enhancePhrases(n);
+          }
+        }
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+})();
+
