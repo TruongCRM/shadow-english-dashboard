@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shadow English — Home Dashboard</title>
+<title>Shadow English — Learning Operating System</title>
+<meta name="description" content="A premium learning OS for English mastery — Shadowing · Spaced Repetition · Communication Reflex.">
+<meta name="theme-color" content="#0d0b1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shadow English">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c5cff'/%3E%3Cstop offset='100%25' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230d0b1f'/%3E%3Cpath d='M55 12 L25 55 L46 55 L40 88 L75 42 L54 42 Z' fill='url(%23g)' stroke='none'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c5cff'/%3E%3Cstop offset='100%25' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230d0b1f'/%3E%3Cpath d='M55 12 L25 55 L46 55 L40 88 L75 42 L54 42 Z' fill='url(%23g)'/%3E%3C/svg%3E">
 <script async src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" onerror="window.__chartFailed=true"></script>
 <style>
 :root {
@@ -944,32 +953,32 @@ body { display: flex; min-height: 100vh; }
 <aside class="sidebar">
   <div class="brand"><span class="brand-icon">⚡</span> Shadow English</div>
 
-  <div class="nav-item active">🏠 Home Dashboard</div>
+  <div class="nav-item active" data-view="home">🏠 Home Dashboard</div>
 
   <div class="nav-section">LEARNING ENGINE</div>
-  <div class="nav-item">▶️ Today Session</div>
-  <div class="nav-item">🔁 Review Engine</div>
-  <div class="nav-item">📚 Topics Database</div>
-  <div class="nav-item">💬 Phrases Bank</div>
-  <div class="nav-item">🎯 Missions</div>
+  <div class="nav-item" data-view="session">▶️ Today Session</div>
+  <div class="nav-item" data-view="review">🔁 Review Engine</div>
+  <div class="nav-item" data-view="topics">📚 Topics Database</div>
+  <div class="nav-item" data-view="phrases">💬 Phrases Bank</div>
+  <div class="nav-item" data-view="missions">🎯 Missions</div>
 
   <div class="nav-section">KNOWLEDGE WORLD</div>
-  <div class="nav-item">🔵 Level 1 — Survival</div>
-  <div class="nav-item">🟢 Level 2 — Social</div>
-  <div class="nav-item">🟣 Level 3 — Advanced</div>
-  <div class="nav-item">📖 All Topics</div>
+  <div class="nav-item" data-view="level1">🔵 Level 1 — Survival</div>
+  <div class="nav-item" data-view="level2">🟢 Level 2 — Social</div>
+  <div class="nav-item" data-view="level3">🟣 Level 3 — Advanced</div>
+  <div class="nav-item" data-view="topics">📖 All Topics</div>
 
   <div class="nav-section">TRACKING</div>
-  <div class="nav-item">📅 Calendar View</div>
-  <div class="nav-item">📈 Progress Tracker</div>
-  <div class="nav-item">🧠 Memory Log</div>
-  <div class="nav-item">📊 Statistics</div>
+  <div class="nav-item" data-view="calendar">📅 Calendar View</div>
+  <div class="nav-item" data-view="progress">📈 Progress Tracker</div>
+  <div class="nav-item" data-view="memory">🧠 Memory Log</div>
+  <div class="nav-item" data-view="stats">📊 Statistics</div>
 
   <div class="nav-section">RESOURCES</div>
-  <div class="nav-item">🗣️ Real English</div>
-  <div class="nav-item">📝 Grammar Hub</div>
-  <div class="nav-item">🎙️ Pronunciation</div>
-  <div class="nav-item">🎧 Listening Library</div>
+  <div class="nav-item" data-view="resources">🗣️ Real English</div>
+  <div class="nav-item" data-view="resources">📝 Grammar Hub</div>
+  <div class="nav-item" data-view="resources">🎙️ Pronunciation</div>
+  <div class="nav-item" data-view="resources">🎧 Listening Library</div>
 
   <div class="sidebar-card">
     <div class="sidebar-card-title">Every day</div>
@@ -1013,6 +1022,7 @@ body { display: flex; min-height: 100vh; }
 
   <!-- CONTENT GRID -->
   <div class="content">
+    <div class="view active" id="view-home">
 
     <!-- ROW 0: MISSION HERO — ACTION CLARITY -->
     <div class="mission-hero">
@@ -1230,83 +1240,37 @@ body { display: flex; min-height: 100vh; }
       </div>
     </div>
 
+
     <!-- ROW 3.5: SPACED REPETITION ENGINE -->
     <div class="card sr-engine">
       <div class="card-title"><span class="icon">🔁</span> SPACED REPETITION ENGINE  ·  Day 0 → Day 60 <span class="live-badge">PERSONALIZED</span></div>
       <div style="font-size:11.5px;color:var(--text-2);margin-top:4px">Hệ thống tự tính khi nào ôn từng topic — anh chỉ cần học theo danh sách hôm nay.</div>
-
       <div class="sr-timeline">
         <div class="sr-connector"></div>
-
-        <div class="sr-stage s-0">
-          <div class="sr-node"><span class="day">DAY</span><span class="day-num">0</span></div>
-          <div class="label">New</div>
-          <div class="count">1</div>
-          <div class="topics-mini">topic mới</div>
-        </div>
-
-        <div class="sr-stage s-1">
-          <div class="sr-node"><span class="day">DAY</span><span class="day-num">1</span></div>
-          <div class="label">Quick Review</div>
-          <div class="count">3</div>
-          <div class="topics-mini">15' / topic</div>
-        </div>
-
-        <div class="sr-stage s-3">
-          <div class="sr-node"><span class="day">DAY</span><span class="day-num">3</span></div>
-          <div class="label">Deep Shadow</div>
-          <div class="count">2</div>
-          <div class="topics-mini">25' / topic</div>
-        </div>
-
-        <div class="sr-stage s-7">
-          <div class="sr-node"><span class="day">DAY</span><span class="day-num">7</span></div>
-          <div class="label">Recall + Speak</div>
-          <div class="count">1</div>
-          <div class="topics-mini">30' / topic</div>
-          <div class="sr-current-badge">TODAY FOCUS</div>
-        </div>
-
-        <div class="sr-stage s-21">
-          <div class="sr-node"><span class="day">DAY</span><span class="day-num">21</span></div>
-          <div class="label">Reinforce</div>
-          <div class="count">4</div>
-          <div class="topics-mini">trong tuần</div>
-        </div>
-
-        <div class="sr-stage s-60">
-          <div class="sr-node"><span class="day">DAY</span><span class="day-num">60</span></div>
-          <div class="label">Automatic</div>
-          <div class="count">6</div>
-          <div class="topics-mini">đã mastered</div>
-        </div>
+        <div class="sr-stage s-0"><div class="sr-node"><span class="day">DAY</span><span class="day-num">0</span></div><div class="label">New</div><div class="count">1</div><div class="topics-mini">topic mới</div></div>
+        <div class="sr-stage s-1"><div class="sr-node"><span class="day">DAY</span><span class="day-num">1</span></div><div class="label">Quick Review</div><div class="count">3</div><div class="topics-mini">15' / topic</div></div>
+        <div class="sr-stage s-3"><div class="sr-node"><span class="day">DAY</span><span class="day-num">3</span></div><div class="label">Deep Shadow</div><div class="count">2</div><div class="topics-mini">25' / topic</div></div>
+        <div class="sr-stage s-7"><div class="sr-node"><span class="day">DAY</span><span class="day-num">7</span></div><div class="label">Recall + Speak</div><div class="count">1</div><div class="topics-mini">30' / topic</div><div class="sr-current-badge">TODAY FOCUS</div></div>
+        <div class="sr-stage s-21"><div class="sr-node"><span class="day">DAY</span><span class="day-num">21</span></div><div class="label">Reinforce</div><div class="count">4</div><div class="topics-mini">trong tuần</div></div>
+        <div class="sr-stage s-60"><div class="sr-node"><span class="day">DAY</span><span class="day-num">60</span></div><div class="label">Automatic</div><div class="count">6</div><div class="topics-mini">đã mastered</div></div>
       </div>
-
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:10px 16px;background:var(--card-2);border-radius:10px;border:1px solid var(--border)">
         <div style="display:flex;align-items:center;gap:8px;font-size:12px">
           <span style="font-size:18px">💡</span>
           <span style="color:var(--text-2)"><span style="color:var(--text);font-weight:600">Insight:</span> Tỉ lệ topics đạt Automatic (Day 60) là <span style="color:#a78bfa;font-weight:700">35%</span> — vượt mục tiêu tháng (30%)</span>
         </div>
-        <div style="display:flex;gap:6px;font-size:11px">
-          <span class="day-tag day-7" style="cursor:pointer">Filter: Day 7</span>
-          <span style="color:var(--text-3);padding:2px 4px">↗ Xem flow đầy đủ</span>
-        </div>
       </div>
     </div>
 
-    <!-- ROW 4: REVIEW QUEUE (span 2) + CALENDAR (span 2) -->
+    <!-- ROW 4: REVIEW QUEUE + CALENDAR + PROGRESS -->
     <div class="card queue-card">
       <div class="card-title"><span class="icon">⚙️</span> REVIEW ENGINE — TODAY QUEUE <span class="live-badge">LIVE</span></div>
       <div class="queue-tabs">
-        <span class="queue-tab active">All (6)</span>
-        <span class="queue-tab">Day 1 (4)</span>
-        <span class="queue-tab">Day 3 (1)</span>
-        <span class="queue-tab">Day 7 (1)</span>
-        <span class="queue-tab">Overdue (0)</span>
+        <span class="queue-tab active">All (6)</span><span class="queue-tab">Day 1 (4)</span><span class="queue-tab">Day 3 (1)</span><span class="queue-tab">Day 7 (1)</span><span class="queue-tab">Overdue (0)</span>
       </div>
       <table class="queue-table">
         <thead><tr><th>Priority</th><th>Topic</th><th>Stage</th><th>Memory</th><th>Last Review</th></tr></thead>
-        <tbody id="queue-tbody">
+        <tbody>
           <tr><td><span class="priority high">🔥</span></td><td>Hotel Check-in</td><td><span class="day-tag day-7">Day 7</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:72%"></span></span> 72%</td><td style="color:var(--text-2)">3 days ago</td></tr>
           <tr><td><span class="priority high">↑</span></td><td>Small Talk</td><td><span class="day-tag day-3">Day 3</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:58%"></span></span> 58%</td><td style="color:var(--text-2)">Yesterday</td></tr>
           <tr><td><span class="priority high">↑</span></td><td>At the Airport</td><td><span class="day-tag day-3">Day 3</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:65%"></span></span> 65%</td><td style="color:var(--text-2)">Yesterday</td></tr>
@@ -1315,15 +1279,12 @@ body { display: flex; min-height: 100vh; }
           <tr><td><span class="priority med">•</span></td><td>Taxi</td><td><span class="day-tag day-1">Day 1</span></td><td><span class="mem-bar"><span class="mem-bar-fill" style="width:40%"></span></span> 40%</td><td style="color:var(--text-2)">Today</td></tr>
         </tbody>
       </table>
-      <div class="queue-link">View all in Review Engine →</div>
+      <div class="queue-link" data-nav="review">View all in Review Engine →</div>
     </div>
 
     <div class="card calendar-card">
-      <div class="card-title"><span class="icon">📅</span> CALENDAR — JUNE 2026</div>
-      <div class="cal-head">
-        <div class="arrows">‹ ›</div>
-        <div style="font-size:11px;color:var(--text-2);font-weight:600">Today</div>
-      </div>
+      <div class="card-title"><span class="icon">📅</span> CALENDAR — <span id="cal-month">JUNE 2026</span></div>
+      <div class="cal-head"><div class="arrows">‹ ›</div><div style="font-size:11px;color:var(--text-2);font-weight:600">Today</div></div>
       <div class="cal-grid" id="cal-grid"></div>
       <div class="cal-legend">
         <span><span class="cal-legend-dot"></span> 1–2 topics</span>
@@ -1343,39 +1304,21 @@ body { display: flex; min-height: 100vh; }
       </div>
     </div>
 
-    <!-- ROW 4.5: NEXT SMALL WIN (Close to Level Up) + COACH NUDGE -->
+    <!-- ROW 4.5: NEXT WIN + COACH + STREAK GUARD -->
     <div class="card close-card" style="grid-column: span 2">
       <div class="card-title"><span class="icon">🌟</span> NEXT SMALL WIN  ·  Close to level up <span class="live-badge">+5 XP each</span></div>
       <div style="font-size:11.5px;color:var(--text-2);margin-top:2px">3 topics đang gần chuyển sang trạng thái cao hơn — chỉ cần 1 buổi review đúng cách.</div>
       <div class="close-card-list">
-        <div class="close-item">
-          <div class="emoji-tile">🏨</div>
-          <div class="name"><b>Hotel Check-in</b> <span style="color:var(--text-3);font-size:10px">· Level 1</span></div>
-          <div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:88%"></div></div>
-          <div class="meta">88%</div>
-          <span class="next-stage">🟩→🟦 Stable → Automatic</span>
-        </div>
-        <div class="close-item">
-          <div class="emoji-tile">☕</div>
-          <div class="name"><b>Small Talk</b> <span style="color:var(--text-3);font-size:10px">· Level 2</span></div>
-          <div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:75%"></div></div>
-          <div class="meta">75%</div>
-          <span class="next-stage">🟨→🟩 Building → Stable</span>
-        </div>
-        <div class="close-item">
-          <div class="emoji-tile">✈️</div>
-          <div class="name"><b>At the Airport</b> <span style="color:var(--text-3);font-size:10px">· Level 1</span></div>
-          <div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:62%"></div></div>
-          <div class="meta">62%</div>
-          <span class="next-stage">🟧→🟨 Weak → Building</span>
-        </div>
+        <div class="close-item"><div class="emoji-tile">🏨</div><div class="name"><b>Hotel Check-in</b> <span style="color:var(--text-3);font-size:10px">· Level 1</span></div><div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:88%"></div></div><div class="meta">88%</div><span class="next-stage">🟩→🟦 Stable → Automatic</span></div>
+        <div class="close-item"><div class="emoji-tile">☕</div><div class="name"><b>Small Talk</b> <span style="color:var(--text-3);font-size:10px">· Level 2</span></div><div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:75%"></div></div><div class="meta">75%</div><span class="next-stage">🟨→🟩 Building → Stable</span></div>
+        <div class="close-item"><div class="emoji-tile">✈️</div><div class="name"><b>At the Airport</b> <span style="color:var(--text-3);font-size:10px">· Level 1</span></div><div class="close-progress-mini"><div class="close-progress-mini-fill" style="width:62%"></div></div><div class="meta">62%</div><span class="next-stage">🟧→🟨 Weak → Building</span></div>
       </div>
     </div>
 
     <div class="card coach-card" style="grid-column: span 2">
       <div class="card-title"><span class="icon">🧠</span> COACH SAYS  ·  Today's insight</div>
-      <div class="coach-quote">17 ngày liên tiếp. Đây không phải may mắn — đây là HỆ THỐNG. Hôm nay anh chỉ cần lặp lại đúng quy trình.</div>
-      <div class="coach-sub">Dựa trên data của anh: <b style="color:#86efac">Thứ Hai</b> là ngày anh học tập trung nhất (avg 78 phút). Hôm nay là Thứ Hai → tận dụng thời gian này.</div>
+      <div class="coach-quote" id="coach-quote">17 ngày liên tiếp. Đây không phải may mắn — đây là HỆ THỐNG. Hôm nay anh chỉ cần lặp lại đúng quy trình.</div>
+      <div class="coach-sub" id="coach-sub">Dựa trên data của anh: <b style="color:#86efac">Thứ Hai</b> là ngày anh học tập trung nhất (avg 78 phút). Hôm nay là Thứ Hai → tận dụng thời gian này.</div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <div style="flex:1;background:var(--card-2);border-radius:8px;padding:8px;text-align:center">
           <div style="font-size:9.5px;color:var(--text-3);text-transform:uppercase;font-weight:600">Today's win goal</div>
@@ -1406,7 +1349,7 @@ body { display: flex; min-height: 100vh; }
       </div>
     </div>
 
-    <!-- ROW 5: MISSIONS (span 2) + NEXT UP (span 1) -->
+    <!-- ROW 5: MISSIONS + NEXT UP -->
     <div class="card missions-card">
       <div class="card-title"><span class="icon">🎯</span> REAL LIFE MISSIONS</div>
       <div class="mission-row done"><span class="mission-check"></span><span class="name">Dùng 1 cụm từ trong bữa ăn thật</span></div>
@@ -1414,32 +1357,83 @@ body { display: flex; min-height: 100vh; }
       <div class="mission-row"><span class="mission-check"></span><span class="name">Xem video hội thoại nhà hàng</span></div>
       <div class="mission-row"><span class="mission-check"></span><span class="name">Ghi âm đoạn hội thoại 1 phút</span></div>
       <div class="mission-row"><span class="mission-check"></span><span class="name">Rủ bạn đóng vai đi nhà hàng</span></div>
-
       <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;font-weight:600;margin-top:14px">MISSION STREAK</div>
-      <div class="streak-row">
-        🔥🔥🔥🔥🔥⚪⚪
-        <span style="margin-left:auto;color:var(--text)">3 / 7 missions</span>
-      </div>
+      <div class="streak-row">🔥🔥🔥🔥🔥⚪⚪<span style="margin-left:auto;color:var(--text)">3 / 7 missions</span></div>
     </div>
 
     <div class="card next-card">
       <div class="card-title"><span class="icon">⏭️</span> NEXT UP <span style="font-weight:400;color:var(--text-3);text-transform:none;letter-spacing:0">(TOMORROW PREVIEW)</span></div>
-
-      <div class="next-section">
-        <div class="next-label">🆕 NEW TOPIC</div>
-        <div class="next-title">🗺️ Asking for Directions <span class="day-tag day-0" style="margin-left:auto">Day 0</span></div>
-      </div>
-
-      <div class="next-section">
-        <div class="next-label">🔁 REVIEWS</div>
-        <div style="font-size:11.5px;margin-top:4px">• Ordering Food <span class="day-tag day-1">Day 1</span></div>
-        <div style="font-size:11.5px;margin-top:4px">• Shopping <span class="day-tag day-3">Day 3</span></div>
-      </div>
-
+      <div class="next-section"><div class="next-label">🆕 NEW TOPIC</div><div class="next-title">🗺️ Asking for Directions <span class="day-tag day-0" style="margin-left:auto">Day 0</span></div></div>
+      <div class="next-section"><div class="next-label">🔁 REVIEWS</div><div style="font-size:11.5px;margin-top:4px">• Ordering Food <span class="day-tag day-1">Day 1</span></div><div style="font-size:11.5px;margin-top:4px">• Shopping <span class="day-tag day-3">Day 3</span></div></div>
       <div style="font-size:11px;color:var(--purple);margin-top:10px;cursor:pointer">View full schedule →</div>
     </div>
 
-  </div>
+    </div><!-- /view-home -->
+
+    <!-- ============= VIEW: TODAY SESSION ============= -->
+    <div class="view" id="view-session">
+      <div class="session-hero">
+        <div class="session-emoji">🍔</div>
+        <div class="session-meta">
+          <div class="session-stage">DAY 0  ·  LEARN + SHADOW LẦN 1</div>
+          <div class="session-title">Ordering Food &amp; Drinks</div>
+          <div class="session-sub">Level 1 · Restaurant · 20 phút · 12 phrases</div>
+        </div>
+        <div class="session-progress-ring"><span>0/5</span><small>steps</small></div>
+      </div>
+
+      <div class="session-steps">
+        <div class="session-step active"><div class="step-num">1</div><div class="step-body"><div class="step-title">📖 LEARN  ·  20 min</div><div class="step-desc">Đọc 12 phrases cốt lõi · Hiểu WHY · Học cách nói tự nhiên</div></div><button class="step-btn primary">Start</button></div>
+        <div class="session-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">🎧 SHADOW  ·  20 min</div><div class="step-desc">Nghe + lặp lại to ×3 lần · Ghi âm giọng mình · So sánh</div></div><button class="step-btn">Locked</button></div>
+        <div class="session-step"><div class="step-num">3</div><div class="step-body"><div class="step-title">🧠 RECALL  ·  10 min</div><div class="step-desc">Đóng tài liệu · Tự nói lại không nhìn · Chấm 1–5</div></div><button class="step-btn">Locked</button></div>
+        <div class="session-step"><div class="step-num">4</div><div class="step-body"><div class="step-title">🔁 REVIEW  ·  10 min</div><div class="step-desc">Mở Topics DB · Review topics đến hạn hôm nay</div></div><button class="step-btn">Locked</button></div>
+        <div class="session-step"><div class="step-num">5</div><div class="step-body"><div class="step-title">✅ LOG  ·  2 min</div><div class="step-desc">Add Study Log · Set Confidence Score · Next Review = ngày mai</div></div><button class="step-btn">Locked</button></div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-title"><span class="icon">💬</span> CORE PHRASES PREVIEW (3/12)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px">
+          <div class="phrase-card">"Can we see the menu, please?"<small>Cho tôi xem menu</small></div>
+          <div class="phrase-card">"I'd like to order..."<small>Tôi muốn gọi món...</small></div>
+          <div class="phrase-card">"Can we have the bill, please?"<small>Cho tôi xin hóa đơn</small></div>
+        </div>
+        <div style="margin-top:10px;text-align:center;font-size:11px;color:var(--text-3)">+9 phrases khác trong topic page</div>
+      </div>
+    </div>
+
+    <!-- ============= VIEW: REVIEW QUEUE ============= -->
+    <div class="view" id="view-review">
+      <div class="placeholder-view">
+        <div class="placeholder-emoji">🔁</div>
+        <h2>Review Engine — Full View</h2>
+        <p>Tab này sẽ là fullscreen review flow.<br>Bấm topic bất kỳ → chạy review session 15 phút → update memory tự động.</p>
+        <div class="placeholder-pills"><span>Day 1 (4)</span><span>Day 3 (1)</span><span>Day 7 (1)</span></div>
+        <button class="step-btn primary" data-nav="home">← Quay về Home</button>
+      </div>
+    </div>
+
+    <!-- ============= VIEW: TOPICS ============= -->
+    <div class="view" id="view-topics">
+      <div class="placeholder-view">
+        <div class="placeholder-emoji">📚</div>
+        <h2>Topics Database</h2>
+        <p>32 topics chia theo Level 1 / 2 / 3. Lọc theo Memory Status, Next Review, Confidence.</p>
+        <p style="font-size:12px;color:var(--text-3)">Đang xây — bản v2 tiếp theo sẽ pull live từ Notion Topics DB.</p>
+        <button class="step-btn primary" data-nav="home">← Quay về Home</button>
+      </div>
+    </div>
+
+    <!-- ============= VIEW: OTHERS PLACEHOLDER ============= -->
+    <div class="view" id="view-placeholder">
+      <div class="placeholder-view">
+        <div class="placeholder-emoji">🚧</div>
+        <h2 id="ph-title">Coming Soon</h2>
+        <p>Section này đang được build cho phiên bản tiếp theo.</p>
+        <button class="step-btn primary" data-nav="home">← Quay về Home</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
 
   <!-- FOOTER QUOTE -->
   <div class="footer-quote">
@@ -1447,178 +1441,242 @@ body { display: flex; min-height: 100vh; }
     <span class="author">— Shadow today, speak naturally tomorrow.</span>
   </div>
 
-</div>
+</div><!-- /main -->
 
+<style>
+/* ===== V2 ADDITIONS ===== */
+.view { display: none; }
+.view.active { display: contents; }
+#view-home.active { display: contents; }
+
+.nav-item { transition: background .15s ease, color .15s ease; }
+
+.session-hero {
+  grid-column: span 5;
+  background: linear-gradient(135deg, #1f1845 0%, #2a1f5e 50%, #1a1f5e 100%);
+  border: 1px solid rgba(124,92,255,0.4);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 12px 40px rgba(124,92,255,0.25);
+}
+.session-emoji { font-size: 72px; filter: drop-shadow(0 8px 18px rgba(255,138,61,0.45)); }
+.session-meta { flex: 1; }
+.session-stage { font-size: 11px; color: #c4b5fd; font-weight: 700; letter-spacing: 0.8px; }
+.session-title { font-size: 32px; font-weight: 800; margin-top: 4px; }
+.session-sub { color: var(--text-2); margin-top: 6px; font-size: 13px; }
+.session-progress-ring {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: conic-gradient(#7c5cff 0%, #2a2750 0%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative;
+}
+.session-progress-ring::before {
+  content: ""; position: absolute; inset: 6px;
+  background: var(--card); border-radius: 50%;
+}
+.session-progress-ring span { position: relative; font-weight: 800; font-size: 18px; }
+.session-progress-ring small { position: relative; font-size: 9px; color: var(--text-3); text-transform: uppercase; }
+
+.session-steps { grid-column: span 5; display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.session-step {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all .2s ease;
+}
+.session-step.active { border-color: var(--purple); box-shadow: 0 0 20px rgba(124,92,255,0.2); }
+.step-num {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--card-2);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 16px;
+  color: var(--text-2);
+  border: 2px solid var(--border);
+}
+.session-step.active .step-num { background: linear-gradient(135deg, var(--purple), var(--purple-2)); color: white; border-color: var(--purple); }
+.step-body { flex: 1; }
+.step-title { font-weight: 600; font-size: 14px; }
+.step-desc { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.step-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  color: var(--text-3);
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+.step-btn.primary {
+  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  border: none;
+  color: white;
+  box-shadow: 0 6px 16px rgba(124,92,255,0.4);
+}
+
+.phrase-card {
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.phrase-card small { color: var(--text-3); font-size: 10.5px; }
+
+.placeholder-view {
+  grid-column: span 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  text-align: center;
+  gap: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.placeholder-emoji { font-size: 72px; opacity: 0.5; }
+.placeholder-view h2 { font-size: 28px; font-weight: 700; }
+.placeholder-view p { color: var(--text-2); max-width: 500px; }
+.placeholder-pills { display: flex; gap: 8px; margin: 8px 0; }
+.placeholder-pills span {
+  padding: 6px 14px; background: var(--card-2); border: 1px solid var(--border);
+  border-radius: 14px; font-size: 12px; color: var(--text-2);
+}
+
+/* Install PWA hint */
+.install-hint {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  color: white;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 12px;
+  display: none;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(124,92,255,0.4);
+  z-index: 1000;
+  align-items: center;
+  gap: 8px;
+}
+.install-hint.show { display: flex; }
+</style>
+
+<button id="install-btn" class="install-hint">📲 Install Shadow English as app</button>
 
 <script>
-console.log('INLINE-SCRIPT-START');
+// ============= V2 SCRIPT =============
 
-// ============= CONFIG =============
-var txtMute = '#6b6890';
-var gridColor = 'rgba(42,39,80,0.5)';
-var cardBg = '#1a1838';
-
-// ============= SVG SPARKLINE =============
-function svgSpark(canvas, data, color) {
-  if (!canvas) return;
-  var w = 180, h = 32;
-  var min = Math.min.apply(null, data), max = Math.max.apply(null, data);
-  var pts = data.map(function(v, i) {
-    var x = (i / (data.length - 1)) * w;
-    var y = h - ((v - min) / (max - min || 1)) * (h - 4) - 2;
-    return x.toFixed(1) + ',' + y.toFixed(1);
-  }).join(' ');
-  var svg = '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
-    '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
-    '<polygon points="0,' + h + ' ' + pts + ' ' + w + ',' + h + '" fill="' + color + '" opacity="0.18"/>' +
-    '</svg>';
-  canvas.outerHTML = '<div class="spark">' + svg + '</div>';
-}
-
-svgSpark(document.getElementById('spark-streak'), [3,5,4,6,8,7,10,12,11,15,14,17], '#a78bfa');
-svgSpark(document.getElementById('spark-load'), [4,5,3,7,8,6,9,7,8,6,5,7], '#facc15');
-svgSpark(document.getElementById('spark-due'), [2,4,3,5,4,6,5,7,6,5,7,6], '#ef4444');
-svgSpark(document.getElementById('spark-week'), [40,45,50,55,52,60,65,62,68,70,66,68], '#3b82f6');
-
-// ============= SVG DONUT =============
-function svgDonut(canvas, segments, size) {
-  if (!canvas) return;
-  var r = size/2 - 2;
-  var cx = size/2, cy = size/2;
-  var total = 0;
-  segments.forEach(function(s){ total += s.value; });
-  var acc = 0;
-  var parts = '';
-  segments.forEach(function(sg) {
-    var start = (acc / total) * 2 * Math.PI - Math.PI/2;
-    acc += sg.value;
-    var end = (acc / total) * 2 * Math.PI - Math.PI/2;
-    var x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
-    var x2 = cx + r * Math.cos(end), y2 = cy + r * Math.sin(end);
-    var large = (end - start) > Math.PI ? 1 : 0;
-    parts += '<path d="M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2 + ' Z" fill="' + sg.color + '"/>';
-  });
-  var inner = r * 0.7;
-  var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
-    parts + '<circle cx="' + cx + '" cy="' + cy + '" r="' + inner + '" fill="' + cardBg + '"/></svg>';
-  canvas.outerHTML = svg;
-}
-
-svgDonut(document.getElementById('memory-donut'),
-  [{value:5,color:'#ef4444'},{value:12,color:'#ff8a3d'},{value:21,color:'#facc15'},{value:24,color:'#22c55e'},{value:6,color:'#a78bfa'}], 150);
-
-svgDonut(document.getElementById('time-gauge'),
-  [{value:58,color:'#7c5cff'},{value:42,color:'#2a2750'}], 60);
-
-// ============= SVG LINE CHART =============
-function svgLineChart(canvas, labels, data, color) {
-  if (!canvas) return;
-  var w = 280, h = 140, pad = 30;
-  var xs = data.map(function(_, i){ return pad + (i/(data.length-1))*(w-pad-10); });
-  var max = 100;
-  var ys = data.map(function(v){ return h - 20 - (v/max)*(h-pad-10); });
-  var pathPts = xs.map(function(x, i){ return x + ',' + ys[i]; }).join(' ');
-  var gridLines = '';
-  [0,25,50,75,100].forEach(function(p) {
-    var y = h - 20 - (p/100)*(h-pad-10);
-    gridLines += '<line x1="' + pad + '" y1="' + y + '" x2="' + (w-10) + '" y2="' + y + '" stroke="' + gridColor + '" stroke-width="0.5"/>';
-    gridLines += '<text x="' + (pad-4) + '" y="' + (y+3) + '" fill="' + txtMute + '" font-size="9" text-anchor="end">' + p + '%</text>';
-  });
-  var xLabels = '';
-  labels.forEach(function(lbl, i) {
-    xLabels += '<text x="' + xs[i] + '" y="' + (h-5) + '" fill="' + txtMute + '" font-size="9" text-anchor="middle">' + lbl + '</text>';
-  });
-  var dots = xs.map(function(x, i){ return '<circle cx="' + x + '" cy="' + ys[i] + '" r="3" fill="' + color + '"/>'; }).join('');
-  var svg = '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet">' +
-    gridLines +
-    '<polygon points="' + xs[0] + ',' + (h-20) + ' ' + pathPts + ' ' + xs[xs.length-1] + ',' + (h-20) + '" fill="' + color + '" opacity="0.15"/>' +
-    '<polyline points="' + pathPts + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-    dots + xLabels + '</svg>';
-  canvas.outerHTML = svg;
-}
-
-svgLineChart(document.getElementById('progress-chart'),
-  ['Jun 2','Jun 3','Jun 4','Jun 5','Jun 6','Jun 7','Jun 9'],
-  [25, 32, 45, 50, 58, 62, 68], '#a78bfa');
-
-// ============= HEATMAP =============
-var heatmap = document.getElementById('heatmap');
-var dows = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-var heatData = [];
-for (var d=0; d<7; d++) {
-  var row = [];
-  for (var w=0; w<28; w++) row.push(Math.floor(Math.random()*5));
-  heatData.push(row);
-}
-for (var di=0; di<dows.length; di++) {
-  var lbl = document.createElement('div');
-  lbl.className = 'hm-label';
-  lbl.textContent = dows[di];
-  heatmap.appendChild(lbl);
-  for (var wi=0; wi<28; wi++) {
-    var c = document.createElement('div');
-    c.className = 'hm-cell hm-' + heatData[di][wi];
-    heatmap.appendChild(c);
+// ---- VIEW NAVIGATION ----
+function navigate(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  var target = document.getElementById('view-' + viewId);
+  if (!target) {
+    target = document.getElementById('view-placeholder');
+    var titleMap = { phrases:'💬 Phrases Bank', missions:'🎯 Missions', level1:'🔵 Level 1 — Survival', level2:'🟢 Level 2 — Social', level3:'🟣 Level 3 — Advanced', calendar:'📅 Calendar View', progress:'📈 Progress Tracker', memory:'🧠 Memory Log', stats:'📊 Statistics', resources:'🗣️ Resources' };
+    document.getElementById('ph-title').textContent = titleMap[viewId] || 'Coming Soon';
   }
+  target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  var navItem = document.querySelector('.nav-item[data-view="' + viewId + '"]');
+  if (navItem) navItem.classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  document.querySelector('.current').textContent = navItem ? navItem.textContent.trim() : 'Coming Soon';
 }
 
-// ============= CALENDAR =============
-var calGrid = document.getElementById('cal-grid');
-['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(d) {
-  var el = document.createElement('div');
-  el.className = 'cal-dow';
-  el.textContent = d;
-  calGrid.appendChild(el);
+document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+  item.addEventListener('click', function() {
+    navigate(this.dataset.view);
+  });
 });
-var todayDate = 9;
-var events = {2:4, 3:7, 4:3, 5:6, 6:5, 7:2, 8:3, 9:6, 10:5, 11:4, 12:6, 13:5, 14:2};
-for (var dd=1; dd<=30; dd++) {
-  var el = document.createElement('div');
-  el.className = 'cal-day';
-  if (dd === todayDate) el.className += ' today';
-  if (events[dd]) el.className += ' has-events';
-  el.innerHTML = '<span>' + dd + '</span>' + (events[dd] ? '<span class="badge">' + events[dd] + '</span>' : '');
-  calGrid.appendChild(el);
+document.querySelectorAll('[data-nav]').forEach(el => {
+  el.addEventListener('click', function() { navigate(this.dataset.nav); });
+});
+
+// ---- ADAPTIVE GREETING ----
+function updateGreeting() {
+  var h = new Date().getHours();
+  var welcome = document.querySelector('.xp-bar span span[style*="font-weight:600"]');
+  var greeting;
+  if (h < 5) greeting = 'Burning the midnight oil, Dương';
+  else if (h < 11) greeting = 'Good morning, Dương';
+  else if (h < 13) greeting = 'Lunch break learning, Dương';
+  else if (h < 17) greeting = 'Good afternoon, Dương';
+  else if (h < 21) greeting = 'Evening study time, Dương';
+  else greeting = 'Late night legend, Dương';
+  if (welcome) welcome.textContent = greeting;
+
+  // Day-of-week coach insight
+  var dow = new Date().getDay();
+  var days = ['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+  var sub = document.getElementById('coach-sub');
+  if (sub) sub.innerHTML = 'Dựa trên data của anh: <b style="color:#86efac">' + days[dow] + '</b> — đây là thời điểm tốt nhất trong tuần để học topic mới. Tận dụng đi.';
+}
+updateGreeting();
+
+// ---- DATE-AWARE CALENDAR MONTH ----
+var monthEl = document.getElementById('cal-month');
+if (monthEl) {
+  var monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  var now = new Date();
+  monthEl.textContent = monthNames[now.getMonth()] + ' ' + now.getFullYear();
 }
 
-// ============= NOTION LIVE =============
-function callNotion(name, args) {
-  if (typeof window.cowork === 'undefined' || !window.cowork.callMcpTool) {
-    return Promise.resolve(null);
+// ---- INSTALL PROMPT (PWA) ----
+var deferredPrompt;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-btn').classList.add('show');
+});
+document.getElementById('install-btn').addEventListener('click', async function() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    var choice = await deferredPrompt.userChoice;
+    if (choice.outcome === 'accepted') this.classList.remove('show');
+    deferredPrompt = null;
   }
-  return window.cowork.callMcpTool(name, args).catch(function(e){ console.error(e); return null; });
+});
+
+// ---- SERVICE WORKER (offline cache + installable) ----
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function(e) { console.warn('SW failed:', e); });
 }
 
-function loadNotionData() {
-  var status = document.getElementById('notion-status');
-  callNotion('mcp__7c824ada-5f4c-4879-9190-379cd9baf1fe__notion-search', {
-    query: 'topics',
-    data_source_url: 'collection://b8c8cbce-2a07-4587-924f-a79dc9d85743',
-    page_size: 25,
-    max_highlight_length: 0
-  }).then(function(result) {
-    if (result && result.results) {
-      var topics = result.results;
-      status.textContent = '✅ Đã kết nối — ' + topics.length + ' topics từ workspace "Ngoại Ngữ Shadowing | 2026"';
-      status.style.color = '#86efac';
-      document.getElementById('topics-count').textContent = topics.length;
-    } else {
-      status.textContent = '⚠️ Hiển thị dữ liệu demo — kết nối Notion không khả dụng trong môi trường này';
-      status.style.color = '#fbbf76';
+// ---- DATA LAYER (foundation for live Notion sync) ----
+async function loadData() {
+  try {
+    var res = await fetch('data.json');
+    if (!res.ok) return;
+    var data = await res.json();
+    if (data.user) {
+      var xpVal = document.querySelector('.xp-bar span[style*="font-weight:600"][style*="color:var(--text)"]');
+      // patch user-related numbers later
     }
-  });
+    if (data.stats) {
+      // patch streak, topics, reviews, weekly
+    }
+  } catch(e) { console.warn('data.json not available yet, using static fallback'); }
 }
+loadData();
 
-function refreshFromNotion() {
-  var status = document.getElementById('notion-status');
-  status.textContent = 'Đang refresh từ Notion...';
-  status.style.color = '#a8a6c8';
-  loadNotionData();
-}
-window.refreshFromNotion = refreshFromNotion;
-
-loadNotionData();
-console.log('INLINE-SCRIPT-DONE');
+console.log('Shadow English v2 — Operating System loaded ✨');
 </script>
 </body>
 </html>

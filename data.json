@@ -1,0 +1,60 @@
+{
+  "user": {
+    "name": "Dương",
+    "level": 12,
+    "title": "Shadow Apprentice",
+    "xp": 1247,
+    "xpToNext": 1500,
+    "streak": 17
+  },
+  "stats": {
+    "streak": 17,
+    "topicsMastered": 32,
+    "topicsTotal": 84,
+    "reviewDueToday": 6,
+    "weeklyProgress": 68,
+    "brainLoad": "Medium"
+  },
+  "todayMission": {
+    "topic": "Ordering Food",
+    "emoji": "🍔",
+    "level": 1,
+    "stage": "Day 0",
+    "estimatedMin": 18,
+    "rewardXp": 150,
+    "title": "Shadow \"Ordering Food\" — 18 min until first win"
+  },
+  "memoryStatus": {
+    "fragile": 5,
+    "weak": 12,
+    "building": 21,
+    "stable": 24,
+    "automatic": 6,
+    "average": 68
+  },
+  "reviewQueue": [
+    {"topic": "Hotel Check-in", "stage": "Day 7", "memory": 72, "lastReview": "3 days ago", "priority": "high"},
+    {"topic": "Small Talk",     "stage": "Day 3", "memory": 58, "lastReview": "Yesterday", "priority": "high"},
+    {"topic": "At the Airport", "stage": "Day 3", "memory": 65, "lastReview": "Yesterday", "priority": "high"},
+    {"topic": "Directions",     "stage": "Day 1", "memory": 38, "lastReview": "Today",     "priority": "med"},
+    {"topic": "Shopping",       "stage": "Day 1", "memory": 45, "lastReview": "Today",     "priority": "med"},
+    {"topic": "Taxi",           "stage": "Day 1", "memory": 40, "lastReview": "Today",     "priority": "med"}
+  ],
+  "closeToLevelUp": [
+    {"topic": "Hotel Check-in", "emoji": "🏨", "level": 1, "progress": 88, "from": "🟩 Stable", "to": "🟦 Automatic"},
+    {"topic": "Small Talk",     "emoji": "☕", "level": 2, "progress": 75, "from": "🟨 Building", "to": "🟩 Stable"},
+    {"topic": "At the Airport", "emoji": "✈️", "level": 1, "progress": 62, "from": "🟧 Weak", "to": "🟨 Building"}
+  ],
+  "missions": [
+    {"task": "Dùng 1 cụm từ trong bữa ăn thật", "done": true},
+    {"task": "Chat với AI về chủ đề này 3 phút", "done": true},
+    {"task": "Xem video hội thoại nhà hàng",    "done": false},
+    {"task": "Ghi âm đoạn hội thoại 1 phút",    "done": false},
+    {"task": "Rủ bạn đóng vai đi nhà hàng",     "done": false}
+  ],
+  "_notion_sync": {
+    "enabled": false,
+    "lastSync": null,
+    "next": "Phase 2 — GitHub Action sẽ pull data từ Notion vào file này mỗi giờ"
+  }
+}
