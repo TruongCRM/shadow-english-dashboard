@@ -251,23 +251,18 @@ function fixLevelMap() {
       var emoji = bubble ? bubble.textContent.trim() : '';
       var isMore = /more/i.test(text) || emoji === '⋯' || emoji === '…';
 
-      var handler;
-      if (isMore) {
-        icon.setAttribute('aria-label', 'View all Level ' + level + ' topics');
-        handler = function() {
-          goToLevel('level' + level);
-        };
-      } else {
+      // Resolve topic at CLICK time (not bind time) — state may load after init,
+      // and looking up emoji each click is cheap.
+      icon.setAttribute('aria-label', isMore
+        ? ('View all Level ' + level + ' topics')
+        : ('Open topic for ' + (emoji || 'level ' + level)));
+      var handler = function() {
+        if (isMore) return goToLevel('level' + level);
         var match = findTopicByEmoji(emoji, level);
-        if (match) {
-          icon.setAttribute('aria-label', 'Open topic ' + match.name);
-          handler = function() { goToTopic(match.id); };
-        } else {
-          // Fallback — open level page if no specific topic matched
-          icon.setAttribute('aria-label', 'Browse Level ' + level);
-          handler = function() { goToLevel('level' + level); };
-        }
-      }
+        if (match) return goToTopic(match.id);
+        // Fallback if no state match — go to level page so user still reaches content
+        return goToLevel('level' + level);
+      };
       icon.addEventListener('click', handler);
       icon.addEventListener('keydown', function(ev) {
         if (ev.key === 'Enter' || ev.key === ' ') {
