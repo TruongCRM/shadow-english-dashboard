@@ -38,11 +38,11 @@ var CSS = [
 /* The review row already has cursor:pointer via existing CSS but lacks handler. */
 '#today-review-list .review-item.nav-bound { transition: background 0.15s ease, transform 0.15s ease; }',
 '#today-review-list .review-item.nav-bound:hover { background: rgba(124,92,255,0.05); transform: translateX(2px); }',
-/* Heatmap polish: full-width section + compact square cells */
+/* Heatmap polish v2: full-width section, centered grid, comfortable cell size */
 '#view-home .heatmap-card { grid-column: 1 / -1 !important; }',
-'.heatmap.nav-polished { justify-content: start !important; align-items: start !important; grid-auto-rows: 32px !important; gap: 4px !important; padding-top: 4px; }',
-'.heatmap.nav-polished .hm-label { font-size: 11px; color: var(--text-3); display: flex; align-items: center; }',
-'.heatmap.nav-polished .hm-cell { border-radius: 4px; min-height: 32px; }',
+'.heatmap.nav-polished { justify-content: center !important; align-items: start !important; grid-auto-rows: 48px !important; gap: 5px !important; padding-top: 4px; max-width: 100%; }',
+'.heatmap.nav-polished .hm-label { font-size: 12px; color: var(--text-3); display: flex; align-items: center; padding-right: 4px; }',
+'.heatmap.nav-polished .hm-cell { border-radius: 5px; min-height: 48px; }',
 /* Mobile — keep tap targets comfortable */
 '@media (max-width: 900px) {',
 '  #view-home .level-card.nav-bound:hover { transform: none; }',
@@ -173,11 +173,11 @@ function fixHeatmap() {
     // from stretching to fill the parent card width. Combined with the CSS
     // override `.heatmap-card { grid-column: 1 / -1 }`, this gives a calm,
     // GitHub-style compact heatmap as its own row.
-    var key = weeks + 'w-v3';
+    var key = weeks + 'w-v4';
     if (hm.dataset.hmFixedWeeks === key) return;
-    // Fixed-size cells (32px) instead of 1fr — prevents stretching to full container width
-    var desiredV3 = '30px repeat(' + weeks + ', 32px)';
-    hm.style.setProperty('grid-template-columns', desiredV3, 'important');
+    // v4: 48px cells (up from 32) — fills card better when full-width, less "empty"
+    var desiredV4 = '36px repeat(' + weeks + ', 48px)';
+    hm.style.setProperty('grid-template-columns', desiredV4, 'important');
     hm.classList.add('nav-polished');
     hm.dataset.hmFixedWeeks = key;
     fixed++;
