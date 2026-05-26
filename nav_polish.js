@@ -188,12 +188,106 @@ function fixHeatmap() {
   return fixed;
 }
 
+// ---------- Level Map: real % + clickable topic icons + working "More..." ----------
+// User-visible bug: .topic-icon inside #view-home .level-card has cursor:pointer
+// but NO onclick handler. % is computed as 0% even when topics have partial mastery.
+// "More..." icon does nothing.
+//
+// Mapping strategy: match icon by EMOJI to state.topics[*].emoji + level.
+// % strategy: average masteryPct across topics in that level.
+
+function computeLevelPct(level) {
+  var state = window.shadowEN && window.shadowEN.state;
+  if (!state || !state.topics) return null;
+  var topics = state.topics.filter(function(t) { return t.level === level; });
+  if (topics.length === 0) return 0;
+  var sum = 0;
+  for (var i = 0; i < topics.length; i++) sum += (topics[i].masteryPct || 0);
+  return Math.round(sum / topics.length);
+}
+
+function findTopicByEmoji(emoji, level) {
+  var state = window.shadowEN && window.shadowEN.state;
+  if (!state) return null;
+  // Strip variation selectors (e.g. ✈️ → ✈)
+  var normalize = function(s) { return (s || '').replace(/️/g, '').trim(); };
+  var target = normalize(emoji);
+  return state.topics.find(function(t) {
+    return t.level === level && normalize(t.emoji) === target;
+  });
+}
+
+function fixLevelMap() {
+  var cards = document.querySelectorAll('#view-home .level-card');
+  var bound = 0;
+  Array.prototype.slice.call(cards).forEach(function(card, idx) {
+    var level = idx + 1;
+    // 1. Update % display with real value
+    var pctEl = card.querySelector('.level-pct');
+    var pct = computeLevelPct(level);
+    if (pctEl && pct !== null) {
+      var newText = pct + '%';
+      if (pctEl.textContent !== newText) {
+        pctEl.textContent = newText;
+      }
+    }
+    // Update progress bar fill width too
+    var fillEl = card.querySelector('.progress-fill');
+    if (fillEl && pct !== null) {
+      fillEl.style.width = pct + '%';
+    }
+
+    // 2. Bind each .topic-icon click
+    var icons = card.querySelectorAll('.topics-row .topic-icon');
+    Array.prototype.slice.call(icons).forEach(function(icon) {
+      if (icon.dataset.lvlMapBound === '1') return;
+      icon.dataset.lvlMapBound = '1';
+      icon.setAttribute('role', 'button');
+      icon.setAttribute('tabindex', '0');
+
+      // Determine target action: is this the "More..." icon?
+      var text = (icon.textContent || '').trim();
+      var bubble = icon.querySelector('.bubble');
+      var emoji = bubble ? bubble.textContent.trim() : '';
+      var isMore = /more/i.test(text) || emoji === '⋯' || emoji === '…';
+
+      var handler;
+      if (isMore) {
+        icon.setAttribute('aria-label', 'View all Level ' + level + ' topics');
+        handler = function() {
+          goToLevel('level' + level);
+        };
+      } else {
+        var match = findTopicByEmoji(emoji, level);
+        if (match) {
+          icon.setAttribute('aria-label', 'Open topic ' + match.name);
+          handler = function() { goToTopic(match.id); };
+        } else {
+          // Fallback — open level page if no specific topic matched
+          icon.setAttribute('aria-label', 'Browse Level ' + level);
+          handler = function() { goToLevel('level' + level); };
+        }
+      }
+      icon.addEventListener('click', handler);
+      icon.addEventListener('keydown', function(ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          handler();
+        }
+      });
+      bound++;
+    });
+  });
+  return bound;
+}
+
 function bindAll() {
   injectCSS();
   var lvl = bindLevelCards();
   var rev = bindReviewItems();
   var hm = fixHeatmap();
-  return { level: lvl, review: rev, heatmap: hm };
+  var lvlMap = fixLevelMap();
+  return { level: lvl, review: rev, heatmap: hm, level_map: lvlMap };
 }
 
 // ---------- Lifecycle ----------
@@ -265,17 +359,23 @@ window.SHADOW_NAV_POLISH = {
   bindLevelCards: bindLevelCards,
   bindReviewItems: bindReviewItems,
   fixHeatmap: fixHeatmap,
+  fixLevelMap: fixLevelMap,
+  computeLevelPct: computeLevelPct,
   _info: function() {
     var lvl = document.querySelectorAll('#view-home .level-card');
     var rev = document.querySelectorAll('#today-review-list .review-item[data-topic]');
     var hm = document.querySelector('.heatmap');
+    var topicIcons = document.querySelectorAll('#view-home .level-card .topic-icon');
     return {
       level_cards_total: lvl.length,
       level_cards_bound: document.querySelectorAll('#view-home .level-card.nav-bound').length,
       review_items_total: rev.length,
       review_items_bound: document.querySelectorAll('#today-review-list .review-item.nav-bound').length,
       heatmap_present: !!hm,
-      heatmap_weeks_fixed: hm ? hm.dataset.hmFixedWeeks : null
+      heatmap_weeks_fixed: hm ? hm.dataset.hmFixedWeeks : null,
+      topic_icons_total: topicIcons.length,
+      topic_icons_bound: document.querySelectorAll('#view-home .level-card .topic-icon[data-lvl-map-bound="1"]').length,
+      level_pcts: [1,2,3].map(function(l) { return { level: l, pct: computeLevelPct(l) }; })
     };
   }
 };
