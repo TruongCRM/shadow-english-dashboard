@@ -286,3 +286,25 @@ console.log('Shadow English v8 — Real Learning Experience loaded 🎧');
   observer.observe(document.body, { childList: true, subtree: true });
 })();
 
+
+// ============= V8.2 — Wrap window.navigate for guaranteed audio attach =============
+(function() {
+  if (typeof window.navigate !== 'function') {
+    setTimeout(arguments.callee, 100);
+    return;
+  }
+  const _navOrig = window.navigate;
+  window.navigate = function(viewId) {
+    _navOrig(viewId);
+    setTimeout(() => {
+      const v = document.getElementById('view-' + viewId);
+      if (v) enhancePhrases(v);
+    }, 100);
+    // Also retry after content settles
+    setTimeout(() => {
+      const v = document.getElementById('view-' + viewId);
+      if (v) enhancePhrases(v);
+    }, 500);
+  };
+  console.log('[v8.2] navigate() wrapped for auto audio attach');
+})();
