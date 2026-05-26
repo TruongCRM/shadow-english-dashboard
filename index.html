@@ -1385,37 +1385,21 @@ body { display: flex; min-height: 100vh; }
       </div>
     </div>
 
-    <!-- ============= VIEW: REVIEW QUEUE ============= -->
-    <div class="view" id="view-review">
-      <div class="placeholder-view">
-        <div class="placeholder-emoji">🔁</div>
-        <h2>Review Engine — Full View</h2>
-        <p>Tab này sẽ là fullscreen review flow.<br>Bấm topic bất kỳ → chạy review session 15 phút → update memory tự động.</p>
-        <div class="placeholder-pills"><span>Day 1 (4)</span><span>Day 3 (1)</span><span>Day 7 (1)</span></div>
-        <button class="step-btn primary" data-nav="home">← Quay về Home</button>
-      </div>
-    </div>
+    <div class="view" id="view-review"></div>
+    <div class="view" id="view-topics"></div>
 
-    <!-- ============= VIEW: TOPICS ============= -->
-    <div class="view" id="view-topics">
-      <div class="placeholder-view">
-        <div class="placeholder-emoji">📚</div>
-        <h2>Topics Database</h2>
-        <p>32 topics chia theo Level 1 / 2 / 3. Lọc theo Memory Status, Next Review, Confidence.</p>
-        <p style="font-size:12px;color:var(--text-3)">Đang xây — bản v2 tiếp theo sẽ pull live từ Notion Topics DB.</p>
-        <button class="step-btn primary" data-nav="home">← Quay về Home</button>
-      </div>
-    </div>
-
-    <!-- ============= VIEW: OTHERS PLACEHOLDER ============= -->
-    <div class="view" id="view-placeholder">
-      <div class="placeholder-view">
-        <div class="placeholder-emoji">🚧</div>
-        <h2 id="ph-title">Coming Soon</h2>
-        <p>Section này đang được build cho phiên bản tiếp theo.</p>
-        <button class="step-btn primary" data-nav="home">← Quay về Home</button>
-      </div>
-    </div>
+    <!-- ============= V4 REAL VIEWS — Auto-rendered by app.js ============= -->
+    <div class="view" id="view-topic-detail"></div>
+    <div class="view" id="view-level1"></div>
+    <div class="view" id="view-level2"></div>
+    <div class="view" id="view-level3"></div>
+    <div class="view" id="view-progress"></div>
+    <div class="view" id="view-calendar"></div>
+    <div class="view" id="view-memory"></div>
+    <div class="view" id="view-stats"></div>
+    <div class="view" id="view-missions"></div>
+    <div class="view" id="view-phrases"></div>
+    <div class="view" id="view-resources"></div>
 
   </div><!-- /content -->
 
@@ -1670,6 +1654,7 @@ console.log('Shadow English v2 — Operating System loaded ✨');
 .mission-row { cursor: pointer; user-select: none; }
 .review-item:hover { background: rgba(124,92,255,0.08); border-radius: 6px; padding-left: 6px; padding-right: 6px; }
 </style>
-<script src="app.js?v=3" defer></script>
+<script src="content.js?v=4" defer></script>
+<script src="app.js?v=4" defer></script>
 </body>
 </html>
