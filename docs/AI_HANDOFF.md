@@ -1,6 +1,30 @@
 # 🤖 AI HANDOFF — Shadow English
 
-> Read this file FIRST if you're an AI taking over this project. It contains everything needed to continue without losing context.
+> **⚠️ STOP. Read `docs/README.md` first.** It's the entry point into the engineering memory system. This file is one of 8 docs that comprise it.
+>
+> Once you've read README, come back here for who-the-user-is + non-negotiables + current-state summary.
+
+---
+
+## 0. ENGINEERING MEMORY SYSTEM (added 2026-05-26 post-v11.1.x)
+
+This project's memory lives in `docs/`. The structure:
+
+| File | Role |
+|------|------|
+| `README.md` | **START HERE** — entry point, navigation, workflow |
+| `TEMPLATE_VERSION_ENTRY.md` | Strict template for every new CHANGELOG entry |
+| `CHANGELOG.md` | Versioned history v1 → v11.x with full goal/built/problems/fixes/lessons |
+| `ARCHITECTURE.md` | 6+1 layers, data flow, design rationale |
+| `STATE_SCHEMA.md` | All data structures |
+| `TECHNICAL_NOTES.md` | Gotchas (1–10 + G6–G9), debug commands, deploy workflow, "do not" list |
+| `ROADMAP.md` | v11.2+ priorities, tech debt, backlog |
+| `AI_HANDOFF.md` | This file — user profile + state summary |
+| `V11_1_DEBUG_PANEL.md` | Deep dive on Internal Insight Panel |
+| `V11_1_PATCHES.md` | Session log for v11.1.0 → v11.1.8 |
+| `VERIFY_REPORT_v11_1.md` | Post-deploy verification record |
+
+**Rule for adding to this memory:** Every shipped code change MUST get a CHANGELOG entry using TEMPLATE_VERSION_ENTRY.md. No exceptions. See README §3 for the workflow.
 
 ---
 
