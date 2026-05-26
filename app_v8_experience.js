@@ -308,3 +308,22 @@ console.log('Shadow English v8 — Real Learning Experience loaded 🎧');
   };
   console.log('[v8.2] navigate() wrapped for auto audio attach');
 })();
+
+// ============= V8.3 — Brute-force interval auto-enhance =============
+// Every 1.5s, find any .phrase-row in active views and add audio buttons
+setInterval(() => {
+  document.querySelectorAll('.view.active').forEach(v => enhancePhrases(v));
+  // Also dialogue lines that have content but no audio btn
+  document.querySelectorAll('.dialogue-line').forEach(line => {
+    if (line.querySelector('.audio-btn')) return;
+    // Extract the spoken text (after "Speaker:")
+    const txt = line.textContent.replace(/^[^:]+:\s*/, '').trim();
+    if (!txt) return;
+    const btn = document.createElement('button');
+    btn.className = 'audio-btn';
+    btn.dataset.audio = txt;
+    btn.textContent = '▶';
+    line.insertBefore(btn, line.firstChild);
+  });
+}, 1500);
+console.log('[v8.3] Brute-force audio attach interval running');
