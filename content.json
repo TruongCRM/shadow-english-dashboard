@@ -1,6 +1,6 @@
 {
   "schema": "shadow-english-content-v1",
-  "generatedAt": "2026-05-26T08:40:53.198Z",
+  "generatedAt": "2026-05-26T09:00:00Z",
   "source": "manual",
   "topics": {
     "L1-01": {
@@ -117,6 +117,63 @@
         "How do you ask for the menu?",
         "What do you say when the food is too salty?",
         "How do you ask for the bill?"
+      ],
+      "sections": [
+        {
+          "type": "callout",
+          "icon": "💡",
+          "color": "yellow",
+          "title": "Tip về tipping",
+          "text": "Ở Mỹ và Canada, tip 15-20% là chuẩn. Ở Anh, 10-12.5%. Châu Âu thường gồm sẵn trong bill."
+        },
+        {
+          "type": "youtube",
+          "title": "Native conversation: At a restaurant",
+          "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          "caption": "Xem ×3 lần — focus vào intonation, không subtitle"
+        },
+        {
+          "type": "tips",
+          "title": "5 lưu ý khi gọi món",
+          "items": [
+            "\"Could I have...\" lịch sự hơn \"Give me...\"",
+            "Native speakers nói \"I'll have\" thay vì \"I want\"",
+            "Pronounce \"the\" trước nguyên âm là \"thee\": the apple → thee apple",
+            "Khi nhân viên hỏi \"Anything else?\" → trả lời \"That's all, thanks\"",
+            "Sau khi ăn xong, nói \"Could we get the check?\" hoặc \"Bill, please\""
+          ]
+        },
+        {
+          "type": "exercise",
+          "title": "Quick test",
+          "question": "Bạn muốn yêu cầu bớt cay món ăn — câu nào tự nhiên nhất?",
+          "options": [
+            "A. Don't put much spice in the food",
+            "B. Can you make it less spicy?",
+            "C. I don't want spicy"
+          ],
+          "answer": "B — \"Can you make it less spicy?\" · Đây là cách natural nhất. A nghe ra lệnh, C ngắn cộc."
+        },
+        {
+          "type": "ai-prompt",
+          "title": "Practice with AI for 5 minutes",
+          "prompt": "You're a waiter at an upscale restaurant. I'm a customer who speaks English as a second language. Greet me, take my order, ask follow-up questions naturally. Use the phrases a real native speaker would. After we finish, tell me 3 things I could say more naturally."
+        },
+        {
+          "type": "checklist",
+          "title": "Real-life missions tuần này",
+          "items": [
+            "Order 1 món bằng tiếng Anh tại quán Việt có tiếng Anh menu",
+            "Hỏi recommend món bằng tiếng Anh",
+            "Phàn nàn 1 lần nhỏ (quá mặn, hết món) bằng tiếng Anh lịch sự",
+            "Pay bill bằng tiếng Anh + tip"
+          ]
+        },
+        {
+          "type": "quote",
+          "text": "If you talk to a man in a language he understands, that goes to his head. If you talk to him in his language, that goes to his heart.",
+          "author": "Nelson Mandela"
+        }
       ]
     },
     "L1-02": {
