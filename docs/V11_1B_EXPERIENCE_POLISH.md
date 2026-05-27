@@ -693,6 +693,290 @@ Thumb-zone awareness (bottom 25% of screen):
 
 ---
 
+### Spec 5.9 — HERO STATS Redesign (Identity + Journey + Momentum) — Wave 4 brief
+
+> **Source:** Anh đưa brief 2026-05-27 evening. Treat as Wave 1 mandatory.
+> **Current state:** Card hiện chỉ có "🔥 1 days · Keep going" (v11.1.13 thêm streak dots + LV chip nhưng vẫn cảm giác **sparse + placeholder**).
+> **Bug nhận thức:** Hero Stats đang feel như **admin tracking area**, không phải **emotional center** của hành trình học.
+
+**Target feel (anh viết verbatim):**
+> *"Identity + Journey + Momentum"*
+> Người dùng phải cảm thấy: mình đang tiến lên · mình đang thay đổi · hệ thống đang sống · ký ức tiếng Anh đang dần hồi phục.
+
+**Layout 3 cột — cụ thể:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ HERO STATS (full-width, height 200-240px)                   │
+├──────────────────┬───────────────────────┬──────────────────┤
+│ LEFT — IDENTITY  │ CENTER — JOURNEY      │ RIGHT — MOMENTUM │
+│ (28% width)      │ (44% width)           │ (28% width)      │
+├──────────────────┼───────────────────────┼──────────────────┤
+│ "Shadow          │ Beginner → Surviving  │ ● 1 review due   │
+│  Apprentice"     │   → Responding        │ ● 32 fragile mem │
+│ "Day {N}         │   → Flowing           │ ● Brain: Clear   │
+│  rebuilding      │ (horizontal line +    │ ● Speaking:      │
+│  your English    │  4 milestones +       │   Building       │
+│  reflex"         │  current position     │                  │
+│                  │  glow nhẹ + pulse)    │                  │
+│ "You are not     │                       │                  │
+│  starting.       │ OR alternative:       │                  │
+│  You are         │ [Day 1] — [Day 7] —   │                  │
+│  remembering."   │ [Day 21] — [Auto]     │                  │
+└──────────────────┴───────────────────────┴──────────────────┘
+```
+
+**Concrete dimensions (G8 sign-off needed):**
+
+| Element | Value | Note |
+|---|---|---|
+| Card total height | 200-240px | Currently ~167px (sparse) |
+| Left column width | 28% (~360px on 1280px viewport) | Identity text |
+| Center column width | 44% (~560px) | Journey visualization |
+| Right column width | 28% (~360px) | Today momentum metrics |
+| Identity title font | 24px serif bold | Shadow Apprentice |
+| Identity subtitle font | 14px italic, opacity 0.75 | "Day N rebuilding..." |
+| Identity quote font | 13px italic, opacity 0.6 | "You are remembering..." |
+| Journey line height | 4px, gradient gray→purple | base track |
+| Journey milestones | 4 dots, 16px diameter | Beginner/Surviving/Responding/Flowing |
+| Current position dot | 22px, white glow ring | Pulse 2s ease-in-out infinite |
+| Momentum row item | 11.5px font, 8px gap | "● {N} {label}" pattern |
+
+**Motion — anh specified:**
+- Breathing gradient on card background (subtle, 4s loop)
+- Slow pulse on current journey position
+- Ambient glow on identity title
+- Shimmer trên progress line (3s loop, very subtle)
+- **NO**: jump animation · aggressive transitions · dopamine effects
+
+**Density — anh specified:**
+- Current: 70% empty space
+- Target: 45% breathing space + 55% meaningful presence
+- KHÔNG nhồi đầy, KHÔNG dead empty
+
+**Copy library (Vietnamese options for Identity column):**
+- "Shadow Apprentice" / "Shadow Survivor" / "Memory Rebuilder" (level-based identity)
+- "Day {N} rebuilding your English reflex" (dynamic)
+- "Small daily repetitions. Real speaking confidence." (manifesto)
+- "You are no longer starting. You are remembering." (recovery framing)
+- "Tiếng Anh không quên anh. Anh chỉ cần gọi nó lại." (Vietnamese variant — emotional)
+
+**Files touch (Day 8+):**
+- New file `app_v11_2_hero_redesign.js` (~250 LOC) — pure additive replace HERO STATS card content
+- Inline `<style>` head — add identity/journey/momentum CSS classes
+- Optional: redirect `state.user.identityTier` based on streak (tier mapping)
+
+**Block by:**
+- TD-2 archaeology (need to understand current HERO STATS card render source — likely `today.js` or hardcoded)
+- Anh sign-off ON SPECIFIC COPY (5 identity lines + manifesto choice)
+- Motion tokens (Spec 5.6) shipped first
+
+**Risk overlap với v11.1.x:**
+- 🔴 HIGH — v11.1.13 đã add SHADOW STATS roadmap. Spec 5.9 REPLACES that, requires careful deprecation/clean-up.
+- 🟡 MEDIUM — state.user.streak/xp/level reads must remain backward compatible
+
+---
+
+### Spec 5.10 — TODAY GOAL Emotional Compass — Wave 4 brief
+
+> **Source:** Anh viết verbatim 2026-05-27. TODAY GOAL ≠ TODAY FOCUS.
+> **Current state:** v11.1.12 đã thêm mission checklist 5 items. v11.1.13 attempted cleanup nhưng MISFIRED (cleaned TODAY FOCUS card thay vì standalone TODAY GOAL).
+> **Bug nhận thức:** Anh nói "TODAY GOAL hiện ≈ mini version của TODAY FOCUS → không tạo thêm meaning."
+
+**Target distinction (anh verbatim):**
+- **TODAY FOCUS** = **task list cụ thể** (5 missions checklist với done state)
+- **TODAY GOAL** = **emotional mission của hôm nay** — câu trả lời cho "hôm nay mình đang cố giữ điều gì sống?"
+
+**Layout TODAY GOAL — KHÔNG dùng checklist:**
+
+```
+┌─────────────────────────────────────────┐
+│ ⏰ TODAY GOAL (height ~280px, narrow)   │
+├─────────────────────────────────────────┤
+│                                         │
+│            ╔═══════════════╗            │
+│            ║      2/3       ║           │
+│            ╚═══════════════╝            │
+│         (big number 56px center)        │
+│                                         │
+│         Daily momentum active           │
+│         (subtitle 13px)                 │
+│                                         │
+│    ██████████████░░░░░░░░░ 66%          │
+│         (purple progress bar)           │
+│                                         │
+│    🔥 17-day consistency streak         │
+│    (small 12px, emotional anchor)       │
+│                                         │
+├─────────────────────────────────────────┤
+│  "Today's Goal"                         │
+│  "Keep your speaking reflex alive."     │
+│  (mission statement 16px italic)        │
+└─────────────────────────────────────────┘
+```
+
+**Concrete dimensions:**
+
+| Element | Value |
+|---|---|
+| Big count number | 56px white bold, line-height 1 |
+| "Daily momentum active" subtitle | 13px opacity 0.75 |
+| Progress bar | 8px height, gradient purple |
+| Streak line | 12px with 🔥 emoji |
+| Mission statement | 16px italic, opacity 0.85, 1.5 line-height |
+| Card height | 280-320px (taller than current 220px for breathing) |
+
+**Mission statement copy library (rotate weekly or by context):**
+- "Keep your speaking reflex alive."
+- "Today: small step. Tomorrow: shadowed automatic."
+- "Don't break the chain. The chain remembers."
+- "Một câu nói thật. Một mảnh trí nhớ được cứu."
+- "Repetition today = automatic tomorrow."
+- "Your past self is waiting for you to remember."
+
+**Motion:**
+- Big number 2/3 — count-up animation 800ms ease-out khi state changes
+- Progress bar — width transition 420ms ease-out
+- Mission statement — soft fade-in 600ms khi rotate
+- Streak number — subtle pulse 1.5s khi increment
+
+**Files touch (Day 8+):**
+- New `app_v11_2_today_goal.js` (~120 LOC)
+- Distinguish from TODAY FOCUS card via card-title text match `^TODAY GOAL$` (exact, not substring)
+- Source mission text từ `coach.js` `getMissionStatement(day, streak)` function (new)
+
+**Block by:**
+- v11.1.13 `cleanTodayGoal` removed (it currently cleans TODAY FOCUS by mistake)
+- Anh sign-off mission statement library (6 options or anh viết thêm)
+
+**Risk overlap:**
+- 🔴 HIGH — v11.1.13 `polish-1112-mission-list` rendered inside TODAY FOCUS. v11.1-B reverts this; mission list moves back to where it belongs.
+- 🟡 MEDIUM — state.missions data structure unchanged, but `TODAY GOAL` no longer shows checklist
+
+---
+
+### Spec 5.11 — MEMORY STATUS as Health Panel — Wave 4 brief
+
+> **Source:** Anh verbatim 2026-05-27. Card phải feel như **Memory Health Panel**, không phải **analytics block**.
+> **Current state:** Card shows Fragile/Weak/Building/Stable/Automatic counts + "68 Average" + heatmap (28 cells).
+> **Bug nhận thức:** Anh nói "user không hiểu '68 Average' nghĩa là gì" — data without meaning.
+
+**Target structure 3 layers:**
+
+```
+┌────────────────────────────────────────────────────────┐
+│ 🧠 MEMORY STATUS                                       │
+├────────────────────────────────────────────────────────┤
+│ LAYER 1 — STATE LABEL (Big)                            │
+│                                                        │
+│    Memory Health                                       │
+│    ┌────────────────┐                                  │
+│    │   FRAGILE      │  ← color-coded badge (red/yellow)│
+│    └────────────────┘                                  │
+│    "Still unstable" (subtitle 14px italic)             │
+│                                                        │
+├────────────────────────────────────────────────────────┤
+│ LAYER 2 — BREAKDOWN (Counts)                           │
+│                                                        │
+│    ● 31 fragile memories                               │
+│    ● 1 weak memory                                     │
+│    ● 0 automatic patterns                              │
+│                                                        │
+├────────────────────────────────────────────────────────┤
+│ LAYER 3 — HEATMAP (Meaningful Intensity)              │
+│                                                        │
+│    REVIEW HEATMAP (This Month)                         │
+│    Mon Tue Wed Thu Fri Sat Sun                         │
+│    [grid 4×7 colored cells with tooltips]              │
+│                                                        │
+│    Tooltip on hover:                                   │
+│    "26/5 — 3 reviews completed · Memory reinforced"   │
+│                                                        │
+├────────────────────────────────────────────────────────┤
+│ LAYER 4 — INTERPRETATION (Emotional Intelligence)     │
+│                                                        │
+│    💡 Most patterns are still fragile.                 │
+│    💡 Your brain still needs repetition.               │
+│    💡 Your memory is waking up, but not                │
+│       stabilized yet.                                  │
+│                                                        │
+│    (rotated insights based on state)                   │
+└────────────────────────────────────────────────────────┘
+```
+
+**Concrete dimensions:**
+
+| Element | Value |
+|---|---|
+| State label badge | 12px padding, 11px font uppercase bold, 8px border-radius |
+| State color mapping | FRAGILE = `#ef4444` · WEAK = `#f59e0b` · BUILDING = `#facc15` · STABLE = `#22c55e` · AUTOMATIC = `#a78bfa` |
+| Subtitle | 14px italic opacity 0.75 |
+| Count rows | 13px, gap 6px, color dots 8px |
+| Heatmap cell tooltip | 11px, padding 8px, bg `rgba(0,0,0,0.85)` |
+| Interpretation row | 14px line-height 1.6, italic, opacity 0.85 |
+
+**State label decision tree (anh — confirm logic):**
+
+```javascript
+function memoryHealthLabel(distribution) {
+  var total = distribution.fragile + distribution.weak + distribution.building + distribution.stable + distribution.automatic;
+  if (!total) return { label: 'AWAKENING', tone: 'Just starting your journey' };
+  var fragilePct = distribution.fragile / total;
+  var automaticPct = distribution.automatic / total;
+  if (fragilePct >= 0.7) return { label: 'FRAGILE', tone: 'Still unstable' };
+  if (fragilePct >= 0.4) return { label: 'BUILDING', tone: 'Memory is forming' };
+  if (automaticPct >= 0.3) return { label: 'STABLE', tone: 'Speaking reflex emerging' };
+  if (automaticPct >= 0.6) return { label: 'AUTOMATIC', tone: 'Your English is alive' };
+  return { label: 'RECOVERING', tone: 'Memory is waking up' };
+}
+```
+
+**Interpretation library (rotate based on state — anh confirm copy):**
+
+| State | Insight options |
+|---|---|
+| FRAGILE | "Most patterns are still fragile." · "Your brain needs repetition." · "Small daily reps = recovery." |
+| BUILDING | "Memory is forming, keep going." · "Patterns are stabilizing." · "Consistency beats intensity." |
+| STABLE | "Speaking reflex is emerging." · "Trust the process." |
+| AUTOMATIC | "Your English is alive." · "From practice to instinct." |
+
+**Heatmap tooltip — meaningful messages:**
+- 0 reviews: "No activity"
+- 1-2 reviews: "Light practice day"
+- 3-4 reviews: "Memory reinforced"
+- 5+ reviews: "Deep maturation day"
+
+**Files touch (Day 8+):**
+- New `app_v11_2_memory_health.js` (~200 LOC) — replace "68 Average" với state label + add interpretation layer
+- Heatmap tooltip via title attribute (already supported by browser)
+- Reads from `state.topics` distribution (no new data)
+
+**Block by:**
+- v11.1.10 heatmap rolling fix verified working
+- Anh sign-off on interpretation library (15 strings above)
+- State label decision tree confirmed (thresholds)
+
+**Risk overlap:**
+- 🟡 MEDIUM — replaces "68 Average" display. Some users may have built mental model around the number.
+- 🟢 LOW — additive interpretation layer doesn't break existing data flow
+
+---
+
+### Spec 5.12 — REVIEW ENGINE Day 21 Stage (ALREADY SHIPPED v11.1.14)
+
+> Sequence updated: **Day 1 → Day 3 → Day 7 → Day 21 → Overdue**
+>
+> ✅ Shipped 2026-05-27 evening as `app_v11_1_14_day21_stage.js`.
+>
+> Tab visible at position 5 (between Day 7 and Overdue). Counts topics with `reviewStage === 'Day 21'`. Filter logic recognizes `Day 21` in row text. Currently shows 0 (no state topics at Day 21 stage yet — will populate as users progress).
+>
+> **Pending Day 8+:**
+> - Update `adaptive.js` to ACTUALLY transition topics to Day 21 stage after Day 7 + good confidence streak
+> - Map Day 21 → "Building → Stable" memory transition trigger
+> - Document Day 21 = ~3-week SR milestone in `ARCHITECTURE.md`
+
+---
+
 ## 6. MOTION PRINCIPLES (governing law for v11.1-B and beyond)
 
 ### Principle 1 — One Vocabulary
