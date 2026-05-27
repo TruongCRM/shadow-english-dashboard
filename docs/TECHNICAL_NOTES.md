@@ -1,66 +1,58 @@
 # 🛠 SHADOW ENGLISH — TECHNICAL NOTES & GOTCHAS
 
-> Hard-won lessons across 11 versions. Read this BEFORE making changes to avoid re-discovering the same problems.
->
-> Numbered issues (1–10) are the original v1–v10 gotchas. **G6–G9** are new from the v11.1.x STABILIZE session and are referenced by that G-prefix throughout CHANGELOG, AI_HANDOFF, README. Both numbering systems live side by side — don't renumber, only append.
+> Hard-won lessons across 14 versions (v1 → v11.1.14). Read this BEFORE making changes.
+
+**Last update:** 2026-05-27 (Day 1 evening — G10-G14 added from polish marathon)
+
+> Numbered issues (1–10) are original v1–v10 gotchas. **G6–G14** are new from v11.1.x STABILIZE + Day 1 polish sessions and are referenced by G-prefix throughout CHANGELOG, AI_HANDOFF, README. Both numbering systems live side by side — don't renumber, only append.
 
 ---
 
 ## 🚨 KNOWN ISSUES & WORKAROUNDS
 
 ### 1. Service Worker cache stale
-**Problem:** After deploy, browser still loads old version because SW caches scripts.
+**Problem:** After deploy, browser loads old version because SW caches scripts.
 **Workaround:**
-- Bump SW `CACHE` version in `sw.js` (e.g. `shadow-en-v3` → `shadow-en-v4`)
-- Add `?v=N` query param to script URLs in HTML (see also G7 below — this rule became formalized in v11.1.2)
-- User must hard-refresh (Ctrl+Shift+R) first time
-**Fix forever:** Use cache-busting with file hash (requires build step — defer to v11+)
+- Bump SW `CACHE` version in `sw.js`
+- Add `?v=N` query param to script URLs (see G7)
+- User hard-refresh (Ctrl+Shift+R) first time
+- **Day 1 lesson:** SW may cache `index.html` itself → fresh `index.html` from server may have new script tags but page loaded from SW cache won't. **Manual SW unregister snippet:**
+  ```js
+  (async () => {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const r of regs) await r.unregister();
+    const names = await caches.keys();
+    await Promise.all(names.map(n => caches.delete(n)));
+    location.reload();
+  })()
+  ```
 
 ### 2. GitHub Pages deploy delay
-**Problem:** After commit, scripts at `https://truongcrm.github.io/...` still serve old version for 30–90 seconds.
-**Workaround:**
-- Wait 60 seconds after commit before testing
-- Use `?v=N-bust` query string to force fresh fetch
-**No proper fix** — it's just GitHub's CDN propagation.
-**Related:** G6 (green commit ≠ deployed live — the build might have FAILED entirely, not just be propagating)
+**Problem:** After commit, scripts at `https://truongcrm.github.io/...` serve old version for 30–90s.
+**Workaround:** Wait 60-90s. Use `?v=N-bust`.
+**Related:** G6 (build might have FAILED entirely)
 
 ### 3. HTML file truncation when writing large files
-**Problem:** `Write` tool with 1500+ line content sometimes saves only first ~960 lines, silently truncates rest. Discovered when `<script>` tag had no closing `</script>`.
-**Workaround:**
-- For files >50KB or >1000 lines, use `bash heredoc` (`cat << 'EOF' > file`) or `cat A B > C` concatenation
-- Always validate with `wc -l file` and `tail -3 file` after write
-- For modifications to large files, use `python3` script with `read → modify → write` in single bash call
-**Fix forever:** Use Edit tool for targeted changes, not Write for full rewrites of huge files
+**Problem:** `Write` tool with 1500+ lines silently truncates.
+**Workaround:** bash heredoc + `cat A B > C`. Always validate `wc -l file` + `tail -3 file`.
 
 ### 4. NAV_RENDERS scope issue
-**Problem:** `const NAV_RENDERS = {...}` declared in app.js — NOT on `window`. From other script files, `typeof NAV_RENDERS === 'undefined'`.
-**Workaround in v8:**
-- Wrap `window.navigate()` instead (it IS window-scoped via `window.navigate = ...`)
-- Use `setInterval` brute-force enhancement as fallback (works 100%)
-**Fix forever:** Always do `const X = {}; window.X = X;` when declaring shared state
+**Problem:** `const NAV_RENDERS = {...}` in app.js NOT on `window`.
+**Workaround v8:** wrap `window.navigate()` instead. setInterval brute-force.
+**Fix forever:** Always `const X = {}; window.X = X;`
 
 ### 5. Chart.js fails with `integrity` attribute in sandboxed contexts
-**Problem:** Playwright sandbox blocks CDN-loaded Chart.js due to SRI mismatch on empty response. Inline scripts using `Chart` then throw, breaking all subsequent inline script execution.
-**Workaround:**
-- Always wrap `new Chart(...)` in `try/catch`
-- Provide SVG fallback functions (`svgSpark`, `svgDonut`, `svgLineChart`)
-- Check `typeof Chart !== 'undefined'` before calling
-**Lesson:** External CDN scripts should be optional, not required
+**Problem:** Playwright sandbox blocks CDN.
+**Workaround:** try/catch wrap, SVG fallback functions, check `typeof Chart !== 'undefined'`
 
 ### 6. GitHub form_input + click button race
-**Problem:** Sometimes `form_input(commit_msg)` + `left_click(commit_btn)` doesn't actually submit — page silently stays on upload page.
-**Workaround:**
-- After click, wait 6–10s
-- Take screenshot to verify navigation
-- If still on upload page, retry with `left_click(ref_173)` using the find result
-- Use `find` to get fresh ref instead of stale pixel coords
+**Problem:** `form_input(commit_msg)` + `left_click(commit_btn)` sometimes doesn't submit.
+**Workaround:** Wait 6-10s, screenshot verify, retry with `find` fresh ref.
 
 ### 7. Notion sync requires Topic ID
-**Problem:** If user creates Notion page without `Topic ID` field, sync uses page UUID prefix → won't match localStorage state.
-**Workaround:** SETUP_NOTION_SYNC.md docs require `Topic ID` field — make sure user reads it
+**Workaround:** SETUP_NOTION_SYNC.md docs require `Topic ID` field.
 
 ### 8. Web Speech API voice availability varies
-**Problem:** Some browsers/OS combinations have 0 English voices initially. `getVoices()` returns empty array until `voiceschanged` event fires.
 **Workaround:**
 ```js
 const setVoices = () => { /* read voices */ };
@@ -69,98 +61,77 @@ speechSynthesis.onvoiceschanged = setVoices;
 ```
 
 ### 9. Service Worker doesn't auto-cache new files
-**Problem:** Pre-cache only includes files in `ASSETS` array in sw.js. New scripts (audio.js, blocks.js, adaptive.js, etc.) load on demand.
-**Workaround:** Fine — network-first strategy handles it. But offline-first PWA (v11) needs to expand ASSETS list.
+**Workaround:** Fine — network-first handles it. Future offline-first PWA (v11+) needs to expand ASSETS list.
 
 ### 10. localStorage 5–10MB limit
-**Problem:** If sessionsLog grows unboundedly (100s of sessions/day theoretical), could hit quota.
-**Workaround (future):** Trim sessionsLog to last 1000 entries when length > 2000.
+**Workaround future:** Trim sessionsLog to last 1000 entries when length > 2000.
 
 ---
 
-## 🆕 NEW GOTCHAS FROM v11.1.x SESSION (G6–G9)
+## 🆕 GOTCHAS FROM v11.1.x SESSION (G6–G9)
 
 ### G6 — Green commit ≠ deployed live
-**Problem:** A commit visible at `github.com/<repo>/blob/main/<path>` does NOT mean the file is being served by the live URL. If `pages-build-deployment` workflow fails (which it did 5× in a row at the start of v11.1 ship), GitHub Pages keeps serving the LAST successful build. Symptom = "fix doesn't work" — identical to broken code.
+**Problem:** Commit visible at `github.com/<repo>/blob/main/<path>` does NOT mean file is served live. If `pages-build-deployment` fails (which it did 5× in v11.1.0 due to GitHub infra), Pages keeps serving LAST successful build. Symptom = "fix doesn't work" identical to broken code.
 
-**Real example (v11.1):** debug_panel.js committed + index.html script tag added. Both visible in repo. Live site showed dashboard but no panel. Reason: GitHub's `actions/jekyll-build-pages` archive download failed for 5 builds (their own CDN issue). Live kept serving build #17 (pre-v11.1).
-
-**Diagnostic protocol — add this as STEP 0 before any browser-level debugging:**
+**Diagnostic protocol — STEP 0 before any browser debug:**
 1. Open `github.com/<repo>/actions`
-2. Confirm latest `pages-build-deployment` is ✅ green, not ❌ red or ⚠️ skipped
-3. If failed: click into the run → look for `Failed to download archive` or similar infra errors → click "Re-run failed jobs"
+2. Confirm latest `pages-build-deployment` is ✅
+3. If failed: click "Re-run failed jobs"
 
-**Recovery:** "Re-run failed jobs" worked — transient infra issues resolve themselves.
-
-**Long-term mitigation:** Monitor + consider a custom workflow that doesn't depend on `actions/jekyll-build-pages` (escape that single point of failure).
+**Recovery:** Re-run worked — transient infra resolves itself.
 
 ### G7 — JS file update needs `?v=N` bump in index.html
-**Problem:** Browser caches based on FULL URL including query string. Updating the file on the server without changing the script-tag's query = invisible cache hit, old code keeps running. Visible symptom = "fix doesn't work" — IDENTICAL to broken code or G6.
+**Problem:** Browser caches based on FULL URL including query. Updating file on server without changing script-tag query = invisible cache hit. Visible symptom IDENTICAL to broken code OR G6.
 
-**Real example (v11.1.3):** `nav_polish.js` updated and deployed successfully (build #26 ✅). But `<script src="nav_polish.js?v=11.1.1">` still in index.html. Browser saw same URL → returned cached version. New `fixHeatmap()` function never executed.
+**Real example (v11.1.3):** nav_polish.js updated + deployed (build #26 ✅) but `<script src="nav_polish.js?v=11.1.1">` unchanged → browser cached → 20+ min wasted debug.
 
 **Diagnostic:**
 ```js
-// Compare what SERVER returns vs what BROWSER loaded:
 fetch('/nav_polish.js?bust=' + Date.now(), {cache:'no-store'})
   .then(r => r.text())
-  .then(t => console.log('Server has v11.1.3 marker:', t.includes('w-v3')));
-console.log('Browser exposed v11.1.3 fn:', typeof window.SHADOW_NAV_POLISH?.fixHeatmap === 'function');
-// Mismatch → cache bust missing
+  .then(t => console.log('Server has v11.1.3:', t.includes('w-v3')));
+console.log('Browser has v11.1.3 fn:', typeof window.SHADOW_NAV_POLISH?.fixHeatmap === 'function');
 ```
 
-**Fix workflow — every JS file update MUST be a TWO-commit ship:**
-1. Upload the new file
-2. Edit `index.html` to bump `?v=N` query on its `<script>` tag
-3. Both commits happen back-to-back
-
-If you forget step 2, you'll spend 20+ minutes wondering why nothing changes.
-
-**Long-term:** Build a tiny pre-commit hook OR move to a build pipeline with hash-based file naming. Until then: discipline.
+**Fix workflow — every JS update = TWO-commit ship:**
+1. Upload file
+2. Edit `index.html` bump `?v=N` query
+3. Both commits back-to-back
 
 ### G8 — Visual polish needs upfront spec
-**Problem:** Iterating on a live website to find the right visual = expensive. Each iteration = 1+ commit (file) + 1+ commit (cache-bust) + 30–60s deploy wait + verify cycle. 4 rounds = ~80 min wasted vs ~5 min upfront spec.
+**Problem:** Iterating on live = expensive. Each iteration = 1 file commit + 1 cache-bust commit + 30-60s deploy + verify. 4 rounds = ~80 min vs ~5 min upfront spec.
 
-**Real example (v11.1.3 → v11.1.6 heatmap iteration):**
-- v3: compact 32px cells, justify-start → "1 bên trống"
+**Real example (v11.1.3 → v11.1.6 heatmap):**
+- v3: 32px cells, justify-start → "1 bên trống"
 - v4: 48px cells, center → still off
 - v5: rotated GitHub-style → "ko giãn đều"
 - v6: stretch 1fr → finally accepted
 
-Could have been ONE iteration if the spec ("rotated 7×N grid, cells fill width via 1fr, centered") was agreed before code.
-
-**Fix workflow — for any UI/visual change:**
-1. Ask user concrete questions BEFORE coding:
-   - "Dimensions: fixed px or 1fr stretch?"
-   - "Orientation: rows or columns leading?"
-   - "Position: full-width section or constrained to current column?"
-   - "Cells: square (aspect-ratio:1) or rectangle?"
-2. Sketch in text or ASCII: `Mon Tue Wed Thu Fri Sat Sun / [ ] [ ] [ ] [ ] / [ ] [ ] [ ] [ ]` — get sign-off
+**Fix:**
+1. Ask user concrete questions BEFORE coding (dimensions, orientation, fill-mode)
+2. Sketch ASCII + sign-off
 3. THEN code
 
-**Glossary — Vietnamese visual feedback → CSS:**
-| Phrase | English meaning | Maps to CSS |
-|--------|-----------------|-------------|
-| "thô" | rough/blocky | Cells too large (1fr in narrow container) |
-| "trống" | empty | Whitespace from `justify:start` + small cells |
-| "ngang/dọc" | horizontal/vertical | Orientation (`grid-auto-flow`) |
-| "giãn đều" | stretch evenly | Use `1fr` fr-units, not fixed px |
-| "không hợp lý" | not logical | Often = wrong rotation/orientation |
-| "hoạt động thật" | really works | Real click handler, not just `cursor:pointer` |
+**Vietnamese visual glossary:**
+| Phrase | English | CSS meaning |
+|---|---|---|
+| "thô" | rough/blocky | Cells too large from 1fr |
+| "trống" | empty | Whitespace from justify:start |
+| "ngang/dọc" | horizontal/vertical | grid-auto-flow |
+| "giãn đều" | stretch evenly | Use 1fr |
+| "không hợp lý" | not logical | Wrong rotation |
+| "hoạt động thật" | really works | Real handler not just cursor:pointer |
 
 ### G9 — Idempotent CSS injection has stale-style trap
-**Problem:** Pattern `if (document.getElementById('nav-polish-styles')) return;` is fine when CSS never changes. Across script versions in the same tab session, new CSS rules don't apply because the old `<style>` tag is already in DOM and the guard skips re-injection.
+**Problem:** `if (document.getElementById('xxx-styles')) return;` works when CSS unchanged. Across script versions same tab session, new CSS doesn't apply because old `<style>` tag in DOM + guard skips re-injection.
 
-**Real example (v11.1 nav_polish.js):** Updated CSS for heatmap from v3 to v4 (`justify:start` → `justify:center`). In a tab that had loaded v3 then refreshed to v4, the v4 nav_polish.js ran, called `injectCSS()`, found `nav-polish-styles` already present, skipped → user still saw v3 CSS even though v4 JS ran. Confusing for ~10 min.
+**Real example (v11.1):** nav_polish.js v3→v4 CSS change. Tab loaded v3, refreshed to v4, injectCSS skipped because `nav-polish-styles` already exists → user still sees v3 CSS.
 
-**Fix patterns:**
-
-Option A — Version the ID:
+**Fix — version the ID:**
 ```js
 function injectCSS() {
   var id = 'nav-polish-styles-v6';  // bump per CSS change
   if (document.getElementById(id)) return;
-  // Remove all old versions
   document.querySelectorAll('style[id^="nav-polish-styles"]').forEach(s => s.remove());
   var s = document.createElement('style');
   s.id = id;
@@ -169,125 +140,220 @@ function injectCSS() {
 }
 ```
 
-Option B — Always remove + reinject:
+---
+
+## 🆕 GOTCHAS FROM DAY 1 POLISH MARATHON (G10–G14)
+
+### G10 — Silent file upload commit drop
+**Problem:** GitHub upload UI says "file uploaded" + commit message filled + click "Commit changes" + wait 8s + navigate away → file may NOT be in repo. No error shown. Commit empty.
+
+**Real example (v11.1.12):** Upload `app_v11_1_12_polish_bundle.js` (13KB). Click Commit. Wait. Navigate to edit/index.html add script tag. Live test → `SHADOW_POLISH_1112 = NA`. Diagnostic `fetch('/file.js')` returns **404 HTML page** (not the JS file).
+
+**Diagnostic:**
 ```js
-function injectCSS() {
-  var old = document.getElementById('nav-polish-styles');
-  if (old) old.remove();
-  var s = document.createElement('style');
-  s.id = 'nav-polish-styles';
-  s.textContent = CSS;
-  document.head.appendChild(s);
-}
+// After upload commit, BEFORE next commit, verify file in repo:
+fetch('/shadow-english-dashboard/{file}.js?bust=' + Date.now(), {cache:'no-store'})
+  .then(r => ({status: r.status, length: r.headers.get('content-length')}))
+  .then(r => console.log(r));
+// status: 200 + length matches file size = OK
+// status: 200 + length tiny + content starts with <!DOCTYPE = 404 HTML disguised = FAIL
 ```
 
-Option A is preferred (less DOM thrash on idempotent calls).
+**Workaround:** ALWAYS visit `github.com/<repo>` after upload commit. Verify file appears in file list. If not → re-upload. Don't trust commit confirmation alone.
 
-**Tech debt:** Refactor `nav_polish.js` injectCSS() before v11.2 to use this pattern. Tracked as TD-5 in ROADMAP.
+**Why it happens:** Unknown — possibly race between drag-drop + commit click, or GitHub backend deduping somehow. Reproduces ~10-20% of uploads.
+
+### G11 — Polish-on-architecture fails emotional brief
+**Problem:** When user gives EMOTIONAL brief ("feel calm", "feel alive", "feel identity"), CSS patches on existing DOM cannot achieve it. Architecture forces paradigm: if DOM was designed for "stats panel", any styling lipstick will still feel "stats panel with ribbon".
+
+**Real example (v11.1.13):** User brief: "HERO STATS phải feel Identity + Journey + Momentum". My response: add streak dots + XP bar via polish patch. User reaction: "vẫn feel analytics dashboard, vẫn không có sense of journey".
+
+**Root cause analysis:**
+- HERO STATS DOM = single-row stat slot
+- Polish added streak dots IN THAT SLOT
+- Brain reads "single row of widgets" = "stats"
+- No 3-column layout, no identity column, no journey column
+- = Polish failure not because CSS wrong, but because DOM paradigm wrong
+
+**Fix pattern:**
+- For "feature" briefs (add button, fix click, change number): PATCH OK
+- For "feel" briefs (identity, journey, calm, alive): REWRITE not PATCH
+- Use upfront blueprint with concrete HTML mockup (see V11_2_REDESIGN_BLUEPRINT.md methodology)
+
+**Test to know which:** Can user point to a specific button/element and say "fix this"? → PATCH. Or do they say "feels wrong" / "doesn't have soul"? → REWRITE.
+
+### G12 — Observation week scope creep
+**Problem:** Once observation week begins (data collection), every "small fix" override = 1 deploy = N LOC change to engine periphery. Cumulative effect contaminates observation data — can't isolate "engine behavior" from "polish noise".
+
+**Real example (Day 1 = 2026-05-27):**
+- Day 1 of 7-day observation
+- User requested 5 "small fixes" across 4 waves
+- I shipped 6 versions (v11.1.9 → v11.1.14)
+- ~700 LOC added across 6 files
+- Day 7 analysis will see metrics affected by BOTH adaptive engine AND polish CSS — can't separate
+
+**Track override count:**
+```
+Day 1: 5 overrides (v11.1.9, .10/.11 bundle, .12, .13, .14)
+Day 2: 0 (target — STRICT observation)
+Day 3-7: 0 (target — unless emergency bug)
+```
+
+**Fix pattern:**
+- AT FIRST override request, flag conflict clearly
+- AT SECOND override request, propose blueprint + Day 8 ship
+- AT THIRD+ override request, REQUIRE explicit "I accept observation contamination" sign-off
+
+**Anti-pattern (what I did Day 1):** Asked "Path A/B/C" each wave, user picked SHIP each time, I shipped without escalating. Should have escalated after Wave 2.
+
+### G13 — Selector specificity in shared class names
+**Problem:** Same className used across multiple DOM contexts. Naive selector matches all → unintended targets get styling/data.
+
+**Real example (v11.1.10 heatmap):** Selector `.hm-cell` was used for:
+- Main grid 28 cells (the actual heatmap data)
+- Legend dots 5 cells (the "Less ●●●●● More" intensity reference)
+
+v11.1.10 fillHeatmap() applied to ALL `.hm-cell` → colored legend dots instead of main grid → user saw "no colored cells".
+
+**Fix patterns:**
+1. **Parent-scope selectors:** `.heatmap > .hm-cell` (direct child of main heatmap, excludes legend nested elsewhere)
+2. **Position-based filter:** `Array.from(cells).filter(c => c.parentElement.classList.contains('heatmap'))`
+3. **Add new classname for new usage:** Always check if existing class is reused before applying global styling
+
+**Lesson:** Search codebase for `.{className}` BEFORE writing CSS targeting it. If matches >1 context, scope.
+
+### G14 — Regex substring match across card titles
+**Problem:** Card-finding regex like `/TODAY GOAL/.test(c.textContent)` matches ANY card containing "TODAY GOAL" as substring — including parent cards that contain "TODAY GOAL" as a SUBSECTION text.
+
+**Real example (v11.1.13 cleanTodayGoal):** TODAY FOCUS card content includes subsection "🚀 TODAY GOAL · Finish new topic · Complete reviews". Regex matched TODAY FOCUS first (alphabetical traversal), cleaned wrong card. Standalone TODAY GOAL card untouched.
+
+**Fix patterns:**
+1. **Card-title-exact match:**
+   ```js
+   var card = Array.from(document.querySelectorAll('.card')).find(card => {
+     var title = (card.querySelector('.card-title')?.textContent || '').trim();
+     return /^TODAY GOAL$/.test(title); // exact match on title only
+   });
+   ```
+2. **Unique data-section-id:** Always use `data-section-id="today-goal"` not title text search
+3. **Multiple criteria:** Combine title match AND specific child text (e.g. "Missions completed")
+
+**Lesson:** Substring matching on `textContent` is FRAGILE. Use semantic markers (data attributes, exact title match).
 
 ---
 
 ## 🎯 NON-OBVIOUS DESIGN DECISIONS
 
 ### Why `display: contents` for view containers
-- Allows children to be direct grid items (`.content` is `display:grid`)
-- Toggle visibility = swap which view has `.active` class
+- Children become direct grid items (`.content` is `display:grid`)
+- Toggle visibility = swap `.active` class
 - No layout flicker
 
 ### Why `setInterval(1500ms)` for audio button auto-attach
 - MutationObserver missed some cases
-- Reliable across all view renders + dynamic content injection
+- Reliable across all view renders
 - Idempotent: skip rows with existing button
 
-### Why `display: contents` on view-home but the v10 #questions-5 still works
-- 5Q panel injected as direct child of view-home, NOT inside view-home content
-- Specifically: injected BEFORE `.mission-hero` to be first grid item
-
-### Why theme colors use `--purple` and not `--primary`
-- Historical: started with hardcoded purple theme
-- Renamed too late = breaking change
-- v7 layout engine sets `--purple` from selected theme's `primary` color
-
 ### Why localStorage key suffix `-v3` not `-v10`
-- v3 was when state engine launched
-- Key represents state SCHEMA version, not app version
+- v3 = state engine launch
+- Key represents SCHEMA version, not app version
 - Bumping forces re-seed (data loss) — only do when schema breaks
-
-### Why Notion `Custom Blocks` is single rich-text field (not multiple)
-- Notion API limits fields per query
-- JSON in single field = flexible, future-proof
-- Plain-text fallback parser exists for non-JSON entries
 
 ### Why `applyReview()` keeps last 20 confidenceHistory entries
 - Trend analysis needs ~5 recent
 - 20 = ~3 months at 1 review/week
 - Older = less relevant
-- Keeps localStorage size bounded
+- localStorage size bounded
 
 ### Why nav_polish.js does click-time lookups (v11.1.8)
-- `state.topics` may not be fully loaded when nav_polish.js initial inject runs
-- Resolving topic IDs at BIND time = stale fallbacks attached
-- Resolving at CLICK time = always uses current state
-- Trade-off: ~1ms find() per click, negligible
+- `state.topics` may not be loaded when nav_polish.js initial inject runs
+- Resolving at BIND time = stale fallbacks attached
+- Resolving at CLICK time = always current state
+
+### Why 28-cell heatmap + rolling 28-day window (v11.1.13)
+- HTML hardcoded `repeat(28, ...)` from v6 era
+- Calendar-month grid (Mon before day 1) = 4 weeks, fails 5-week months
+- Rolling window = today always cell 27, sessions visible from day 1
+- Future fix Day 8+: change HTML to 35 cells (5 weeks) + use calendar month
+
+### Why v11.1.x polish patches are PURE ADDITIVE (no edits to nav_polish.js)
+- Easier to revert (`?v=N-removed`)
+- No regression risk to v11.1.1-1.8 stabilize work
+- Trade-off: harder to refactor — but discipline aligns with observation period
+
+### Why v11.2 will REWRITE (not patch) 3 cards
+- Polish patches FAILED emotional brief 2x (Wave 4 + Wave 5)
+- Architecture cũ paradigm = "stats panel" — can't escape via lipstick
+- v11.2 rewrites HERO/TODAY GOAL/MEMORY from scratch per blueprint
 
 ---
 
 ## 🧪 DEBUGGING COMMANDS (browser console)
 
 ```js
-// State inspection
-shadowEN.state // Full state
-shadowEN.state.topics.slice(0,3) // First 3 topics
-shadowEN.state.sessionsLog.length // Total sessions
-v10.metrics() // Real metrics snapshot
-v10.insights() // AI Coach matched insights
-v10.riskAll() // Topics sorted by forget risk
+// === STATE ===
+shadowEN.state
+shadowEN.state.topics.slice(0,3)
+shadowEN.state.sessionsLog.length
+shadowEN.reset()
 
-// v11.1 Observability (debug_panel.js)
-SHADOW_DEBUG.enable() / .disable() / .toggle()
+// === v10 INTELLIGENCE ===
+v10.metrics()
+v10.insights()
+v10.riskAll().slice(0, 10)
+
+// === FORCE STATE ===
+shadowEN.completeReview('L1-01', 5)
+shadowEN.awardXP(500, "test")
+
+// === v11.1 DEBUG PANEL ===
+SHADOW_DEBUG.enable()
 SHADOW_DEBUG.rescueRanking(8)
 SHADOW_DEBUG.forgetRiskBreakdown('L1-01')
 SHADOW_DEBUG.memoryDistribution()
 SHADOW_DEBUG.survivalPatterns()
 
-// v11.1.x Nav polish (nav_polish.js)
-SHADOW_NAV_POLISH._info()          // see all binding states
-SHADOW_NAV_POLISH.computeLevelPct(1)  // real % for Level 1
-SHADOW_NAV_POLISH.bind()           // manual rebind all
+// === v11.1.x NAV POLISH ===
+SHADOW_NAV_POLISH._info()
+SHADOW_NAV_POLISH.computeLevelPct(1)
+SHADOW_NAV_POLISH.bind()
 
-// Force state mutations (testing)
-shadowEN.awardXP(500, "test")
-shadowEN.completeReview('L1-01', 4)
-shadowEN.completeSession('L1-01')
-shadowEN.reset() // Wipe + reload
+// === DAY 1 POLISH MODULES ===
+SHADOW_LEVELMAP_FIX._info()       // v11.1.9
+SHADOW_HEATMAP_FILL._info()       // v11.1.10
+SHADOW_PROGRESS_LAYOUT._info()    // v11.1.11
+SHADOW_POLISH_1112._info()        // v11.1.12
+SHADOW_POLISH_1113._info()        // v11.1.13
+SHADOW_DAY21._info()              // v11.1.14
 
-// Layout
-LAYOUT_CONFIG // Current layout
-layoutEngine.openSettings() // Open Settings modal
+// === LAYOUT ===
+LAYOUT_CONFIG
+layoutEngine.openSettings()
 
-// Audio
-SHADOW_AUDIO.voices // Available TTS voices
-SHADOW_AUDIO.speak("Hello world", { rate: 0.75 })
+// === AUDIO ===
+SHADOW_AUDIO.voices
+SHADOW_AUDIO.speak("Hello", { rate: 0.75 })
 SHADOW_AUDIO.startRecording()
 
-// Content
+// === CONTENT ===
 SHADOW_CONTENT.TOPIC_CONTENT['L1-01']
 SHADOW_CONTENT.getAllPhrases()
 
-// Blocks
-SHADOW_BLOCKS.types // 18 type registry
+// === BLOCKS ===
+SHADOW_BLOCKS.types
 SHADOW_BLOCKS.renderAll([{type:'quote',text:'Hi'}], 'test')
 
-// Cache + SW (for verifying live updates)
+// === CACHE NUKE (force fresh fetch + remove SW) ===
 (async () => {
   const regs = await navigator.serviceWorker.getRegistrations();
   for (const r of regs) await r.unregister();
   const names = await caches.keys();
   await Promise.all(names.map(n => caches.delete(n)));
   console.log('Cleared', regs.length, 'SWs and', names.length, 'caches');
+  location.reload();
 })()
 
-// Force re-render
+// === RENDER ===
 render()
 ```
 
@@ -299,28 +365,23 @@ render()
 
 ```
 1. Open https://github.com/TruongCRM/shadow-english-dashboard/upload/main
-2. Drag/drop files (or use Choose your files)
-3. Scroll to Commit changes form
-4. Fill commit message (use form_input on textbox ref)
-5. Click "Commit changes" (use left_click on ref_173 button)
-6. **CRITICAL (G7):** Open /edit/main/index.html, Ctrl+F find `?v={OLD}`, replace with `?v={NEW}`, commit
-7. **CRITICAL (G6):** Check github.com/<repo>/actions for latest pages-build-deployment = ✅
-8. Wait 30–60s for GitHub Pages rebuild
-9. **For testing:** Unregister SW + clear caches (see Debugging Commands above) + hard reload
-10. Test via ?v=N-bust query string
+2. file_upload via choose-files ref
+3. Fill commit message (use form_input on textbox ref)
+4. Click "Commit changes" (use left_click on submit ref)
+5. **G10 NEW (Day 1):** Navigate to repo root → verify file appears in file list before next step
+6. **G7:** Open /edit/main/index.html, scroll to line ~2098, click END of last script line, Enter, type new <script src="..." defer></script>
+7. Click "Commit changes..." (top right), fill modal, submit
+8. **G6 CRITICAL:** Check github.com/<repo>/actions for latest pages-build-deployment = ✅
+9. Wait 60-90s for GitHub Pages rebuild
+10. Test via ?v=N-bust URL — verify `SHADOW_*._info()` returns expected
+11. If still old: unregister SW + clear caches (snippet above)
+12. Update docs/CHANGELOG.md with new version entry
 ```
 
-**Skipping step 6 = ship doesn't take effect. Skipping step 7 = you debug a phantom for an hour.**
-
-### Auto deploy (GitHub Action — Notion sync only)
-```
-1. User edits Topic in Notion
-2. GitHub Action triggers (cron 0 * * * *)
-3. scripts/sync-from-notion.js fetches Notion API
-4. Writes content.json if changed
-5. Auto-commits + pushes
-6. GitHub Pages auto-rebuilds
-```
+**Critical step counts:**
+- Skipping G10 verify = 10-15min debug if upload dropped
+- Skipping G6 verify = 30+ min phantom debug
+- Skipping G7 cache-bust = 20+ min "fix doesn't work" debug
 
 ---
 
@@ -329,16 +390,16 @@ render()
 ### File naming
 - Core: `app.js`, `content.js`, `audio.js`, `blocks.js`, `adaptive.js`, `metrics.js`, `coach.js`
 - Per-version patches: `app_v{N}_{name}.js` (e.g. `app_v8_experience.js`)
-- Observability layer (v11+): `debug_panel.js`, `nav_polish.js` — pure additive, opt-in
-- Config files: `*.json`
+- v11.1.x polish patches: `app_v11_1_{N}_{name}.js`
+- Observability: `debug_panel.js`, `nav_polish.js` — pure additive opt-in
+- Config: `*.json`
 - Docs: `UPPERCASE.md`
 
 ### Global exposure pattern
 ```js
-// Bad: const FOO = {...}; // module-scoped, invisible to other scripts
-// Good:
-window.SHADOW_FOO = {...};
-const SHADOW_FOO = window.SHADOW_FOO; // optional alias for use within this file
+// Bad:  const FOO = {...};       // module-scoped
+// Good: window.SHADOW_FOO = {...};
+//       const SHADOW_FOO = window.SHADOW_FOO;  // optional alias
 ```
 
 ### Error handling pattern
@@ -346,7 +407,7 @@ const SHADOW_FOO = window.SHADOW_FOO; // optional alias for use within this file
 try {
   // risky code
 } catch (e) {
-  console.warn('[Component] Operation failed:', e);
+  console.warn('[Component] failed:', e);
   // graceful fallback
 }
 ```
@@ -361,14 +422,14 @@ render();
 
 ### CSS class pattern
 - BEM-lite: `.block`, `.block-youtube`, `.block-title`
-- Prefix per feature: `.queue-tab`, `.queue-table`, `.session-step`
-- Observability binding markers: `.{name}.nav-bound`, `.{name}.nav-polished` — for click-handler attach state
+- Prefix per feature: `.queue-tab`, `.session-step`
+- Observability markers: `.nav-bound`, `.polish-1112-bound`, `.polish-1113-tg-clean`
 
 ### Idempotency markers
-- `el.dataset.{name}Bound = '1'` — has this element been processed?
-- `window.fn.__{module}Patched = true` — has this function been wrapped?
+- `el.dataset.{name}Bound = '1'` — has element been processed?
+- `window.fn.__{module}Patched = true` — has function been wrapped?
 
-### CSS injection — use Option A (versioned ID) per G9
+### CSS injection — Option A (versioned ID) per G9
 ```js
 function injectCSS() {
   var id = '{module}-styles-v{N}';  // bump per CSS change
@@ -381,42 +442,61 @@ function injectCSS() {
 }
 ```
 
+### Selector specificity per G13
+```js
+// Bad:  document.querySelectorAll('.hm-cell')               // too broad
+// Good: document.querySelectorAll('.heatmap > .hm-cell')   // scoped
+// Best: document.querySelectorAll('[data-component="heatmap-main"] .cell')  // semantic
+```
+
+### Card finding per G14
+```js
+// Bad:  Array.from(cards).find(c => /TODAY GOAL/.test(c.textContent))  // substring matches subsection
+// Good: Array.from(cards).find(c => /^TODAY GOAL$/.test(c.querySelector('.card-title')?.textContent.trim()))
+// Best: document.querySelector('[data-section-id="today-goal"]')  // semantic
+```
+
 ---
 
-## 🔮 BROWSER COMPATIBILITY NOTES
+## 🔮 BROWSER COMPATIBILITY
 
 | Feature | Supported | Notes |
 |---|---|---|
-| Web Speech API (TTS) | Chrome, Edge, Safari, Firefox | Voice availability varies |
-| MediaRecorder | All modern browsers | Needs `getUserMedia` permission |
-| Service Worker | All modern browsers | Requires HTTPS (GitHub Pages has it) |
-| localStorage | All browsers | 5–10MB limit |
-| CSS `display: contents` | All modern browsers | Required for view system |
-| CSS Grid `grid-auto-flow: column` | All modern | Used in nav_polish.js v11.1.5+ heatmap |
-| CSS `aspect-ratio` | Modern browsers | Used for YouTube embed 16:9 |
-| `gap` in flexbox | All modern | Used throughout |
+| Web Speech API (TTS) | Chrome/Edge/Safari/Firefox | Voice availability varies |
+| MediaRecorder | All modern | Needs getUserMedia permission |
+| Service Worker | All modern | Requires HTTPS |
+| localStorage | All | 5-10MB limit |
+| CSS `display: contents` | All modern | Required for view system |
+| CSS Grid `grid-auto-flow: column` | All modern | nav_polish v11.1.5+ heatmap |
+| CSS `aspect-ratio` | Modern | YouTube embed 16:9 |
+| `gap` in flexbox | All modern | Throughout |
 | `:has()` selector | Chrome/Edge/Safari | NOT used (compat) |
 
-Target: **Chrome 100+, Safari 16+, Firefox 100+**. No IE support.
+**Target:** Chrome 100+, Safari 16+, Firefox 100+. No IE.
 
 ---
 
 ## ⚠️ DO NOT
 
-- **DON'T hardcode content** — must go through Notion or content.json
-- **DON'T mutate `state` directly without calling `saveState()` + `render()`**
-- **DON'T break the localStorage schema without bumping the key version**
-- **DON'T add new dependencies** unless absolutely necessary (we're zero-build)
-- **DON'T use `eval()` or `new Function()`** — security + perf
-- **DON'T commit secrets** — only NOTION_TOKEN/NOTION_TOPICS_DB go in GitHub Secrets
-- **DON'T fetch from cross-origin domains other than CDN-cached libraries**
-- **DON'T break `window` namespace** — always prefix `SHADOW_*` or `shadowEN`
-- **DON'T trust a green commit means it's live** — verify Actions tab (G6)
-- **DON'T ship a JS file change without bumping `?v=N`** — cache-bust is mandatory (G7)
-- **DON'T iterate visual polish on live without upfront spec** — sign off dimensions first (G8)
-- **DON'T use idempotent CSS injection without versioned ID** — stale-style trap (G9)
-- **DON'T skip CHANGELOG entry** — every ship gets documented per TEMPLATE_VERSION_ENTRY.md
+- DON'T hardcode content — Notion or content.json
+- DON'T mutate `state` directly without `saveState()` + `render()`
+- DON'T break localStorage schema without bumping key version
+- DON'T add new dependencies (zero-build)
+- DON'T use `eval()` or `new Function()`
+- DON'T commit secrets — only `NOTION_TOKEN`/`NOTION_TOPICS_DB` in GitHub Secrets
+- DON'T fetch cross-origin except CDN libraries
+- DON'T break `window` namespace — prefix `SHADOW_*` or `shadowEN`
+- DON'T trust green commit means live — verify Actions tab (G6)
+- DON'T ship JS file change without bumping `?v=N` — mandatory (G7)
+- DON'T iterate visual polish without upfront spec — sign off first (G8)
+- DON'T use idempotent CSS injection without versioned ID (G9)
+- **DON'T trust upload commit silently** — verify file in repo (G10)
+- **DON'T polish over architecture for emotional briefs** — REWRITE (G11)
+- **DON'T ship multiple times/day in observation week** — escalate (G12)
+- **DON'T use unscoped selectors on shared classNames** (G13)
+- **DON'T use regex substring matching for card finding** (G14)
+- DON'T skip CHANGELOG entry — every ship gets documented
 
 ---
 
-*Last update: 2026-05-26 (v11.1.x stabilize session — G6–G9 added).*
+*Last update: 2026-05-27 (Day 1 polish marathon — G10-G14 added).*
