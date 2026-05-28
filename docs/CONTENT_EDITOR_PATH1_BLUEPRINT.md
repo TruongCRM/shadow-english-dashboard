@@ -5,8 +5,9 @@
 > **NOT scope:** in-app CMS UI, inline WYSIWYG, drag-drop block builder. Notion CHÍNH LÀ editor.
 
 **Author:** Claude (Cowork mode) cho Dương Trường
-**Date:** 2026-05-27 (Day 1 evening — prep during observation week, ship Day 11-12)
-**Status:** DRAFT — pending §9 sign-off sheet review
+**Date:** 2026-05-29 (Day 3 observation week — prep complete, ship target Day 11-12)
+**Updated:** 2026-05-29 — TD-9 (sync silent failure) discovered + resolved · Pre-flight Step 0 added
+**Status:** DRAFT v2 — pending §9 sign-off sheet review
 **Companion doc:** `docs/V11_2_REDESIGN_BLUEPRINT.md` (UI layer, parallel stream)
 
 ---
@@ -773,12 +774,19 @@ Step-by-step em sẽ document trong updated `SETUP_NOTION_SYNC.md` (Day 11 task)
 - [ ] Anh confirm: Việc 2 (Topic Flow restructure) defer to v11.3.
 - [ ] Anh confirm: Acceptance criteria §8 measurable + agreed.
 
+### 9.10 TD-9 mitigation sign-off (added Day 3 — 2026-05-29)
+
+- [ ] Anh confirm: Day 11 morning, BEFORE Wave A start, anh sẽ check Actions tab xem latest "Sync content from Notion" run = ✅ GREEN. Nếu RED → anh re-trigger workflow_dispatch + verify pass trước khi em ship code.
+- [ ] Anh đồng ý em add workflow status badge vào README.md trong Wave C (Day 12, Docs) → để future silent failures visible without manual Actions tab check.
+- [ ] Optional: anh muốn enable GitHub email notification cho Sync workflow failure (Settings → Notifications → Actions)? Em viết step-by-step nếu YES.
+
 ---
 
 ## 10. IMPLEMENTATION PLAN (Day 11-12)
 
 ### 10.1 Pre-flight (sau khi v11.2 ship clean Day 10)
 
+- [ ] **STEP 0 (CRITICAL — TD-9 mitigation)**: Verify Sync workflow LATEST run = ✅ GREEN trong Actions tab. Nếu fail → fix secrets BEFORE bất cứ Wave A work nào. (TD-9 silent failure pattern: cron fail âm thầm, không alert. Day 3 discovery: workflow đã fail 6+ runs liên tiếp May 28-29 vì NOTION_TOKEN/NOTION_TOPICS_DB env vars missing → anh restore secrets manual + workflow_dispatch trigger → fixed 2026-05-29.)
 - [ ] v11.2 ship + verify all acceptance §1.10/§2.7/§3.9 PASS
 - [ ] Sign-off sheet §9 — anh check Day 5 → em update blueprint nếu có change
 - [ ] Anh add 2 Notion DB fields (`Notion Page URL`, `Video Immersion URL`)
@@ -857,6 +865,8 @@ Spread across Day 11 (6h) + Day 12 (2.5h).
 | Mobile UX broken | Medium | UX | Test 380px viewport + ≥44px tap targets |
 | Anh add unsupported block type | High over time | Silent skip | Document supported list clearly + log skipped types in Action output |
 | Việc 2 deferred to v11.3 disappoints anh | Low (anh chose) | Expectation | Confirmed v11.3 in §9 sign-off |
+| **TD-9 — Sync workflow silent failure (NOTION_TOKEN/NOTION_TOPICS_DB expired/missing)** | **High over time** | **Total sync break — content.json stale, app shows old data** | **Day 11 Pre-flight Step 0 (§10.1) verify latest Sync run = green. Future: add workflow status badge to README.md so failures visible. Even further: add email notification cho cron fail (GitHub Actions native).** |
+| Re-discovering TD-9 sau Day 11 ship | Low | Path 1 features render stale content | Sign-off sheet §9.10 (mới) — anh confirm Pre-flight Step 0 đã chạy trong same session với Wave A start |
 
 ---
 
@@ -905,6 +915,22 @@ The product becomes truly **creator-friendly** — không bằng cách build Not
 
 ---
 
-*Last update: 2026-05-27 (Day 1 evening — prepped during observation week).*
-*Status: DRAFT v1. Anh sign-off §9 sheet Day 5. Ship Day 11-12 after v11.2 ship clean.*
+*Last update: 2026-05-29 (Day 3 observation week — TD-9 added, sync alive verified).*
+*Status: DRAFT v2. Anh sign-off §9 sheet (now 10 sub-sections). Ship Day 11-12 after v11.2 ship clean + Pre-flight Step 0 PASS.*
 *Companion: `docs/V11_2_REDESIGN_BLUEPRINT.md` (UI stream — parallel, zero codebase overlap).*
+
+---
+
+## CHANGELOG (this file)
+
+**v2 — 2026-05-29 (Day 3)**:
+- Discovered TD-9: Sync workflow silent failure since at least May 28. Root cause: `NOTION_TOKEN` / `NOTION_TOPICS_DB` GitHub Secrets missing/expired.
+- Resolved: anh re-set both secrets manually + workflow_dispatch trigger → sync alive again (run #19 ✅ 18s).
+- Added Pre-flight Step 0 §10.1 (CRITICAL — verify sync alive before Wave A start).
+- Added TD-9 row to risk register §11.
+- Added §9.10 sign-off sub-section (3 items: pre-flight confirm, workflow badge in Wave C, email notification opt-in).
+- Fixed date metadata: was Day 1 (May 27), correctly Day 3 (May 29).
+- Validation bonus: anh's manual workflow_dispatch trigger (via Actions tab "Run workflow") = exact UX flow designed in §5. Anh confirmed feels acceptable.
+
+**v1 — 2026-05-27 (Day 1)**:
+- Initial blueprint authored.
