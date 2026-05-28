@@ -8,7 +8,7 @@
 
 (function setupV12Editor() {
   const NS = window.SHADOW_V12 = window.SHADOW_V12 || {};
-  NS.version = '12.0';
+  NS.version = '12.0.1';
 
   // ============= STATE =============
   NS.editMode = false;
@@ -775,6 +775,14 @@
   };
 
   // ============= NAVIGATE HOOK =============
+  function getCurrentTopicId() {
+    // Try multiple state globals (v12.0.1 fix — global is shadowEN.state, not window.state)
+    if (window.shadowEN?.state?.currentTopicId) return window.shadowEN.state.currentTopicId;
+    try { if (typeof state !== 'undefined' && state?.currentTopicId) return state.currentTopicId; } catch(e) {}
+    if (window.state?.currentTopicId) return window.state.currentTopicId;
+    return null;
+  }
+
   function hookNavigate() {
     if (typeof window.navigate !== 'function') { setTimeout(hookNavigate, 200); return; }
     if (window.navigate.__v12Hooked) return;
@@ -785,13 +793,13 @@
       if (viewId === 'topic-detail') {
         setTimeout(() => {
           const view = document.getElementById('view-topic-detail');
-          const tid = window.state?.currentTopicId;
+          const tid = getCurrentTopicId();
           if (view && tid) NS.renderTopicDetail(view, tid);
         }, 220);
         // Retry once for safety
         setTimeout(() => {
           const view = document.getElementById('view-topic-detail');
-          const tid = window.state?.currentTopicId;
+          const tid = getCurrentTopicId();
           if (view && tid && !view.querySelector('.v12-edit-toggle')) NS.renderTopicDetail(view, tid);
         }, 600);
       }
