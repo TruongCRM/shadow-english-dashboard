@@ -8,7 +8,7 @@
 
 (function setupV12Editor() {
   const NS = window.SHADOW_V12 = window.SHADOW_V12 || {};
-  NS.version = '12.0.1';
+  NS.version = '12.0.2';
 
   // ============= STATE =============
   NS.editMode = false;
@@ -173,9 +173,8 @@
     const s = document.createElement('style');
     s.id = id;
     s.textContent = `
-      /* Edit Mode Toggle Button */
+      /* Edit Mode Toggle Button — v12.0.2: moved inline to CUSTOM CONTENT header (was hidden behind Internal Insight panel) */
       .v12-edit-toggle {
-        position: absolute; top: 12px; right: 20px;
         display: inline-flex; align-items: center; gap: 6px;
         padding: 7px 14px; border-radius: 8px;
         background: rgba(255,255,255,0.04);
@@ -183,7 +182,7 @@
         color: rgba(255,255,255,0.7);
         font-size: 12.5px; cursor: pointer;
         transition: all 200ms ease-out;
-        z-index: 10;
+        margin-left: auto;
       }
       .v12-edit-toggle:hover {
         background: rgba(124,92,255,0.1);
@@ -348,13 +347,25 @@
       }
       .v12-block-content[contenteditable="true"]:focus { outline-color: rgba(180,140,255,0.9); }
 
-      /* Add Block Button + Popover */
+      /* Add Block Button + Popover — v12.0.2: always visible (auto-enables edit mode on click) */
       .v12-add-block-bar {
-        display: none;
         margin: 16px 0;
         text-align: center;
       }
-      .editor-on .v12-add-block-bar { display: block; }
+
+      /* Empty state hint in CUSTOM CONTENT section */
+      .v12-empty-hint {
+        text-align: center;
+        padding: 24px 16px;
+        background: rgba(255,255,255,0.02);
+        border: 2px dashed rgba(124,92,255,0.2);
+        border-radius: 10px;
+        color: rgba(255,255,255,0.5);
+        font-size: 12.5px;
+        font-style: italic;
+        margin: 10px 0;
+      }
+      .v12-empty-hint .v12-arrow { color: rgba(180,140,255,0.8); font-style: normal; }
 
       .v12-add-block-btn {
         display: inline-flex; align-items: center; gap: 6px;
@@ -471,18 +482,12 @@
     else view.classList.remove('editor-on');
 
     // Remove existing v12 elements (idempotent)
-    view.querySelectorAll('.v12-edit-toggle, .v12-video-immersion, .v12-editor-section, .v12-status-bar').forEach(el => el.remove());
+    view.querySelectorAll('.v12-edit-toggle-floating, .v12-video-immersion, .v12-editor-section, .v12-status-bar').forEach(el => el.remove());
 
-    // 1. Edit mode toggle button (top-right)
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'v12-edit-toggle' + (NS.editMode ? ' active' : '');
-    toggleBtn.innerHTML = NS.editMode ? '✏ Edit mode' : '✏ Edit';
-    toggleBtn.onclick = function() { NS.toggleEditMode(); };
-    // Ensure view is position:relative for absolute children
-    if (getComputedStyle(view).position === 'static') view.style.position = 'relative';
-    view.appendChild(toggleBtn);
+    // v12.0.2: Edit mode toggle is now INSIDE CUSTOM CONTENT section header (not floating)
+    // No floating toggle anymore — was hidden behind Internal Insight panel
 
-    // 2. Insert Video Immersion section before Core Phrases
+    // 1. Insert Video Immersion section before Core Phrases
     const videoSection = NS._renderVideoImmersionSection(topicId);
     const phrasesAnchor = NS._findPhrasesCard(view);
     if (phrasesAnchor && phrasesAnchor.parentNode) {
@@ -494,7 +499,7 @@
       else view.appendChild(videoSection);
     }
 
-    // 3. Editor Section (Status bar + custom blocks + Add Block button)
+    // 2. Editor Section (toggle in header + custom blocks + Add Block button always visible)
     const editorSection = NS._renderEditorSection(topicId);
     view.appendChild(editorSection);
   };
@@ -559,19 +564,25 @@
     const section = document.createElement('div');
     section.className = 'v12-editor-section card';
     section.style.gridColumn = 'span 5';
+    const hasBlocks = overlay.customBlocks.length > 0;
 
+    // v12.0.2: Edit toggle INSIDE header (always visible) + Add block always visible (auto-enables edit)
     section.innerHTML = `
       <div class="es-title">
         <span>🧱 CUSTOM CONTENT</span>
         <span class="es-badge">${overlay.customBlocks.length} blocks · local</span>
+        <button class="v12-edit-toggle ${NS.editMode ? 'active' : ''}" onclick="SHADOW_V12.toggleEditMode()">
+          ${NS.editMode ? '✏ Edit mode' : '✏ Edit'}
+        </button>
       </div>
       <div class="v12-status-bar">
         <span>✏ Edit mode active — drag, click to edit, hover for actions</span>
         <button class="v12-reset-btn" onclick="SHADOW_V12.resetOverlay(SHADOW_V12.currentTopicId)">↺ Discard local edits</button>
       </div>
+      ${!hasBlocks ? `<div class="v12-empty-hint">Chưa có block nào.<br>Nhấn <span class="v12-arrow">+ Add block</span> bên dưới để bắt đầu thêm content.</div>` : ''}
       <div class="v12-blocks-container"></div>
       <div class="v12-add-block-bar">
-        <button class="v12-add-block-btn" onclick="SHADOW_V12._showAddPopover(event)">+ Add block</button>
+        <button class="v12-add-block-btn" onclick="SHADOW_V12._showAddPopover(event, true)">+ Add block</button>
       </div>
     `;
 
@@ -729,7 +740,20 @@
     }
   };
 
-  NS._showAddPopover = function(event) {
+  NS._showAddPopover = function(event, autoEnableEdit) {
+    // v12.0.2: auto-enable edit mode when triggered from Add block button
+    if (autoEnableEdit && !NS.editMode) {
+      NS.editMode = true;
+      // Re-render so handles + actions appear
+      NS._rerender();
+      // Re-find button after rerender (DOM replaced)
+      setTimeout(() => {
+        const btn = document.querySelector('.v12-add-block-btn');
+        if (btn) NS._showAddPopover({ target: btn }, false);
+      }, 60);
+      return;
+    }
+
     // Remove existing popover
     document.querySelectorAll('.v12-popover').forEach(p => p.remove());
 
