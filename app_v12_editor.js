@@ -8,7 +8,7 @@
 
 (function setupV12Editor() {
   const NS = window.SHADOW_V12 = window.SHADOW_V12 || {};
-  NS.version = '12.2.0';
+  NS.version = '12.3.0';
 
   // ============= STATE =============
   NS.editMode = false;
@@ -563,6 +563,43 @@
         .v12-edit-toggle { top: 8px; right: 8px; padding: 6px 10px; font-size: 11px; }
         .v12-popover-grid { grid-template-columns: 1fr; }
         .v12-block-actions { font-size: 11px; }
+      }
+
+      /* v12.3: Mobile polish — 600px + 380px breakpoints */
+      @media (max-width: 600px) {
+        .v12-master-toggle { bottom: 16px; padding: 8px 14px; font-size: 11.5px; }
+        .v12-section-edit-btn { padding: 7px 12px; font-size: 12.5px; min-height: 32px; }
+        .v12-phrase-row { flex-direction: column; align-items: stretch; gap: 4px; padding: 10px 12px; }
+        .v12-phrase-en { font-size: 14px; padding: 2px 4px; }
+        .v12-phrase-vi { text-align: left; font-size: 12.5px; padding: 2px 4px 2px 12px; border-left: 2px solid rgba(124,92,255,0.3); margin-top: 2px; }
+        .v12-phrase-actions { display: inline-flex !important; align-self: flex-end; margin-top: 4px; padding: 4px 6px; }
+        .v12-phrase-actions button { font-size: 14px; padding: 6px 10px; min-width: 36px; min-height: 36px; }
+        .v12-block-actions { display: inline-flex !important; position: static; background: rgba(124,92,255,0.06); border-color: rgba(124,92,255,0.18); margin-top: 8px; padding: 4px 6px; border-radius: 6px; justify-content: flex-end; width: 100%; box-sizing: border-box; }
+        .v12-block-actions button { font-size: 14px; padding: 6px 10px; min-width: 36px; min-height: 36px; }
+        .v12-block-handle { display: inline-block !important; position: static; transform: none; font-size: 16px; padding: 6px 10px; margin: 0 0 4px; background: rgba(124,92,255,0.08); border-radius: 6px; cursor: grab; color: rgba(180,140,255,0.8); }
+        .editor-on .v12-block-wrapper { padding-left: 12px; }
+        .v12-editor-section .es-title { flex-wrap: wrap; gap: 6px; }
+        .v12-sync-badge { margin-left: 0; }
+        .v12-pat-modal { padding: 20px 18px; border-radius: 12px; max-width: calc(100% - 24px); }
+        .v12-pat-modal h3 { font-size: 16px; }
+        .v12-pat-modal ol { font-size: 12px; padding-left: 18px; }
+        .v12-pat-actions button { flex: 1; min-height: 38px; font-size: 12.5px; padding: 8px 10px; }
+        .v12-video-immersion { padding: 16px; }
+        .v12-video-immersion .vi-empty { padding: 32px 16px; font-size: 12.5px; }
+        .v12-editor-section { padding: 16px; }
+        .v12-add-block-btn { padding: 10px 18px; font-size: 13px; }
+        .v12-add-phrase-btn { padding: 8px 14px; font-size: 12px; min-height: 36px; }
+        .v12-empty-hint { padding: 18px 14px; font-size: 12px; }
+        .v12-block-wrapper.dragging { opacity: 0.5; }
+        .v12-block-wrapper.drag-over { background: rgba(124,92,255,0.18) !important; outline: 2px solid rgba(180,140,255,0.7); }
+      }
+      @media (max-width: 380px) {
+        .v12-master-toggle { padding: 6px 10px; font-size: 10.5px; }
+        .v12-master-toggle span:not(.v12-master-icon) { display: none; }
+        .v12-pat-modal-bg { padding: 8px; }
+        .v12-pat-modal { padding: 14px 12px; }
+        .v12-phrase-actions button, .v12-block-actions button { min-width: 32px; padding: 4px 6px; font-size: 13px; }
+        .v12-section-edit-btn { padding: 6px 10px; font-size: 11.5px; }
       }
     `;
     document.head.appendChild(s);
@@ -1235,6 +1272,45 @@
       overlayKeys: Object.keys(localStorage).filter(k => k.startsWith('shadow-en-overlay-')).length
     };
   };
+
+  // ============= v12.3: TOUCH DRAG-DROP =============
+  NS._setupTouchDrag = function() {
+    if (NS._touchSetupDone) return;
+    NS._touchSetupDone = true;
+    document.addEventListener('touchstart', function(e) {
+      if (!NS.editMode) return;
+      const handle = e.target.closest('.v12-block-handle');
+      if (!handle) return;
+      const wrapper = handle.closest('.v12-block-wrapper');
+      if (!wrapper) return;
+      e.preventDefault();
+      NS._touchDrag = { sourceWrapper: wrapper, sourceIdx: parseInt(wrapper.dataset.blockIdx, 10) };
+      wrapper.classList.add('dragging');
+    }, { passive: false });
+    document.addEventListener('touchmove', function(e) {
+      if (!NS._touchDrag) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      const elem = document.elementFromPoint(t.clientX, t.clientY);
+      const target = elem ? elem.closest('.v12-block-wrapper') : null;
+      document.querySelectorAll('.v12-block-wrapper').forEach(function(w) { w.classList.remove('drag-over'); });
+      if (target && target !== NS._touchDrag.sourceWrapper) target.classList.add('drag-over');
+    }, { passive: false });
+    document.addEventListener('touchend', function(e) {
+      if (!NS._touchDrag) return;
+      const t = e.changedTouches[0];
+      const elem = document.elementFromPoint(t.clientX, t.clientY);
+      const target = elem ? elem.closest('.v12-block-wrapper') : null;
+      if (target && target !== NS._touchDrag.sourceWrapper) {
+        const targetIdx = parseInt(target.dataset.blockIdx, 10);
+        NS.reorderBlocks(NS.currentTopicId, NS._touchDrag.sourceIdx, targetIdx);
+      }
+      NS._touchDrag.sourceWrapper.classList.remove('dragging');
+      document.querySelectorAll('.v12-block-wrapper').forEach(function(w) { w.classList.remove('drag-over'); });
+      NS._touchDrag = null;
+    });
+  };
+  NS._setupTouchDrag();
 
   console.log('[v12] Visual Content Editor loaded · ' + NS.BLOCK_TYPES_CATALOG.length + ' block types · localStorage-backed overlay ✏');
 })();
