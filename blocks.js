@@ -1,6 +1,7 @@
 // ============================================================
 // SHADOW ENGLISH — Custom Content Blocks Renderer
-// 15+ block types, content-driven, no code changes needed to add new content
+// v2 (2026-05-29) — Added paragraph, bulleted_list, numbered_list for Notion native + Content Editor
+// 21 block types total
 // ============================================================
 
 window.SHADOW_BLOCKS = {
@@ -34,6 +35,23 @@ window.SHADOW_BLOCKS = {
   // ============= BLOCK TYPES =============
   types: {
 
+    // ---- PARAGRAPH (NEW v12) ----
+    paragraph: function(b) {
+      return `<p class="block block-paragraph">${b.text || ''}</p>`;
+    },
+
+    // ---- BULLETED LIST (NEW v12) ----
+    bulleted_list: function(b) {
+      const items = b.items || [];
+      return `<ul class="block block-bulleted-list">${items.map(it => `<li>${it}</li>`).join('')}</ul>`;
+    },
+
+    // ---- NUMBERED LIST (NEW v12) ----
+    numbered_list: function(b) {
+      const items = b.items || [];
+      return `<ol class="block block-numbered-list">${items.map(it => `<li>${it}</li>`).join('')}</ol>`;
+    },
+
     // ---- HEADING ----
     heading: function(b) {
       const level = b.level || 2;
@@ -48,7 +66,6 @@ window.SHADOW_BLOCKS = {
     // ---- YOUTUBE ----
     youtube: function(b) {
       const url = b.url || '';
-      // Extract video ID
       let id = '';
       const m1 = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
       if (m1) id = m1[1];
@@ -211,4 +228,4 @@ window.SHADOW_BLOCKS = {
   }
 };
 
-console.log('Shadow English Blocks System v1 loaded · ' + Object.keys(window.SHADOW_BLOCKS.types).length + ' block types ready 🧱');
+console.log('Shadow English Blocks System v2 loaded · ' + Object.keys(window.SHADOW_BLOCKS.types).length + ' block types ready 🧱');
