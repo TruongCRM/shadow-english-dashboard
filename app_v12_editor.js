@@ -8,7 +8,7 @@
 
 (function setupV12Editor() {
   const NS = window.SHADOW_V12 = window.SHADOW_V12 || {};
-  NS.version = '12.1.0';
+  NS.version = '12.2.0';
 
   // ============= STATE =============
   NS.editMode = false;
@@ -627,6 +627,130 @@
   NS._addPhrase = function(group, topicId) { const phrases = NS._getEffectivePhrases(topicId); phrases[group] = phrases[group].slice(); phrases[group].push({ en: 'New phrase', vi: 'Cum moi' }); NS._savePhrases(topicId, phrases); setTimeout(function() { const view = document.getElementById('view-topic-detail'); const newRow = view?.querySelector('.v12-phrase-row[data-group="' + group + '"][data-idx="' + (phrases[group].length - 1) + '"]'); if (newRow) NS._editPhrase(newRow, phrases[group].length - 1, group, topicId); }, 80); };
   NS._deletePhrase = function(idx, group, topicId) { const phrases = NS._getEffectivePhrases(topicId); phrases[group] = phrases[group].slice(); phrases[group].splice(idx, 1); NS._savePhrases(topicId, phrases); };
   NS._movePhrase = function(idx, group, dir, topicId) { const phrases = NS._getEffectivePhrases(topicId); const arr = phrases[group].slice(); const newIdx = idx + dir; if (newIdx < 0 || newIdx >= arr.length) return; const [moved] = arr.splice(idx, 1); arr.splice(newIdx, 0, moved); phrases[group] = arr; NS._savePhrases(topicId, phrases); };
+
+  // ============= v12.2: GITHUB OVERLAYS SYNC (Path C) =============
+  NS.gh = {
+    REPO: 'TruongCRM/shadow-english-dashboard',
+    BRANCH: 'main',
+    OVERLAY_DIR: 'data/overlays',
+    getPAT: function() { return localStorage.getItem('shadow-en-github-pat') || ''; },
+    setPAT: function(p) { if (p) localStorage.setItem('shadow-en-github-pat', p); else localStorage.removeItem('shadow-en-github-pat'); },
+    hasPAT: function() { return !!this.getPAT(); },
+    _headers: function() { const p = this.getPAT(); const h = { 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }; if (p) h['Authorization'] = 'Bearer ' + p; return h; },
+    getFile: async function(path) {
+      const url = 'https://api.github.com/repos/' + this.REPO + '/contents/' + path + '?ref=' + this.BRANCH + '&t=' + Date.now();
+      const r = await fetch(url, { headers: this._headers() });
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error('GH GET ' + r.status);
+      const d = await r.json();
+      return { content: decodeURIComponent(escape(atob(d.content.replace(/\n/g, '')))), sha: d.sha };
+    },
+    putFile: async function(path, content, sha) {
+      const url = 'https://api.github.com/repos/' + this.REPO + '/contents/' + path;
+      const body = { message: 'app: overlay ' + path.split('/').pop(), content: btoa(unescape(encodeURIComponent(content))), branch: this.BRANCH };
+      if (sha) body.sha = sha;
+      const r = await fetch(url, { method: 'PUT', headers: Object.assign({'Content-Type':'application/json'}, this._headers()), body: JSON.stringify(body) });
+      if (!r.ok) { const t = await r.text(); throw new Error('GH PUT ' + r.status + ': ' + t.slice(0,200)); }
+      return r.json();
+    }
+  };
+  NS._syncCache = {};
+  NS._syncQueue = {};
+  NS._syncStatus = {};
+  NS.pullOverlay = async function(topicId) {
+    if (!NS.gh.hasPAT() || !topicId) return null;
+    NS._setSyncStatus(topicId, 'syncing');
+    try {
+      const res = await NS.gh.getFile(NS.gh.OVERLAY_DIR + '/' + topicId + '.json');
+      if (!res) { NS._setSyncStatus(topicId, 'synced'); return null; }
+      const remote = JSON.parse(res.content);
+      NS._syncCache[topicId] = { sha: res.sha };
+      const local = NS.getOverlay(topicId);
+      if ((remote._modifiedAt || 0) > (local._modifiedAt || 0)) {
+        localStorage.setItem('shadow-en-overlay-' + topicId, JSON.stringify(remote));
+        if (NS._rerender) NS._rerender();
+      }
+      NS._setSyncStatus(topicId, 'synced');
+    } catch (e) { NS._setSyncStatus(topicId, 'error', e.message); console.warn('[v12.2] pull', e); }
+  };
+  NS.pushOverlay = async function(topicId) {
+    if (!NS.gh.hasPAT() || !topicId) return null;
+    NS._setSyncStatus(topicId, 'syncing');
+    const overlay = NS.getOverlay(topicId);
+    overlay._modifiedAt = Date.now();
+    localStorage.setItem('shadow-en-overlay-' + topicId, JSON.stringify(overlay));
+    try {
+      const res = await NS.gh.putFile(NS.gh.OVERLAY_DIR + '/' + topicId + '.json', JSON.stringify(overlay, null, 2), NS._syncCache[topicId]?.sha);
+      NS._syncCache[topicId] = { sha: res.content.sha };
+      NS._setSyncStatus(topicId, 'synced');
+    } catch (e) {
+      if (/409|422/.test(e.message)) {
+        try { const f = await NS.gh.getFile(NS.gh.OVERLAY_DIR + '/' + topicId + '.json'); if (f) NS._syncCache[topicId] = { sha: f.sha }; return NS.pushOverlay(topicId); } catch(e2) {}
+      }
+      NS._setSyncStatus(topicId, 'error', e.message);
+      console.error('[v12.2] push', e);
+    }
+  };
+  NS.queueOverlaySync = function(topicId) {
+    if (!NS.gh.hasPAT() || !topicId) return;
+    clearTimeout(NS._syncQueue[topicId]);
+    NS._setSyncStatus(topicId, 'pending');
+    NS._syncQueue[topicId] = setTimeout(function() { NS.pushOverlay(topicId); }, 4000);
+  };
+  NS._setSyncStatus = function(topicId, status, errMsg) {
+    NS._syncStatus[topicId] = { status: status, msg: errMsg || '', at: Date.now() };
+    const view = document.getElementById('view-topic-detail');
+    if (!view) return;
+    view.querySelectorAll('.v12-sync-badge').forEach(function(b) { b.remove(); });
+    const t = view.querySelector('.v12-editor-section .es-title');
+    if (!t) return;
+    const b = document.createElement('span');
+    b.className = 'v12-sync-badge ' + status;
+    if (errMsg) b.title = errMsg;
+    const icons = { synced: '\u2713 synced', syncing: '\u27F3 syncing', pending: '\u23F1 pending', error: '\u26A0 sync error', local: '\u26C8 local only — setup' };
+    b.innerHTML = icons[status] || status;
+    if (status === 'error' || status === 'local') b.onclick = function() { NS.openPATModal(); };
+    t.appendChild(b);
+  };
+  NS.openPATModal = function() {
+    document.querySelectorAll('.v12-pat-modal-bg').forEach(function(m) { m.remove(); });
+    const bg = document.createElement('div');
+    bg.className = 'v12-pat-modal-bg';
+    const cur = NS.gh.getPAT();
+    const mask = cur ? cur.slice(0,7) + '…' + cur.slice(-4) : '';
+    bg.innerHTML = '<div class="v12-pat-modal"><h3>⚙ GitHub Sync — Multi-device</h3>' +
+      '<p>Edit content từ nhiều device qua GitHub. Edits tự động push sau 4 giây.</p>' +
+      '<ol><li>Mở <a href="https://github.com/settings/tokens/new?scopes=repo&description=Shadow+English+Sync" target="_blank" rel="noopener">github.com/settings/tokens/new</a></li>' +
+      '<li>Scope: <code>repo</code> (đã prefill)</li><li>Generate → copy ngay</li><li>Paste bên dưới</li></ol>' +
+      '<input type="password" id="v12-pat-input" placeholder="ghp_xxxxxxxxxxxxxxxx" value="' + cur + '" autocomplete="off" />' +
+      '<div class="v12-pat-actions">' +
+      '<button class="primary" onclick="SHADOW_V12._savePAT()">Save & enable</button>' +
+      (cur ? '<button class="danger" onclick="SHADOW_V12._removePAT()">Remove</button>' : '') +
+      '<button onclick="SHADOW_V12._closePATModal()">Cancel</button></div>' +
+      (cur ? '<p style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:10px">Current: <code>' + mask + '</code></p>' : '') +
+      '</div>';
+    document.body.appendChild(bg);
+    bg.onclick = function(e) { if (e.target === bg) NS._closePATModal(); };
+  };
+  NS._savePAT = function() {
+    const i = document.getElementById('v12-pat-input'); if (!i) return;
+    const p = i.value.trim();
+    NS.gh.setPAT(p);
+    NS._closePATModal();
+    toast(p ? '\u2713 PAT saved' : 'PAT cleared');
+    if (p && NS.currentTopicId) NS.pullOverlay(NS.currentTopicId);
+    if (NS._rerender) NS._rerender();
+  };
+  NS._removePAT = function() { NS.gh.setPAT(''); NS._closePATModal(); toast('PAT removed'); if (NS._rerender) NS._rerender(); };
+  NS._closePATModal = function() { document.querySelectorAll('.v12-pat-modal-bg').forEach(function(m) { m.remove(); }); };
+  if (!NS._origSaveOverlay_v122) {
+    NS._origSaveOverlay_v122 = NS.saveOverlay;
+    NS.saveOverlay = function(t, o) { NS._origSaveOverlay_v122(t, o); NS.queueOverlaySync(t); };
+  }
+  if (!NS._origRender_v122) {
+    NS._origRender_v122 = NS.renderTopicDetail;
+    NS.renderTopicDetail = function(v, t) { NS._origRender_v122(v, t); setTimeout(function() { if (NS.gh.hasPAT()) NS.pullOverlay(t); else NS._setSyncStatus(t, 'local'); }, 400); };
+  }
 
   // v12.0.3: Master toggle button — fixed at bottom-center, prominent UI
   NS._renderMasterToggle = function() {
