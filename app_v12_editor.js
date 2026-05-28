@@ -8,7 +8,7 @@
 
 (function setupV12Editor() {
   const NS = window.SHADOW_V12 = window.SHADOW_V12 || {};
-  NS.version = '12.0.2';
+  NS.version = '12.0.3';
 
   // ============= STATE =============
   NS.editMode = false;
@@ -159,11 +159,20 @@
     NS.editMode = !NS.editMode;
     NS._rerender();
     if (NS.editMode) {
-      toast('✏ Edit mode ON — Click bất kỳ block nào để chỉnh');
+      toast('✏ Edit mode — click section/block để chỉnh sửa');
     } else {
-      toast('👁 Preview mode — đã lưu mọi thay đổi local');
+      toast('👁 Preview mode — đây là cách anh học thực tế');
     }
   };
+
+  // v12.0.3: notionOverrides editable sections
+  NS.EDITABLE_SECTIONS = [
+    { key: 'why',           titleRegex: /WHY THIS TOPIC|WHY/i,           label: 'Why this topic',          multiline: true },
+    { key: 'scene',         titleRegex: /THE SCENE|SCENE/i,              label: 'The scene',               multiline: true },
+    { key: 'shadow_script', titleRegex: /SHADOWING SCRIPT|SHADOW SCRIPT/i, label: 'Shadowing script',      multiline: true },
+    { key: 'missions',      titleRegex: /REAL LIFE MISSIONS|MISSIONS/i,  label: 'Real life missions',     multiline: true },
+    { key: 'active_recall', titleRegex: /ACTIVE RECALL|RECALL/i,         label: 'Active recall',           multiline: true }
+  ];
 
   // ============= CSS INJECTION (G9 versioned ID) =============
   function injectCSS() {
@@ -367,6 +376,85 @@
       }
       .v12-empty-hint .v12-arrow { color: rgba(180,140,255,0.8); font-style: normal; }
 
+      /* v12.0.3: Master Edit/Preview toggle in topic detail header */
+      .v12-master-toggle {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 24px;
+        background: rgba(20,18,40,0.92);
+        backdrop-filter: blur(12px);
+        border: 1.5px solid rgba(124,92,255,0.4);
+        color: rgba(255,255,255,0.95);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(124,92,255,0.2);
+        transition: all 220ms ease-out;
+      }
+      .v12-master-toggle:hover {
+        transform: translateX(-50%) translateY(-2px);
+        border-color: rgba(124,92,255,0.7);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.5), 0 0 30px rgba(124,92,255,0.35);
+      }
+      .v12-master-toggle.editing {
+        background: linear-gradient(135deg, rgba(124,92,255,0.95), rgba(180,140,255,0.95));
+        border-color: rgba(255,255,255,0.4);
+      }
+      .v12-master-toggle .v12-master-icon { font-size: 15px; }
+
+      /* v12.0.3: Section edit button (✏ on each editable native section) */
+      .v12-section-edit-btn {
+        display: none;
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        background: rgba(124,92,255,0.12);
+        border: 1px solid rgba(124,92,255,0.3);
+        color: rgba(180,140,255,0.95);
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        z-index: 5;
+        transition: all 180ms ease-out;
+      }
+      .editor-on .v12-section-edit-btn { display: inline-flex; align-items: center; gap: 4px; }
+      .v12-section-edit-btn:hover {
+        background: rgba(124,92,255,0.25);
+        color: white;
+        border-color: rgba(180,140,255,0.6);
+      }
+      .v12-section-editing {
+        outline: 2px solid rgba(180,140,255,0.7);
+        outline-offset: 2px;
+        background: rgba(124,92,255,0.06);
+        border-radius: 4px;
+        padding: 6px 10px;
+        white-space: pre-wrap;
+        min-height: 32px;
+      }
+      .v12-section-editing:focus { outline-color: rgba(180,140,255,0.95); }
+
+      /* v12.0.3: badge ✓ on overridden sections in preview mode (subtle indicator) */
+      .v12-overridden-badge {
+        display: none;
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        font-size: 10px;
+        color: rgba(180,140,255,0.5);
+        font-style: italic;
+        pointer-events: none;
+      }
+      body:not(.editor-on-body) .v12-overridden-badge.show { display: inline; }
+
       .v12-add-block-btn {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 8px 16px;
@@ -481,11 +569,10 @@
     if (NS.editMode) view.classList.add('editor-on');
     else view.classList.remove('editor-on');
 
-    // Remove existing v12 elements (idempotent)
+    // Remove existing v12 injected elements (idempotent)
     view.querySelectorAll('.v12-edit-toggle-floating, .v12-video-immersion, .v12-editor-section, .v12-status-bar').forEach(el => el.remove());
-
-    // v12.0.2: Edit mode toggle is now INSIDE CUSTOM CONTENT section header (not floating)
-    // No floating toggle anymore — was hidden behind Internal Insight panel
+    // Also remove existing master toggle (it's appended to body, not view)
+    document.querySelectorAll('.v12-master-toggle').forEach(el => el.remove());
 
     // 1. Insert Video Immersion section before Core Phrases
     const videoSection = NS._renderVideoImmersionSection(topicId);
@@ -493,7 +580,6 @@
     if (phrasesAnchor && phrasesAnchor.parentNode) {
       phrasesAnchor.parentNode.insertBefore(videoSection, phrasesAnchor);
     } else {
-      // Fallback: append after first card (likely WHY)
       const firstCard = view.querySelector('.card');
       if (firstCard && firstCard.nextSibling) firstCard.parentNode.insertBefore(videoSection, firstCard.nextSibling);
       else view.appendChild(videoSection);
@@ -502,6 +588,154 @@
     // 2. Editor Section (toggle in header + custom blocks + Add Block button always visible)
     const editorSection = NS._renderEditorSection(topicId);
     view.appendChild(editorSection);
+
+    // 3. v12.0.3: Apply Notion overrides + add edit buttons to native sections
+    NS._applyNotionOverrides(view, topicId);
+
+    // 4. v12.0.3: Master Edit/Preview toggle (floating bottom-center)
+    NS._renderMasterToggle();
+  };
+
+  // v12.0.3: Master toggle button — fixed at bottom-center, prominent UI
+  NS._renderMasterToggle = function() {
+    const btn = document.createElement('button');
+    btn.className = 'v12-master-toggle' + (NS.editMode ? ' editing' : '');
+    btn.innerHTML = NS.editMode
+      ? '<span class="v12-master-icon">👁</span> <span>Preview lesson</span>'
+      : '<span class="v12-master-icon">✏</span> <span>Edit this lesson</span>';
+    btn.onclick = function() { NS.toggleEditMode(); };
+    document.body.appendChild(btn);
+  };
+
+  // v12.0.3: Apply notion overrides + inject edit buttons on editable sections
+  NS._applyNotionOverrides = function(view, topicId) {
+    const overlay = NS.getOverlay(topicId);
+    const overrides = overlay.notionOverrides || {};
+
+    NS.EDITABLE_SECTIONS.forEach(function(sec) {
+      const card = NS._findCardByTitle(view, sec.titleRegex);
+      if (!card) return;
+
+      // Ensure card is positioned for absolute children
+      if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+
+      // Apply override (replace content text)
+      const contentEl = NS._findEditableContent(card);
+      if (contentEl && overrides[sec.key] != null) {
+        contentEl.textContent = overrides[sec.key];
+        contentEl.classList.add('v12-override-applied');
+      }
+
+      // Inject edit button (idempotent)
+      let editBtn = card.querySelector('.v12-section-edit-btn');
+      if (!editBtn) {
+        editBtn = document.createElement('button');
+        editBtn.className = 'v12-section-edit-btn';
+        editBtn.dataset.sectionKey = sec.key;
+        editBtn.innerHTML = '✏ Edit';
+        editBtn.title = 'Edit ' + sec.label;
+        editBtn.onclick = function(e) {
+          e.stopPropagation();
+          NS._editSection(card, sec.key, sec.label, topicId);
+        };
+        card.appendChild(editBtn);
+      }
+    });
+  };
+
+  NS._findCardByTitle = function(view, regex) {
+    const titles = view.querySelectorAll('.card-title');
+    for (var i = 0; i < titles.length; i++) {
+      var txt = (titles[i].textContent || '').trim();
+      if (regex.test(txt)) {
+        return titles[i].closest('.card') || titles[i].parentElement;
+      }
+    }
+    return null;
+  };
+
+  NS._findEditableContent = function(card) {
+    // Skip title, edit button, badges → find first content element with text
+    const title = card.querySelector('.card-title');
+    if (!title) return null;
+    var next = title.nextElementSibling;
+    while (next) {
+      var cls = next.className || '';
+      if (typeof cls === 'string' &&
+          !cls.includes('v12-section-edit-btn') &&
+          !cls.includes('v12-overridden-badge') &&
+          next.tagName !== 'BUTTON') {
+        return next;
+      }
+      next = next.nextElementSibling;
+    }
+    return null;
+  };
+
+  NS._editSection = function(card, sectionKey, sectionLabel, topicId) {
+    const contentEl = NS._findEditableContent(card);
+    if (!contentEl) {
+      toast('Không tìm thấy phần content để edit');
+      return;
+    }
+
+    // Save original HTML in case anh cancels
+    const originalHTML = contentEl.innerHTML;
+    const originalText = contentEl.textContent;
+
+    // Make editable
+    contentEl.contentEditable = 'true';
+    contentEl.classList.add('v12-section-editing');
+    contentEl.style.whiteSpace = 'pre-wrap';
+    contentEl.focus();
+
+    // Select all text for easy replace
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(contentEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch(e) {}
+
+    var cancelled = false;
+    const finish = function() {
+      if (cancelled) {
+        contentEl.innerHTML = originalHTML;
+      } else {
+        const newText = contentEl.textContent.trim();
+        const overlay = NS.getOverlay(topicId);
+        overlay.notionOverrides = overlay.notionOverrides || {};
+        if (newText === '' || newText === originalText) {
+          // No change or cleared — remove override
+          delete overlay.notionOverrides[sectionKey];
+          contentEl.innerHTML = originalHTML;
+        } else {
+          overlay.notionOverrides[sectionKey] = newText;
+          contentEl.textContent = newText;
+        }
+        NS.saveOverlay(topicId, overlay);
+        toast('💾 Đã lưu "' + sectionLabel + '" — bấm 👁 Preview để xem');
+      }
+      contentEl.contentEditable = 'false';
+      contentEl.classList.remove('v12-section-editing');
+    };
+
+    const onKey = function(e) {
+      if (e.key === 'Escape') {
+        cancelled = true;
+        contentEl.blur();
+      } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        // Ctrl/Cmd + Enter = save
+        contentEl.blur();
+      }
+    };
+
+    contentEl.addEventListener('keydown', onKey);
+    contentEl.addEventListener('blur', function() {
+      contentEl.removeEventListener('keydown', onKey);
+      finish();
+    }, { once: true });
   };
 
   NS._findPhrasesCard = function(view) {
