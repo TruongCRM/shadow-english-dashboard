@@ -8,7 +8,7 @@
 
 (function setupV12Editor() {
   const NS = window.SHADOW_V12 = window.SHADOW_V12 || {};
-  NS.version = '12.0.3';
+  NS.version = '12.1.0';
 
   // ============= STATE =============
   NS.editMode = false;
@@ -454,6 +454,21 @@
         pointer-events: none;
       }
       body:not(.editor-on-body) .v12-overridden-badge.show { display: inline; }
+      .v12-phrase-group { margin: 16px 0; }
+      .v12-phrase-group-title { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: rgba(255,255,255,0.6); text-transform: uppercase; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+      .v12-phrase-row { position: relative; display: flex; gap: 14px; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; margin: 6px 0; transition: all 150ms ease-out; }
+      .editor-on .v12-phrase-row:hover { background: rgba(124,92,255,0.06); border-color: rgba(124,92,255,0.2); }
+      .v12-phrase-en { flex: 1; font-weight: 600; font-size: 13px; color: rgba(255,255,255,0.95); padding: 4px 6px; border-radius: 4px; }
+      .v12-phrase-vi { flex: 1; font-size: 11.5px; color: rgba(255,255,255,0.6); text-align: right; padding: 4px 6px; border-radius: 4px; }
+      .v12-phrase-en[contenteditable="true"], .v12-phrase-vi[contenteditable="true"] { outline: 2px solid rgba(180,140,255,0.7); background: rgba(124,92,255,0.1); text-align: left; }
+      .v12-phrase-actions { display: none; gap: 3px; background: rgba(13,11,31,0.95); padding: 3px 5px; border-radius: 6px; border: 1px solid rgba(124,92,255,0.2); }
+      .editor-on .v12-phrase-row:hover .v12-phrase-actions { display: inline-flex; }
+      .v12-phrase-actions button { background: transparent; border: none; color: rgba(255,255,255,0.6); font-size: 12px; padding: 3px 5px; border-radius: 4px; cursor: pointer; }
+      .v12-phrase-actions button:hover { background: rgba(124,92,255,0.25); color: white; }
+      .v12-phrase-actions button[data-act="del"]:hover { background: rgba(239,68,68,0.25); color: #ef4444; }
+      .v12-add-phrase-btn { display: none; margin: 8px 0; padding: 6px 14px; border-radius: 16px; background: rgba(124,92,255,0.1); border: 1px dashed rgba(124,92,255,0.3); color: rgba(180,140,255,0.9); font-size: 11.5px; cursor: pointer; transition: all 150ms ease-out; }
+      .editor-on .v12-add-phrase-btn { display: inline-flex; align-items: center; gap: 4px; }
+      .v12-add-phrase-btn:hover { background: rgba(124,92,255,0.2); color: white; border-color: rgba(124,92,255,0.5); }
 
       .v12-add-block-btn {
         display: inline-flex; align-items: center; gap: 6px;
@@ -592,9 +607,26 @@
     // 3. v12.0.3: Apply Notion overrides + add edit buttons to native sections
     NS._applyNotionOverrides(view, topicId);
 
-    // 4. v12.0.3: Master Edit/Preview toggle (floating bottom-center)
+    // 4. v12.1: CORE PHRASES editor
+    NS._renderCorePhrasesEditor(view, topicId);
+
+    // 5. v12.0.3: Master Edit/Preview toggle (floating bottom-center)
     NS._renderMasterToggle();
   };
+
+  // ============= v12.1: CORE PHRASES EDITOR =============
+  NS.PHRASE_GROUPS = ['before', 'during', 'after'];
+  NS.PHRASE_GROUP_LABELS = { before: 'BEFORE', during: 'DURING', after: 'AFTER' };
+  NS._escape = function(s) { return String(s).replace(/[&<>"']/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+  NS._normalizePhrase = function(p) { return { en: p.en || p.english || '', vi: p.vi || p.vietnamese || '' }; };
+  NS._getEffectivePhrases = function(topicId) { const overlay = NS.getOverlay(topicId); const overrides = overlay.notionOverrides?.phrases || {}; let native = { before: [], during: [], after: [] }; try { const content = window.SHADOW_CONTENT?.getContent?.(topicId) || {}; if (content.phrases) native = { before: Array.isArray(content.phrases.before) ? content.phrases.before : [], during: Array.isArray(content.phrases.during) ? content.phrases.during : [], after: Array.isArray(content.phrases.after) ? content.phrases.after : [] }; } catch(e) {} return { before: (overrides.before || native.before).map(NS._normalizePhrase), during: (overrides.during || native.during).map(NS._normalizePhrase), after: (overrides.after || native.after).map(NS._normalizePhrase) }; };
+  NS._savePhrases = function(topicId, phrases) { const overlay = NS.getOverlay(topicId); overlay.notionOverrides = overlay.notionOverrides || {}; overlay.notionOverrides.phrases = phrases; NS.saveOverlay(topicId, overlay); const view = document.getElementById('view-topic-detail'); if (view) NS._renderCorePhrasesEditor(view, topicId); };
+  NS._renderCorePhrasesEditor = function(view, topicId) { const card = NS._findCardByTitle(view, /CORE PHRASES/i); if (!card) return; if (getComputedStyle(card).position === 'static') card.style.position = 'relative'; const phrases = NS._getEffectivePhrases(topicId); const title = card.querySelector('.card-title'); Array.from(card.children).forEach(ch => { if (ch === title) return; if (ch.classList && ch.classList.contains('v12-section-edit-btn')) { ch.style.display = 'none'; return; } if (ch.classList && ch.classList.contains('v12-overridden-badge')) return; ch.remove(); }); NS.PHRASE_GROUPS.forEach(function(group) { const groupEl = document.createElement('div'); groupEl.className = 'v12-phrase-group'; groupEl.dataset.group = group; groupEl.innerHTML = '<div class="v12-phrase-group-title">' + NS.PHRASE_GROUP_LABELS[group] + '</div>'; const list = document.createElement('div'); list.className = 'v12-phrase-rows'; groupEl.appendChild(list); (phrases[group] || []).forEach(function(phrase, idx) { list.appendChild(NS._renderPhraseRow(phrase, idx, group, topicId)); }); const addBtn = document.createElement('button'); addBtn.className = 'v12-add-phrase-btn'; addBtn.innerHTML = '+ Add phrase'; addBtn.onclick = function() { NS._addPhrase(group, topicId); }; groupEl.appendChild(addBtn); card.appendChild(groupEl); }); };
+  NS._renderPhraseRow = function(phrase, idx, group, topicId) { const row = document.createElement('div'); row.className = 'v12-phrase-row'; row.dataset.idx = idx; row.dataset.group = group; row.innerHTML = '<span class="v12-phrase-en">' + NS._escape(phrase.en) + '</span><span class="v12-phrase-vi">' + NS._escape(phrase.vi) + '</span><span class="v12-phrase-actions"><button data-act="edit">\u270F</button><button data-act="up">\u2191</button><button data-act="down">\u2193</button><button data-act="del">\uD83D\uDDD1</button></span>'; row.querySelectorAll('button').forEach(function(btn) { btn.onclick = function(e) { e.stopPropagation(); const act = btn.dataset.act; if (act === 'edit') NS._editPhrase(row, idx, group, topicId); else if (act === 'up') NS._movePhrase(idx, group, -1, topicId); else if (act === 'down') NS._movePhrase(idx, group, +1, topicId); else if (act === 'del') { if (confirm('Xoa phrase nay?')) NS._deletePhrase(idx, group, topicId); } }; }); row.querySelector('.v12-phrase-en').onclick = function() { if (NS.editMode) NS._editPhrase(row, idx, group, topicId); }; row.querySelector('.v12-phrase-vi').onclick = function() { if (NS.editMode) NS._editPhrase(row, idx, group, topicId); }; return row; };
+  NS._editPhrase = function(row, idx, group, topicId) { const enEl = row.querySelector('.v12-phrase-en'); const viEl = row.querySelector('.v12-phrase-vi'); if (!enEl || !viEl) return; enEl.contentEditable = 'true'; viEl.contentEditable = 'true'; enEl.focus(); try { const r = document.createRange(); r.selectNodeContents(enEl); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } catch(e) {} let done = false; const finish = function() { if (done) return; done = true; enEl.contentEditable = 'false'; viEl.contentEditable = 'false'; const phrases = NS._getEffectivePhrases(topicId); const arr = phrases[group].slice(); arr[idx] = { en: enEl.textContent.trim(), vi: viEl.textContent.trim() }; phrases[group] = arr; NS._savePhrases(topicId, phrases); }; const onKey = function(e) { if (e.key === 'Escape') finish(); else if (e.key === 'Tab' && !e.shiftKey && document.activeElement === enEl) { e.preventDefault(); viEl.focus(); const r = document.createRange(); r.selectNodeContents(viEl); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finish(); } }; enEl.addEventListener('keydown', onKey); viEl.addEventListener('keydown', onKey); enEl.addEventListener('blur', function() { setTimeout(function() { if (document.activeElement !== viEl) finish(); }, 50); }); viEl.addEventListener('blur', function() { setTimeout(function() { if (document.activeElement !== enEl) finish(); }, 50); }); };
+  NS._addPhrase = function(group, topicId) { const phrases = NS._getEffectivePhrases(topicId); phrases[group] = phrases[group].slice(); phrases[group].push({ en: 'New phrase', vi: 'Cum moi' }); NS._savePhrases(topicId, phrases); setTimeout(function() { const view = document.getElementById('view-topic-detail'); const newRow = view?.querySelector('.v12-phrase-row[data-group="' + group + '"][data-idx="' + (phrases[group].length - 1) + '"]'); if (newRow) NS._editPhrase(newRow, phrases[group].length - 1, group, topicId); }, 80); };
+  NS._deletePhrase = function(idx, group, topicId) { const phrases = NS._getEffectivePhrases(topicId); phrases[group] = phrases[group].slice(); phrases[group].splice(idx, 1); NS._savePhrases(topicId, phrases); };
+  NS._movePhrase = function(idx, group, dir, topicId) { const phrases = NS._getEffectivePhrases(topicId); const arr = phrases[group].slice(); const newIdx = idx + dir; if (newIdx < 0 || newIdx >= arr.length) return; const [moved] = arr.splice(idx, 1); arr.splice(newIdx, 0, moved); phrases[group] = arr; NS._savePhrases(topicId, phrases); };
 
   // v12.0.3: Master toggle button — fixed at bottom-center, prominent UI
   NS._renderMasterToggle = function() {
