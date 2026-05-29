@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.1.6';
+  NS.version = '13.1.7';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -743,6 +743,28 @@
       .card.sr-engine *, .sr-engine * { min-width: 0 !important; max-width: 100% !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; flex-shrink: 1 !important; }
       .card.sr-engine label, .sr-engine label { width: 100% !important; display: flex !important; align-items: flex-start !important; gap: 8px !important; }
       .card.sr-engine input[type=checkbox], .sr-engine input[type=checkbox] { flex: 0 0 auto !important; min-width: 18px !important; }
+      /* v13.1.7: Sidebar hide + Stat-card + Missions-card mobile */
+      @media (max-width: 700px) {
+        aside.sidebar, .sidebar, [class*="sidebar"]:not([class*="main"]) { display: none !important; }
+        .main, .content { margin-left: 0 !important; padding-left: 0 !important; max-width: 100vw !important; }
+        .card.stat-card { padding: 12px 14px !important; min-height: 0 !important; }
+        .card.stat-card h1, .card.stat-card h2, .card.stat-card .big, .card.stat-card [class*="value"], .card.stat-card [class*="num"] { font-size: 24px !important; line-height: 1.1 !important; }
+        .card.stat-card div, .card.stat-card span { font-size: 11.5px; }
+        .card.stat-card .card-title { font-size: 10px !important; }
+        .card.missions-card, .missions-card { padding: 14px 16px !important; min-height: 0 !important; }
+        .missions-card .mission-row, .mission-row { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px !important; flex-wrap: nowrap !important; padding: 6px 0 !important; width: 100% !important; }
+        .missions-card .mission-row > *, .mission-row > * { min-width: 0 !important; }
+        .missions-card .name, .mission-row .name, .mission-row span, .mission-row label { flex: 1 1 0 !important; min-width: 0 !important; max-width: 100% !important; width: auto !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; font-size: 13px !important; text-align: left !important; }
+        .mission-row input[type=checkbox], .missions-card input[type=checkbox] { flex: 0 0 18px !important; width: 18px !important; height: 18px !important; }
+        .missions-card .name * { white-space: normal !important; word-break: normal !important; }
+        .card { display: block !important; box-sizing: border-box !important; }
+        .card > * { box-sizing: border-box !important; max-width: 100% !important; }
+      }
+      @media (max-width: 400px) {
+        .card.stat-card h1, .card.stat-card h2, .card.stat-card .big { font-size: 20px !important; }
+        .mission-row .name, .missions-card .name { font-size: 12.5px !important; }
+      }
+
       .card.v13-memory-health { padding: 16px 18px !important; gap: 12px !important; }
       .v13-memory-health .card-title { font-size: 10.5px !important; }
       .v13-health-state { padding: 4px 0 !important; }
