@@ -1,33 +1,30 @@
 /* ============================================================================
- * SHADOW ENGLISH - v21  DASHBOARD UX POLISH V1   (UI/UX ONLY - NO NEW LOGIC)
+ * SHADOW ENGLISH - v21  DASHBOARD UX POLISH   (UI/UX ONLY - NO NEW LOGIC)
+ * v21.1.0 - compact hero + responsive polish
  * ----------------------------------------------------------------------------
  * 100% ADDITIVE & PRESENTATIONAL. Adds ZERO learning/AI/review/memory logic and
- * ZERO data structures. It only RE-PRESENTS data that v20 already computes:
+ * ZERO data structures. It only RE-PRESENTS data v20 already computes:
  *   window.SHADOW_V20.smartNextAction() / memoryHealth() / coachRecommendation()
  *   / dailyPlan() / rescueList()
  *
- * What it does (UI only):
- *   1) Full-width HERO ("TODAY'S MISSION") = the Smart Next Action, promoted.
- *   2) Compact KPI-style Memory Health (much shorter).
- *   3) Coach Recommendation restyled as a trainer message ("COACH NOI").
- *   4) Today's Plan as a numbered timeline (not a table).
- *   5) Responsive 2-column layout that fills the full content width
- *      (fixes the empty right area: v20/v14 roots only occupied 1 grid cell;
- *       v21 root spans grid-column 1/-1).
- *   6) Better type scale / spacing / shadows / section titles.
- *
- * It hides v20's raw panel (#shadow-v20-root) via CSS and widens v14's priority
- * row to full width via CSS - both presentational, no code in v20/v14 touched.
+ * v21.1.0 changes (UI only):
+ *   - Hero is now a COMPACT horizontal card (~180px tall, < 25% viewport):
+ *     text on the left, CTA on the right; reduced vertical padding.
+ *   - Uses CSS `order` so the v21 block (Mission/Health/Coach/Plan) is the FIRST
+ *     thing on screen and v14's priority row drops below it -> first viewport
+ *     shows all four key panels without scrolling on a 1366x768 laptop.
+ *   - Responsive: 2-col grid collapses to 1-col on tablets/phones; hero stacks;
+ *     no horizontal overflow; CTAs stay tappable.
  *
  * Does NOT touch: Learning Loop, Review Engine, Memory Engine, Gemini, Topic
- * storage, Overlay structure, or any v20 engine. CTAs reuse v20's existing
- * delegated launcher (data-v20-start). Revert = delete this one <script> line;
- * the v20 panel reappears unchanged. Run SHADOW_V21.selfTest() to verify.
+ * storage, Overlay structure, or any v20 engine. CTAs reuse v20's delegated
+ * launcher (data-v20-start). Revert = delete this one <script> line.
+ * Run SHADOW_V21.selfTest() to verify.
  * ========================================================================== */
 (function () {
   'use strict';
   if (window.SHADOW_V21) return;
-  var VERSION = 'v21.0.0';
+  var VERSION = 'v21.1.0';
 
   function log() { try { console.log.apply(console, ['[v21]'].concat([].slice.call(arguments))); } catch (e) {} }
   function esc(s) {
@@ -46,23 +43,29 @@
   function heroHTML(sna) {
     if (!sna) {
       return '<div class="v21-hero v21-hero--done">' +
-        '<div class="v21-hero-label">TODAY\'S MISSION</div>' +
-        '<div class="v21-hero-title">✅ Hôm nay bạn đã ôn xong</div>' +
-        '<div class="v21-hero-why">Không có trí nhớ nào đang phai. Quay lại sau để giữ chúng sắc bén.</div>' +
+        '<div class="v21-hero-main">' +
+          '<div class="v21-hero-label">TODAY\'S MISSION</div>' +
+          '<div class="v21-hero-title">✅ Hôm nay bạn đã ôn xong</div>' +
+          '<div class="v21-hero-why">Không có trí nhớ nào đang phai. Quay lại sau để giữ chúng sắc bén.</div>' +
+        '</div>' +
       '</div>';
     }
     var verb = sna.mode === 'review' ? 'Review' : 'Learn';
     var why = (sna.reasons && sna.reasons.length) ? sna.reasons.join(' · ') : 'Recommended next step';
     return '<div class="v21-hero v21-hero--' + sna.mode + '">' +
-      '<div class="v21-hero-label">TODAY\'S MISSION</div>' +
-      '<div class="v21-hero-title">' + esc(temoji(sna.topic)) + ' ' + verb + ': ' + esc(tname(sna.topic)) + '</div>' +
-      '<div class="v21-hero-why"><b>Why</b> ' + esc(why) + '</div>' +
-      '<div class="v21-hero-meta">' +
-        '<span class="v21-chip">⏱ ~' + sna.estMin + ' minutes</span>' +
-        '<span class="v21-chip v21-chip--' + pcls(sna.score) + '">Priority: ' + plabel(sna.score) + '</span>' +
+      '<div class="v21-hero-main">' +
+        '<div class="v21-hero-label">TODAY\'S MISSION</div>' +
+        '<div class="v21-hero-title">' + esc(temoji(sna.topic)) + ' ' + verb + ': ' + esc(tname(sna.topic)) + '</div>' +
+        '<div class="v21-hero-why"><b>Why</b> ' + esc(why) + '</div>' +
+        '<div class="v21-hero-meta">' +
+          '<span class="v21-chip">⏱ ~' + sna.estMin + ' min</span>' +
+          '<span class="v21-chip v21-chip--' + pcls(sna.score) + '">Priority: ' + plabel(sna.score) + '</span>' +
+        '</div>' +
       '</div>' +
-      '<button class="v21-cta" data-v20-start="' + esc(tid(sna.topic)) + '" data-v20-mode="' + sna.mode + '">' +
-        (sna.mode === 'review' ? 'Start Review' : 'Start Learning') + ' →</button>' +
+      '<div class="v21-hero-cta-wrap">' +
+        '<button class="v21-cta" data-v20-start="' + esc(tid(sna.topic)) + '" data-v20-mode="' + sna.mode + '">' +
+          (sna.mode === 'review' ? 'Start Review' : 'Start Learning') + ' →</button>' +
+      '</div>' +
     '</div>';
   }
 
@@ -100,7 +103,7 @@
       '</button>';
     }).join('');
     return '<div class="v21-card v21-plan">' +
-      '<div class="v21-sec-title">📋 TODAY\'S PLAN <span class="v21-plan-total">Total: ' + p.total + ' minutes</span></div>' +
+      '<div class="v21-sec-title">📋 TODAY\'S PLAN <span class="v21-plan-total">Total: ' + p.total + ' min</span></div>' +
       '<div class="v21-timeline">' + steps + '</div>' +
     '</div>';
   }
@@ -141,7 +144,7 @@
 
     var root = document.getElementById('shadow-v21-root');
     if (!root) { root = document.createElement('section'); root.id = 'shadow-v21-root'; }
-    if (root.parentNode !== h || h.firstChild !== root) h.insertBefore(root, h.firstChild);
+    if (root.parentNode !== h) h.insertBefore(root, h.firstChild); // ordering enforced via CSS `order`
 
     var sna, health, coach, plan, rescue;
     try {
@@ -167,74 +170,92 @@
     var css = document.createElement('style');
     css.id = 'shadow-v21-css';
     css.textContent = [
-      /* take the full content width (fixes empty right area) + hide raw v20 panel */
-      '#shadow-v21-root{grid-column:1/-1!important;display:flex;flex-direction:column;gap:18px;margin:0 0 22px;font-family:inherit;width:100%}',
+      /* full content width + force this block to the TOP via grid order */
+      '#shadow-v21-root{grid-column:1/-1!important;order:-2!important;display:flex;flex-direction:column;gap:14px;margin:0 0 16px;font-family:inherit;width:100%;min-width:0}',
       '#shadow-v21-root *{box-sizing:border-box}',
       '#shadow-v20-root{display:none!important}',
-      '#loopv14-root{grid-column:1/-1!important}',
+      /* v14 priority row: full width, placed just AFTER the v21 block */
+      '#loopv14-root{grid-column:1/-1!important;order:-1!important}',
       /* shared card */
-      '.v21-card{background:var(--card,#1a1838);border:1px solid var(--border,#2a2750);border-radius:20px;padding:20px 22px;box-shadow:0 6px 22px rgba(0,0,0,.18)}',
-      '.v21-sec-title{font-size:12px;letter-spacing:.18em;font-weight:800;opacity:.65;margin-bottom:14px;display:flex;align-items:center;gap:10px;color:var(--text,#fff)}',
-      /* HERO */
-      '.v21-hero{position:relative;border-radius:24px;padding:30px 32px;color:#fff;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.32)}',
+      '.v21-card{background:var(--card,#1a1838);border:1px solid var(--border,#2a2750);border-radius:18px;padding:16px 18px;box-shadow:0 5px 18px rgba(0,0,0,.16)}',
+      '.v21-sec-title{font-size:11px;letter-spacing:.16em;font-weight:800;opacity:.65;margin-bottom:12px;display:flex;align-items:center;gap:9px;color:var(--text,#fff)}',
+      /* ===== COMPACT HERO (horizontal: text left, CTA right) ===== */
+      '.v21-hero{display:flex;align-items:center;gap:24px;border-radius:20px;padding:20px 26px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.28);min-height:0}',
       '.v21-hero--learn{background:linear-gradient(135deg,#6d4bff 0%,#3b1fa6 100%)}',
       '.v21-hero--review{background:linear-gradient(135deg,#e0405f 0%,#8c1d3a 100%)}',
       '.v21-hero--done{background:linear-gradient(135deg,#2b9e6b 0%,#13603f 100%)}',
-      '.v21-hero-label{font-size:12px;letter-spacing:.24em;font-weight:800;opacity:.82;margin-bottom:12px}',
-      '.v21-hero-title{font-size:32px;line-height:1.15;font-weight:900;margin-bottom:12px}',
-      '.v21-hero-why{font-size:16px;line-height:1.5;opacity:.94;margin-bottom:18px;max-width:760px}',
+      '.v21-hero-main{flex:1;min-width:0}',
+      '.v21-hero-label{font-size:11px;letter-spacing:.22em;font-weight:800;opacity:.82;margin-bottom:7px}',
+      '.v21-hero-title{font-size:24px;line-height:1.15;font-weight:900;margin-bottom:7px;overflow-wrap:anywhere}',
+      '.v21-hero-why{font-size:14px;line-height:1.45;opacity:.93;margin-bottom:11px}',
       '.v21-hero-why b{opacity:.7;font-weight:800;margin-right:4px}',
-      '.v21-hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}',
-      '.v21-chip{background:rgba(255,255,255,.16);border-radius:24px;padding:7px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(2px)}',
+      '.v21-hero-meta{display:flex;flex-wrap:wrap;gap:9px}',
+      '.v21-chip{background:rgba(255,255,255,.16);border-radius:22px;padding:6px 13px;font-size:13px;font-weight:700}',
       '.v21-chip--high{background:rgba(255,255,255,.95);color:#b21f3a}',
       '.v21-chip--med{background:rgba(255,255,255,.92);color:#9a6b00}',
       '.v21-chip--low{background:rgba(255,255,255,.9);color:#4a3aa8}',
-      '.v21-cta{border:0;border-radius:14px;padding:15px 30px;font-size:16px;font-weight:800;cursor:pointer;background:#fff;color:#1a1838;box-shadow:0 6px 18px rgba(0,0,0,.25);transition:transform .08s ease,box-shadow .15s}',
-      '.v21-cta:hover{box-shadow:0 9px 26px rgba(0,0,0,.34)}',
+      '.v21-hero-cta-wrap{flex:0 0 auto}',
+      '.v21-cta{border:0;border-radius:14px;padding:14px 26px;font-size:15px;font-weight:800;cursor:pointer;background:#fff;color:#1a1838;box-shadow:0 6px 18px rgba(0,0,0,.22);transition:transform .08s ease,box-shadow .15s;white-space:nowrap}',
+      '.v21-cta:hover{box-shadow:0 9px 26px rgba(0,0,0,.32)}',
       '.v21-cta:active{transform:translateY(1px)}',
-      /* 2-col grid */
-      '.v21-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(320px,1.25fr);gap:18px;align-items:start}',
-      '.v21-col{display:flex;flex-direction:column;gap:18px;min-width:0}',
+      /* ===== 2-col grid ===== */
+      '.v21-grid{display:grid;grid-template-columns:minmax(260px,1fr) minmax(300px,1.25fr);gap:16px;align-items:start}',
+      '.v21-col{display:flex;flex-direction:column;gap:16px;min-width:0}',
       /* KPI memory health (compact) */
-      '.v21-kpi{padding:16px 20px}',
-      '.v21-kpi-row{display:flex;align-items:center;gap:14px;margin-bottom:10px}',
-      '.v21-kpi-num{font-size:34px;font-weight:900;line-height:1;color:var(--green,#22c55e)}',
-      '.v21-kpi-num small{font-size:15px;opacity:.7}',
-      '.v21-kpi-label{font-size:10px;letter-spacing:.18em;font-weight:800;opacity:.6;color:var(--text,#fff)}',
-      '.v21-kpi-sub{font-size:14px;font-weight:700;color:var(--text,#fff);margin-top:2px}',
+      '.v21-kpi{padding:14px 18px}',
+      '.v21-kpi-row{display:flex;align-items:center;gap:13px;margin-bottom:9px}',
+      '.v21-kpi-num{font-size:30px;font-weight:900;line-height:1;color:var(--green,#22c55e)}',
+      '.v21-kpi-num small{font-size:14px;opacity:.7}',
+      '.v21-kpi-label{font-size:10px;letter-spacing:.16em;font-weight:800;opacity:.6;color:var(--text,#fff)}',
+      '.v21-kpi-sub{font-size:13px;font-weight:700;color:var(--text,#fff);margin-top:2px}',
       '.v21-kpi-bar{height:6px;border-radius:6px;background:rgba(255,255,255,.10);overflow:hidden}',
       '.v21-kpi-bar span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#ef4444,#facc15,#22c55e)}',
       /* coach */
       '.v21-coach{background:linear-gradient(135deg,#211d44,#17142f)}',
-      '.v21-coach-head{font-size:12px;letter-spacing:.16em;font-weight:800;opacity:.7;margin-bottom:10px;color:var(--text,#fff);display:flex;align-items:center;gap:8px}',
-      '.v21-coach-ic{font-size:18px}',
-      '.v21-coach-text{font-size:16px;line-height:1.6;font-weight:600;color:var(--text,#fff)}',
+      '.v21-coach-head{font-size:11px;letter-spacing:.16em;font-weight:800;opacity:.7;margin-bottom:9px;color:var(--text,#fff);display:flex;align-items:center;gap:8px}',
+      '.v21-coach-ic{font-size:17px}',
+      '.v21-coach-text{font-size:15px;line-height:1.55;font-weight:600;color:var(--text,#fff)}',
       /* plan timeline */
-      '.v21-plan-total{margin-left:auto;background:rgba(124,92,255,.18);color:var(--purple,#7c5cff);border-radius:20px;padding:3px 12px;font-size:12px;letter-spacing:.02em}',
-      '.v21-timeline{display:flex;flex-direction:column;gap:10px}',
-      '.v21-step{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:13px 15px;cursor:pointer;color:var(--text,#fff);transition:background .15s}',
+      '.v21-plan-total{margin-left:auto;background:rgba(124,92,255,.18);color:var(--purple,#7c5cff);border-radius:20px;padding:3px 11px;font-size:11px}',
+      '.v21-timeline{display:flex;flex-direction:column;gap:9px}',
+      '.v21-step{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:13px;padding:11px 13px;cursor:pointer;color:var(--text,#fff);transition:background .15s}',
       '.v21-step:hover{background:rgba(255,255,255,.10)}',
-      '.v21-step-num{flex:0 0 26px;width:26px;height:26px;border-radius:50%;background:var(--purple,#7c5cff);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}',
-      '.v21-step-emoji{font-size:19px}',
-      '.v21-step-name{flex:1;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.v21-step-tag{font-size:10px;font-weight:800;letter-spacing:.04em;border-radius:20px;padding:3px 10px}',
+      '.v21-step-num{flex:0 0 24px;width:24px;height:24px;border-radius:50%;background:var(--purple,#7c5cff);color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}',
+      '.v21-step-emoji{font-size:18px}',
+      '.v21-step-name{flex:1;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}',
+      '.v21-step-tag{font-size:10px;font-weight:800;letter-spacing:.04em;border-radius:20px;padding:3px 9px;white-space:nowrap}',
       '.v21-step-tag.review{background:rgba(59,130,246,.2);color:var(--blue,#3b82f6)}',
       '.v21-step-tag.rescue{background:rgba(239,68,68,.2);color:var(--red,#ef4444)}',
       '.v21-step-tag.learn{background:rgba(34,197,94,.2);color:var(--green,#22c55e)}',
-      '.v21-step-min{font-size:13px;opacity:.7;font-weight:700}',
+      '.v21-step-min{font-size:12px;opacity:.7;font-weight:700;white-space:nowrap}',
       '.v21-step-go{font-size:13px;font-weight:800;opacity:.7}',
-      '.v21-plan-empty{font-size:14px;opacity:.6;padding:10px 4px;color:var(--text,#fff)}',
+      '.v21-plan-empty{font-size:14px;opacity:.6;padding:8px 4px;color:var(--text,#fff)}',
       /* rescue */
-      '.v21-rescue{border-radius:18px;padding:16px 20px;border:1px solid rgba(239,68,68,.5);background:linear-gradient(135deg,rgba(239,68,68,.16),rgba(239,68,68,.04))}',
-      '.v21-rescue-head{font-size:12px;letter-spacing:.12em;font-weight:800;color:var(--red,#ef4444);margin-bottom:12px;display:flex;align-items:center;gap:10px}',
+      '.v21-rescue{border-radius:16px;padding:14px 18px;border:1px solid rgba(239,68,68,.5);background:linear-gradient(135deg,rgba(239,68,68,.16),rgba(239,68,68,.04))}',
+      '.v21-rescue-head{font-size:11px;letter-spacing:.12em;font-weight:800;color:var(--red,#ef4444);margin-bottom:11px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}',
       '.v21-rescue-note{font-weight:600;letter-spacing:.02em;opacity:.85;text-transform:none}',
-      '.v21-rescue-head b{margin-left:auto;background:rgba(239,68,68,.25);border-radius:20px;padding:2px 11px;font-size:12px}',
-      '.v21-rescue-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:rgba(255,255,255,.05);border:0;border-radius:12px;padding:11px 14px;margin-bottom:8px;cursor:pointer;color:var(--text,#fff)}',
+      '.v21-rescue-head b{margin-left:auto;background:rgba(239,68,68,.25);border-radius:20px;padding:2px 10px;font-size:12px}',
+      '.v21-rescue-row{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:rgba(255,255,255,.05);border:0;border-radius:12px;padding:10px 13px;margin-bottom:7px;cursor:pointer;color:var(--text,#fff)}',
       '.v21-rescue-row:hover{background:rgba(255,255,255,.1)}',
-      '.v21-rescue-conf{font-size:13px;font-weight:800;color:var(--orange,#ff8a3d)}',
-      '.v21-rescue-days{font-size:12px;opacity:.6}',
-      /* responsive */
-      '@media(max-width:820px){.v21-grid{grid-template-columns:1fr}.v21-hero-title{font-size:26px}.v21-hero{padding:24px 22px}}'
+      '.v21-rescue-conf{font-size:13px;font-weight:800;color:var(--orange,#ff8a3d);white-space:nowrap}',
+      '.v21-rescue-days{font-size:12px;opacity:.6;white-space:nowrap}',
+      /* ===== responsive ===== */
+      /* tablet portrait & down: single column, hero stacks */
+      '@media(max-width:900px){',
+      '  .v21-grid{grid-template-columns:1fr}',
+      '  .v21-hero{flex-direction:column;align-items:stretch;gap:14px;padding:18px 20px}',
+      '  .v21-hero-title{font-size:21px}',
+      '  .v21-hero-cta-wrap .v21-cta{width:100%}',
+      '}',
+      /* phones */
+      '@media(max-width:430px){',
+      '  .v21-hero{padding:16px 16px;border-radius:16px}',
+      '  .v21-hero-title{font-size:19px}',
+      '  .v21-hero-why{font-size:13px}',
+      '  .v21-card{padding:14px 14px}',
+      '  .v21-step-tag{display:none}',
+      '  .v21-kpi-num{font-size:26px}',
+      '}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -254,6 +275,14 @@
     check('CTAs reuse v20 launcher (data-v20-start)', !root || /data-v20-start/.test(root.innerHTML) || !V20().smartNextAction());
     var v20root = document.getElementById('shadow-v20-root');
     check('raw v20 panel hidden', !v20root || getComputedStyle(v20root).display === 'none');
+    if (root && typeof root.getBoundingClientRect === 'function') {
+      var hero = root.querySelector('.v21-hero');
+      if (hero) {
+        var hh = Math.round(hero.getBoundingClientRect().height);
+        var vh = window.innerHeight || 768;
+        check('hero height <= 25% viewport (' + hh + 'px / ' + vh + 'px)', hh <= vh * 0.25 + 8 || hh <= 230);
+      }
+    }
     check('does NOT modify v14', !!window.LoopV14 ? typeof window.LoopV14.selfTest === 'function' : true);
 
     console.log('%c[v21] SELF-TEST ' + (ok ? 'PASSED' : 'FAILED'),
@@ -270,6 +299,7 @@
     injectCSS();
     render();
     window.addEventListener('hashchange', function () { setTimeout(render, 90); });
+    window.addEventListener('resize', function () { /* layout is pure CSS; no re-render needed */ });
     setInterval(function () {
       if (homeVisible() && !document.getElementById('shadow-v21-root')) render();
     }, 1800);
