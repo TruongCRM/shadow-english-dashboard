@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.1';
+  NS.version = '13.1.1';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -740,14 +740,14 @@
 
   // ============= v13.1: DAY 60 REVIEW TAB =============
   NS.addDay60Tab = function() {
-    const view = document.getElementById('view-review');
-    if (!view) return;
-    if (view.querySelector('[data-v13-day60]')) return;
-    const tabs = Array.from(view.querySelectorAll('button, [class*="tab"], [class*="chip"]'));
+    const tabsContainer = document.querySelector('.queue-tabs');
+    if (!tabsContainer) return;
+    if (tabsContainer.querySelector('[data-v13-day60]')) return;
+    const tabs = Array.from(tabsContainer.querySelectorAll('.queue-tab, [class*="queue-tab"], span, button'));
     let day21Tab = null;
     for (const t of tabs) {
       const txt = (t.textContent || '').trim();
-      if (/^Day 21/i.test(txt) && !t.querySelector('button')) { day21Tab = t; break; }
+      if (/^Day 21/i.test(txt) && t.children.length === 0) { day21Tab = t; break; }
     }
     if (!day21Tab) return;
     const state = NS.getState();
@@ -761,12 +761,14 @@
       e.stopPropagation();
       tabs.forEach(t => t.classList.remove('active'));
       day60.classList.add('active');
-      const rows = view.querySelectorAll('tr, [class*="queue-row"], [class*="review-row"], [class*="topic-row"]');
-      rows.forEach(row => {
-        if (row.tagName === 'TR' && row.querySelector('th')) return;
-        const stageText = row.textContent || '';
-        row.style.display = /Day 60/i.test(stageText) ? '' : 'none';
-      });
+      const table = document.querySelector('.queue-table');
+      if (table) {
+        const rows = table.querySelectorAll('tbody tr, tr:not(:first-child)');
+        rows.forEach(row => {
+          const stageText = row.textContent || '';
+          row.style.display = /Day 60/i.test(stageText) ? '' : 'none';
+        });
+      }
     };
   };
   (function hookReviewView() {
@@ -775,10 +777,10 @@
     const orig = window.navigate;
     window.navigate = function(viewId) {
       orig(viewId);
-      if (viewId === 'review') {
-        setTimeout(NS.addDay60Tab, 250);
-        setTimeout(NS.addDay60Tab, 700);
-        setTimeout(NS.addDay60Tab, 1500);
+      if (viewId === 'review' || viewId === 'home' || viewId === 'dashboard' || !viewId) {
+        setTimeout(NS.addDay60Tab, 350);
+        setTimeout(NS.addDay60Tab, 800);
+        setTimeout(NS.addDay60Tab, 1800);
       }
     };
     window.navigate.__v13_1_review_hooked = true;
