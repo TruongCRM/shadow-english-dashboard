@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.1.4';
+  NS.version = '13.1.3';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -738,11 +738,6 @@
         .mission-body, .mission-label, .mission-content, [class*=mission-] { min-width: 0 !important; max-width: 100% !important; width: 100% !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; }
         .mission-body *, .mission-label *, [class*=mission-] * { min-width: 0 !important; word-break: normal !important; overflow-wrap: break-word !important; white-space: normal !important; flex-shrink: 1 !important; }
         .mission-hero h1, .mission-hero h2, .mission-hero h3, .mission-hero div { font-size: clamp(14px, 4vw, 22px) !important; }
-        .card.sr-engine, .sr-engine { overflow-x: hidden !important; }
-        .card.sr-engine *, .sr-engine * { min-width: 0 !important; max-width: 100% !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; flex-shrink: 1 !important; }
-        .card.sr-engine label, .sr-engine label { width: 100% !important; display: flex !important; align-items: flex-start !important; gap: 8px !important; }
-        .card.sr-engine input[type=checkbox], .sr-engine input[type=checkbox] { flex: 0 0 auto !important; min-width: 18px !important; }
-
 
       }
       @media (max-width: 400px) {
@@ -773,11 +768,10 @@
 
   injectCSS();
   hookNavigate();
-  setTimeout(function(){ NS.addDay60Tab(); }, 800);
-  setTimeout(function(){ NS.addDay60Tab(); }, 2000);
-  setTimeout(function(){ NS.addDay60Tab(); }, 4000);
-  setTimeout(function(){ NS.addDay60Tab(); }, 8000);
-  window.__v13Day60Interval = setInterval(function(){ if (window.SHADOW_V13 && window.SHADOW_V13.addDay60Tab) window.SHADOW_V13.addDay60Tab(); }, 3000);
+  setTimeout(NS.addDay60Tab, 800);
+  setTimeout(NS.addDay60Tab, 2000);
+  setTimeout(NS.addDay60Tab, 4000);
+  setInterval(NS.addDay60Tab, 5000);
 
   
 
