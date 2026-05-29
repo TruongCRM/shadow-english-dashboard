@@ -782,6 +782,7 @@
         #view-home > *, #view-dashboard > *, #view-review > * { grid-column: 1 / -1 !important; min-width: 0 !important; }
         [data-section-id] { grid-column: 1 / -1 !important; }
         .v13-ma-cols { grid-template-columns: 1fr; gap: 18px; }
+        .levels-grid { grid-template-columns: 1fr !important; }
       }
       @media (max-width: 600px) {
         .v13-tier-name { font-size: 16px; }
