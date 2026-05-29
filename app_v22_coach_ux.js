@@ -24,7 +24,7 @@
 (function () {
   'use strict';
   if (window.SHADOW_V22) return;
-  var VERSION = 'v22.0.0';
+  var VERSION = 'v22.0.1';
 
   function log() { try { console.log.apply(console, ['[v22]'].concat([].slice.call(arguments))); } catch (e) {} }
   function esc(s) {
@@ -291,7 +291,7 @@
     if (!document.getElementById('shadow-v22-safety')) {
       var sf = document.createElement('style'); sf.id = 'shadow-v22-safety';
       sf.textContent = [
-        '@media(max-width:1100px){.levels-grid{grid-template-columns:1fr!important}}',
+        '@media(max-width:1500px){.levels-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))!important}}',
         '@media(max-width:900px){html,body{overflow-x:hidden!important;max-width:100%!important}.topics-row{flex-wrap:wrap!important;min-width:0!important}.level-card,.level-head,.level-sub,.progress-bar,.topics-row{max-width:100%!important;min-width:0!important}}'
       ].join('\n');
       document.head.appendChild(sf);
