@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.1.3';
+  NS.version = '13.1.5';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -738,6 +738,40 @@
         .mission-body, .mission-label, .mission-content, [class*=mission-] { min-width: 0 !important; max-width: 100% !important; width: 100% !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; }
         .mission-body *, .mission-label *, [class*=mission-] * { min-width: 0 !important; word-break: normal !important; overflow-wrap: break-word !important; white-space: normal !important; flex-shrink: 1 !important; }
         .mission-hero h1, .mission-hero h2, .mission-hero h3, .mission-hero div { font-size: clamp(14px, 4vw, 22px) !important; }
+      /* v13.1.5: TODAY FOCUS + MEMORY STATUS compact */
+      .card.sr-engine, .sr-engine { overflow-x: hidden !important; }
+      .card.sr-engine *, .sr-engine * { min-width: 0 !important; max-width: 100% !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; flex-shrink: 1 !important; }
+      .card.sr-engine label, .sr-engine label { width: 100% !important; display: flex !important; align-items: flex-start !important; gap: 8px !important; }
+      .card.sr-engine input[type=checkbox], .sr-engine input[type=checkbox] { flex: 0 0 auto !important; min-width: 18px !important; }
+      .card.v13-memory-health { padding: 16px 18px !important; gap: 12px !important; }
+      .v13-memory-health .card-title { font-size: 10.5px !important; }
+      .v13-health-state { padding: 4px 0 !important; }
+      .v13-health-state-label { font-size: 9.5px !important; margin-bottom: 5px !important; }
+      .v13-health-state-badge { padding: 6px 18px !important; font-size: 12.5px !important; }
+      .v13-health-state-subtitle { font-size: 11px !important; margin-top: 5px !important; }
+      .v13-health-breakdown { gap: 6px !important; }
+      .v13-breakdown-row { padding: 7px 4px !important; gap: 4px !important; border-radius: 6px !important; }
+      .v13-breakdown-count { font-size: 18px !important; }
+      .v13-breakdown-label { font-size: 8.5px !important; letter-spacing: 0.02em !important; line-height: 1.15 !important; }
+      .v13-health-heatmap { gap: 6px !important; }
+      .v13-heatmap-label { font-size: 9.5px !important; }
+      .v13-heatmap-period { font-size: 10px !important; }
+      .v13-heatmap-days { font-size: 9px !important; }
+      .v13-heatmap-grid { gap: 3px !important; }
+      .v13-hm-cell { border-radius: 2px !important; }
+      .v13-health-insights { padding: 10px 12px !important; gap: 5px !important; }
+      .v13-insight-row { font-size: 11.5px !important; line-height: 1.4 !important; gap: 6px !important; }
+      @media (max-width: 600px) {
+        .card.v13-memory-health { padding: 12px 14px !important; gap: 10px !important; }
+        .v13-health-state-badge { padding: 5px 14px !important; font-size: 11.5px !important; }
+        .v13-health-breakdown { gap: 4px !important; }
+        .v13-breakdown-row { padding: 6px 2px !important; }
+        .v13-breakdown-count { font-size: 16px !important; }
+        .v13-breakdown-label { font-size: 7.5px !important; }
+        .v13-insight-row { font-size: 10.5px !important; }
+        .v13-health-insights { padding: 8px 10px !important; }
+      }
+
 
       }
       @media (max-width: 400px) {
@@ -772,6 +806,8 @@
   setTimeout(NS.addDay60Tab, 2000);
   setTimeout(NS.addDay60Tab, 4000);
   setInterval(NS.addDay60Tab, 5000);
+  window.__v13Day60Interval = true;
+  window.addEventListener('load', function() { setTimeout(function(){ if (window.SHADOW_V13) window.SHADOW_V13.addDay60Tab(); }, 200); setTimeout(function(){ if (window.SHADOW_V13) window.SHADOW_V13.addDay60Tab(); }, 1500); });
 
   
 
