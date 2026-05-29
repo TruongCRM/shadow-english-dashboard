@@ -33,7 +33,13 @@
   function refreshDashboard() { try { if (window.shadowEN && typeof window.shadowEN.render === 'function') window.shadowEN.render(); } catch(e){} }
 
   // overlay wrappers (reuse v12 persistence + sync)
-  function getOv(id) { return V12.getOverlay(id); }
+  // NOTE: V12.getOverlay() reconstructs an object with only {videoImmersionUrl,customBlocks,notionOverrides}
+  // and DROPS our custom `v15` bucket. Re-attach it from raw localStorage so v15 data round-trips.
+  function getOv(id) {
+    const ov = V12.getOverlay(id);
+    try { const raw = JSON.parse(localStorage.getItem('shadow-en-overlay-' + id) || '{}'); if (raw && raw.v15) ov.v15 = raw.v15; } catch(e){}
+    return ov;
+  }
   function saveOv(id, ov) { V12.saveOverlay(id, ov); try { if (V12.queueOverlaySync) V12.queueOverlaySync(id); } catch(e){} }
   function v15Bucket(ov) { ov.v15 = ov.v15 || {}; const b = ov.v15; b.missions = b.missions || []; b.recall = b.recall || []; b.shadowBlocks = b.shadowBlocks || []; b.sections = b.sections || { order: [], hidden: [] }; b.header = b.header || {}; return b; }
   function readV15(id) { return v15Bucket(getOv(id)); }
@@ -750,8 +756,8 @@
     all &= ok('video parser (yt+vimeo)', !!NS.parseVideo('https://youtu.be/abcdefghijk') && !!NS.parseVideo('https://vimeo.com/123456'));
     all &= ok('wizard fn', typeof NS.openWizard === 'function');
     all &= ok('FAB mounted', !!document.querySelector('.v15-fab'));
-    console.log('%c[v15] SELF-TEST ' + (all?'PASSED ✅':'FAILED ❌'), 'font-weight:bold;color:' + (all?'#4ade80':'#f87171'));
-    r.forEach(x => console.log('  ' + x));
+    console.log('[v15] SELF-TEST ' + (all ? 'PASSED' : 'FAILED'));
+    r.forEach(function(x){ console.log('  ' + x); });
     return { ok: !!all, results: r };
   };
 
