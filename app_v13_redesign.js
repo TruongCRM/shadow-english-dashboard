@@ -778,6 +778,10 @@
         .card.v13-hero-living { padding: 24px 20px !important; }
         .v13-hero-grid { grid-template-columns: 1fr; gap: 24px; }
         .v13-hero-identity-quote { display: none; }
+        /* v13.4: collapse dashboard sections to one column on tablet (avoid span-2 implicit-column overflow 700-900px) */
+        #view-home > *, #view-dashboard > *, #view-review > * { grid-column: 1 / -1 !important; min-width: 0 !important; }
+        [data-section-id] { grid-column: 1 / -1 !important; }
+        .v13-ma-cols { grid-template-columns: 1fr; gap: 18px; }
       }
       @media (max-width: 600px) {
         .v13-tier-name { font-size: 16px; }
