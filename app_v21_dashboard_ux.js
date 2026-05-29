@@ -24,7 +24,7 @@
 (function () {
   'use strict';
   if (window.SHADOW_V21) return;
-  var VERSION = 'v21.1.1';
+  var VERSION = 'v21.1.2';
 
   function log() { try { console.log.apply(console, ['[v21]'].concat([].slice.call(arguments))); } catch (e) {} }
   function esc(s) {
@@ -267,7 +267,8 @@
       sf.textContent = [
         '@media(max-width:1100px){.levels-grid{grid-template-columns:1fr!important}}',
         '@media(max-width:900px){.topics-row{flex-wrap:wrap!important;min-width:0!important}.level-card,.level-head,.level-sub,.progress-bar,.topics-row{max-width:100%!important;min-width:0!important}}',
-        '@media(max-width:430px){.v21-hero{gap:10px!important;padding:14px 14px!important}.v21-cta{padding:12px 18px!important}.v21-hero-why{margin-bottom:9px!important}}'
+        '@media(max-width:430px){.v21-hero{gap:10px!important;padding:14px 14px!important}.v21-cta{padding:12px 18px!important}.v21-hero-why{margin-bottom:9px!important}}',
+        '@media(max-width:900px){html,body{overflow-x:hidden!important;max-width:100%!important}}'
       ].join('\n');
       document.head.appendChild(sf);
     }
