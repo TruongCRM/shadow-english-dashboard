@@ -334,6 +334,10 @@
           <span class="v13-mh-num">${dist.weak}</span>
           <span class="v13-mh-lab"><i class="v13-mh-dot dot-weak"></i>Weak</span>
         </div>
+        <div class="v13-mh-stat${dist.building === 0 ? ' dim' : ''}">
+          <span class="v13-mh-num">${dist.building}</span>
+          <span class="v13-mh-lab"><i class="v13-mh-dot dot-building"></i>Building</span>
+        </div>
         <div class="v13-mh-stat${dist.stable === 0 ? ' dim' : ''}">
           <span class="v13-mh-num">${dist.stable}</span>
           <span class="v13-mh-lab"><i class="v13-mh-dot dot-stable"></i>Stable</span>
@@ -357,7 +361,7 @@
     let hist = [];
     try { hist = JSON.parse(localStorage.getItem('shadow-en-dist-history') || '[]'); } catch (e) { hist = []; }
     const today = new Date().toDateString();
-    const snap = { d: today, f: dist.fragile, w: dist.weak, s: dist.stable, a: dist.automatic };
+    const snap = { d: today, f: dist.fragile, w: dist.weak, b: dist.building, s: dist.stable, a: dist.automatic };
     hist = hist.filter(h => h.d !== today);
     const past = hist.slice();
     hist.push(snap);
@@ -375,6 +379,7 @@
     return {
       fragile: dir(dist.fragile, prior ? prior.f : null, true),
       weak: dir(dist.weak, prior ? prior.w : null, true),
+      building: dir(dist.building, prior ? prior.b : null, false),
       stable: dir(dist.stable, prior ? prior.s : null, false),
       automatic: dir(dist.automatic, prior ? prior.a : null, false),
       hasHistory: !!prior
@@ -410,7 +415,7 @@
     const weekArrow = weekDelta > 0 ? { a: '↑', c: 'good' } : weekDelta < 0 ? { a: '↓', c: 'bad' } : { a: '→', c: 'flat' };
 
     const dist = NS.computeDistribution(state.topics);
-    const needAttention = dist.fragile + dist.weak;
+    const needReview = Math.max(0, (dist.total || 0) - dist.stable - dist.automatic);
 
     const streak = (state.user && state.user.streak) || 0;
     let best = streak;
@@ -463,7 +468,7 @@
           <div class="v13-ma-block">
             <div class="v13-ma-sub">Memory insights</div>
             <div class="v13-insight-line"><span class="v13-il-ico">🔥</span><span class="v13-il-txt">${thisWeek} review${thisWeek === 1 ? '' : 's'} completed this week</span></div>
-            <div class="v13-insight-line"><span class="v13-il-ico">⚠️</span><span class="v13-il-txt">${needAttention} topic${needAttention === 1 ? '' : 's'} need attention</span></div>
+            <div class="v13-insight-line"><span class="v13-il-ico">⚠️</span><span class="v13-il-txt">${needReview} topic${needReview === 1 ? '' : 's'} need review</span></div>
             <div class="v13-insight-line"><span class="v13-il-ico">📈</span><span class="v13-il-txt">Trend vs last week <b class="t-${weekArrow.c}">${weekArrow.a} ${weekDelta > 0 ? '+' : ''}${weekDelta}</b></span></div>
             <div class="v13-insight-line action" data-go="${action.view}"><span class="v13-il-ico">🎯</span><span class="v13-il-txt">${escapeHTML(action.text)}</span><span class="v13-il-arrow">→</span></div>
           </div>
@@ -482,6 +487,7 @@
               <div class="v13-trend">
                 ${trendRow('Fragile', trend.fragile, dist.fragile)}
                 ${trendRow('Weak', trend.weak, dist.weak)}
+                ${trendRow('Building', trend.building, dist.building)}
                 ${trendRow('Stable', trend.stable, dist.stable)}
                 ${trendRow('Automatic', trend.automatic, dist.automatic)}
               </div>
@@ -837,7 +843,7 @@
         display: flex; flex-direction: column; gap: 16px;
       }
       .v13-mh-stats {
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+        display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
       }
       .v13-mh-stat {
         display: flex; flex-direction: column; align-items: center; gap: 5px;
@@ -858,6 +864,7 @@
       .v13-mh-dot.dot-fragile { background: #ef4444; }
       .v13-mh-dot.dot-weak { background: #f59e0b; }
       .v13-mh-dot.dot-stable { background: #22c55e; }
+      .v13-mh-dot.dot-building { background: #facc15; }
       .v13-mh-dot.dot-automatic { background: #a78bfa; }
       .v13-mh-insight {
         font-size: 13px; line-height: 1.45; padding: 11px 14px; border-radius: 10px;
