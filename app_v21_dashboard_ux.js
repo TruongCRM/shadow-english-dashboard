@@ -1,6 +1,6 @@
 /* ============================================================================
  * SHADOW ENGLISH - v21  DASHBOARD UX POLISH   (UI/UX ONLY - NO NEW LOGIC)
- * v21.1.0 - compact hero + responsive polish
+ * v21.1.1 - compact hero + responsive polish + legacy overflow safety net
  * ----------------------------------------------------------------------------
  * 100% ADDITIVE & PRESENTATIONAL. Adds ZERO learning/AI/review/memory logic and
  * ZERO data structures. It only RE-PRESENTS data v20 already computes:
@@ -24,7 +24,7 @@
 (function () {
   'use strict';
   if (window.SHADOW_V21) return;
-  var VERSION = 'v21.1.0';
+  var VERSION = 'v21.1.1';
 
   function log() { try { console.log.apply(console, ['[v21]'].concat([].slice.call(arguments))); } catch (e) {} }
   function esc(s) {
@@ -258,6 +258,19 @@
       '}'
     ].join('\n');
     document.head.appendChild(css);
+    /* additive safety net: neutralize PRE-EXISTING horizontal overflow from the app's
+       legacy home components (.levels-grid fixed track, .topics-row) + tighten mobile
+       hero under 25%. Separate <style> so it is trivially reversible. */
+    if (!document.getElementById('shadow-v21-safety')) {
+      var sf = document.createElement('style');
+      sf.id = 'shadow-v21-safety';
+      sf.textContent = [
+        '@media(max-width:1100px){.levels-grid{grid-template-columns:1fr!important}}',
+        '@media(max-width:900px){.topics-row{flex-wrap:wrap!important;min-width:0!important}.level-card,.level-head,.level-sub,.progress-bar,.topics-row{max-width:100%!important;min-width:0!important}}',
+        '@media(max-width:430px){.v21-hero{gap:10px!important;padding:14px 14px!important}.v21-cta{padding:12px 18px!important}.v21-hero-why{margin-bottom:9px!important}}'
+      ].join('\n');
+      document.head.appendChild(sf);
+    }
   }
 
   /* --------------------------------------------------------------- selfTest */
