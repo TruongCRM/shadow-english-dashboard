@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.1.2';
+  NS.version = '13.1.3';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -733,6 +733,12 @@
         .v13-hero-identity-quote { text-align: center; }
         .card.v13-memory-health { padding: 16px 14px !important; }
         .card.v13-today-compass { padding: 16px 14px !important; min-height: 0 !important; }
+        .mission-hero { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+        .mission-hero > * { width: 100% !important; min-width: 0 !important; flex: 0 0 auto !important; }
+        .mission-body, .mission-label, .mission-content, [class*=mission-] { min-width: 0 !important; max-width: 100% !important; width: 100% !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; }
+        .mission-body *, .mission-label *, [class*=mission-] * { min-width: 0 !important; word-break: normal !important; overflow-wrap: break-word !important; white-space: normal !important; flex-shrink: 1 !important; }
+        .mission-hero h1, .mission-hero h2, .mission-hero h3, .mission-hero div { font-size: clamp(14px, 4vw, 22px) !important; }
+
       }
       @media (max-width: 400px) {
         .card { padding: 14px 12px !important; }
@@ -762,6 +768,12 @@
 
   injectCSS();
   hookNavigate();
+  setTimeout(NS.addDay60Tab, 800);
+  setTimeout(NS.addDay60Tab, 2000);
+  setTimeout(NS.addDay60Tab, 4000);
+  setInterval(NS.addDay60Tab, 5000);
+
+  
 
   NS._info = function() {
     const state = NS.getState();
