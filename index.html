@@ -244,6 +244,9 @@ body { display: flex; min-height: 100vh; }
 }
 
 /* ===== TODAY FOCUS ===== */
+/* v13.4: stat cards fill full width — no dead space on the right */
+.stats-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.stats-row > .stat-card { grid-column: auto; }
 .today-focus { grid-column: span 2; }
 .today-grid {
   display: grid;
@@ -1053,6 +1056,7 @@ body { display: flex; min-height: 100vh; }
       <canvas class="spark" id="spark-streak"></canvas>
     </div>
 
+    <div class="stats-row">
     <div class="card stat-card">
       <div class="card-title"><span class="icon">🧠</span> BRAIN LOAD</div>
       <div class="stat-value" id="stat-brain-load" style="color:var(--yellow)">Medium</div>
@@ -1081,6 +1085,8 @@ body { display: flex; min-height: 100vh; }
       <div class="stat-sub">+12% vs last week</div>
       <canvas class="spark" id="spark-week"></canvas>
     </div>
+
+    </div><!-- /stats-row -->
 
     <!-- ROW 2: TODAY FOCUS (span 2) + MEMORY DONUT (span 2) + HEATMAP (span 1 narrow) -->
     <div class="card today-focus" data-section-id="today-focus">
@@ -2097,5 +2103,5 @@ body.focus-mode .audio-btn-big { padding: 0 24px; height: 50px; font-size: 15px;
 <script src="app_v11_1_13_polish_bundle2.js?v=11.1.13" defer></script>
 <script src="app_v11_1_14_day21_stage.js?v=11.1.14" defer></script>
 <script src="app_v12_editor.js?v=12.3.0" defer></script>
-<script src="app_v13_redesign.js?v=13.1.7" defer></script>
-<script src="app_v13_2_review.js?v=13.2.0" defer></script>
+<script src="app_v13_redesign.js?v=13.4.0" defer></script>
+<script src="app_v13_2_review.js?v=13.3.0" defer></script>

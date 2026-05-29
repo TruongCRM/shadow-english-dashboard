@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.1.7';
+  NS.version = '13.4.0';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -309,11 +309,12 @@
     const state = NS.getState();
     const dist = NS.computeDistribution(state.topics);
     const health = NS.memoryHealthState(dist);
-    const heatmap = NS.heatmap28Day(state.sessionsLog);
     const insightsPool = NS.INSIGHTS[health.label] || NS.INSIGHTS.FRAGILE;
     const todayKey = new Date().toDateString();
-    const insights = NS._pickInsights(insightsPool, todayKey, 3);
+    const oneInsight = NS._pickInsights(insightsPool, todayKey, 1)[0] || '';
+    const needReview = Math.max(0, (dist.total || 0) - dist.stable - dist.automatic);
 
+    // SUMMARY CARD (not analytics dashboard) — heatmap moved to Memory Activity section.
     card.classList.add('v13-memory-health');
     card.innerHTML = `
       <div class="card-title"><span class="icon">🧠</span> MEMORY STATUS</div>
@@ -324,49 +325,68 @@
         <div class="v13-health-state-subtitle">${escapeHTML(health.tone)}</div>
       </div>
 
-      <div class="v13-health-breakdown">
-        <div class="v13-breakdown-row${dist.fragile === 0 ? ' dim' : ''}">
-          <span class="v13-breakdown-dot dot-fragile"></span>
-          <span class="v13-breakdown-count">${dist.fragile}</span>
-          <span class="v13-breakdown-label">${dist.fragile === 1 ? 'fragile memory' : 'fragile memories'}</span>
+      <div class="v13-mh-stats">
+        <div class="v13-mh-stat${dist.fragile === 0 ? ' dim' : ''}">
+          <span class="v13-mh-num">${dist.fragile}</span>
+          <span class="v13-mh-lab"><i class="v13-mh-dot dot-fragile"></i>Fragile</span>
         </div>
-        <div class="v13-breakdown-row${dist.weak === 0 ? ' dim' : ''}">
-          <span class="v13-breakdown-dot dot-weak"></span>
-          <span class="v13-breakdown-count">${dist.weak}</span>
-          <span class="v13-breakdown-label">${dist.weak === 1 ? 'weak memory' : 'weak memories'}</span>
+        <div class="v13-mh-stat${dist.weak === 0 ? ' dim' : ''}">
+          <span class="v13-mh-num">${dist.weak}</span>
+          <span class="v13-mh-lab"><i class="v13-mh-dot dot-weak"></i>Weak</span>
         </div>
-        <div class="v13-breakdown-row${dist.building === 0 ? ' dim' : ''}">
-          <span class="v13-breakdown-dot dot-building"></span>
-          <span class="v13-breakdown-count">${dist.building}</span>
-          <span class="v13-breakdown-label">building</span>
+        <div class="v13-mh-stat${dist.stable === 0 ? ' dim' : ''}">
+          <span class="v13-mh-num">${dist.stable}</span>
+          <span class="v13-mh-lab"><i class="v13-mh-dot dot-stable"></i>Stable</span>
         </div>
-        <div class="v13-breakdown-row${dist.stable === 0 ? ' dim' : ''}">
-          <span class="v13-breakdown-dot dot-stable"></span>
-          <span class="v13-breakdown-count">${dist.stable}</span>
-          <span class="v13-breakdown-label">stable patterns</span>
-        </div>
-        <div class="v13-breakdown-row${dist.automatic === 0 ? ' dim' : ''}">
-          <span class="v13-breakdown-dot dot-automatic"></span>
-          <span class="v13-breakdown-count">${dist.automatic}</span>
-          <span class="v13-breakdown-label">automatic patterns</span>
+        <div class="v13-mh-stat${dist.automatic === 0 ? ' dim' : ''}">
+          <span class="v13-mh-num">${dist.automatic}</span>
+          <span class="v13-mh-lab"><i class="v13-mh-dot dot-automatic"></i>Automatic</span>
         </div>
       </div>
 
-      <div class="v13-health-heatmap">
-        <div class="v13-heatmap-header">
-          <span class="v13-heatmap-label">REVIEW HEATMAP</span>
-          <span class="v13-heatmap-period">Last 28 days</span>
-        </div>
-        <div class="v13-heatmap-days">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => '<span>' + d + '</span>').join('')}</div>
-        <div class="v13-heatmap-grid">${heatmap.map((d, i) => {
+      <div class="v13-mh-insight ${needReview > 0 ? 'warn' : 'ok'}">
+        ${needReview > 0
+          ? '<span class="v13-mh-insight-icon">⚠️</span> ' + needReview + ' topic' + (needReview === 1 ? '' : 's') + ' need review'
+          : '<span class="v13-mh-insight-icon">✅</span> ' + escapeHTML(oneInsight || 'All on track today')}
+      </div>
+    `;
+  };
+
+  // ============= RENDER MEMORY ACTIVITY (heatmap, full-width section) =============
+  NS.renderMemoryActivity = function () {
+    const home = document.getElementById('view-home') || document.getElementById('view-dashboard');
+    if (!home) return;
+    const state = NS.getState();
+    const heatmap = NS.heatmap28Day(state.sessionsLog);
+    const totalReviews = heatmap.reduce((s, d) => s + d.count, 0);
+    const activeDays = heatmap.filter(d => d.count > 0).length;
+
+    let card = home.querySelector('[data-section-id="memory-activity"]');
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'card v13-memory-activity';
+      card.setAttribute('data-section-id', 'memory-activity');
+      // insert right after the MEMORY STATUS / TODAY GOAL trio
+      const anchor = home.querySelector('[data-section-id="today-goal"]')
+        || home.querySelector('[data-section-id="memory-status"]')
+        || home.querySelector('.v13-memory-health');
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(card, anchor.nextSibling);
+      else home.appendChild(card);
+    }
+
+    card.innerHTML = `
+      <div class="v13-ma-head">
+        <div class="card-title"><span class="icon">📅</span> MEMORY ACTIVITY</div>
+        <div class="v13-ma-meta">${activeDays} active day${activeDays === 1 ? '' : 's'} · ${totalReviews} review${totalReviews === 1 ? '' : 's'} · last 28 days</div>
+      </div>
+      <div class="v13-ma-grid-wrap">
+        <div class="v13-heatmap-days v13-ma-days">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => '<span>' + d + '</span>').join('')}</div>
+        <div class="v13-heatmap-grid v13-ma-grid">${heatmap.map((d, i) => {
           const isToday = i === heatmap.length - 1;
           const cls = NS.heatmapIntensity(d.count) + (isToday ? ' today' : '');
           return `<div class="v13-hm-cell ${cls}" title="${escapeHTML(NS.heatmapTooltip(d.date, d.count))}"></div>`;
         }).join('')}</div>
-      </div>
-
-      <div class="v13-health-insights">
-        ${insights.map(ins => `<div class="v13-insight-row"><span class="v13-insight-icon">💡</span><span class="v13-insight-text">${escapeHTML(ins)}</span></div>`).join('')}
+        <div class="v13-ma-legend"><span>Less</span><span class="v13-hm-cell hm-0"></span><span class="v13-hm-cell hm-1"></span><span class="v13-hm-cell hm-2"></span><span class="v13-hm-cell hm-3"></span><span class="v13-hm-cell hm-4"></span><span>More</span></div>
       </div>
     `;
   };
@@ -376,6 +396,7 @@
     try { NS.renderHeroStats(); } catch(e) { console.warn('[v13] hero render', e); }
     try { NS.renderTodayGoal(); } catch(e) { console.warn('[v13] today render', e); }
     try { NS.renderMemoryStatus(); } catch(e) { console.warn('[v13] memory render', e); }
+    try { NS.renderMemoryActivity(); } catch(e) { console.warn('[v13] memory activity render', e); }
   };
 
   // ============= CSS INJECTION (G9 versioned ID) =============
@@ -703,143 +724,130 @@
         .v13-health-insights { padding: 10px 12px; gap: 6px; }
       }
 
-      /* v13.1.2: CRITICAL mobile grid override */
+      /* ========================================================
+         V13.4 — COMPACT MEMORY STATUS (summary card, not analytics)
+         ======================================================== */
+      .card.v13-memory-health {
+        padding: 20px 22px !important;
+        display: flex; flex-direction: column; gap: 16px;
+      }
+      .v13-mh-stats {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+      }
+      .v13-mh-stat {
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+        padding: 12px 6px; border-radius: 10px;
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.05);
+        transition: all 180ms ease-out;
+      }
+      .v13-mh-stat:hover { background: rgba(124,92,255,0.06); border-color: rgba(124,92,255,0.18); }
+      .v13-mh-stat.dim { opacity: 0.4; }
+      .v13-mh-num { font-size: 24px; font-weight: 800; color: rgba(255,255,255,0.96); line-height: 1; }
+      .v13-mh-lab {
+        font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+        color: rgba(255,255,255,0.6); font-weight: 600;
+        display: inline-flex; align-items: center; gap: 5px;
+      }
+      .v13-mh-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+      .v13-mh-dot.dot-fragile { background: #ef4444; }
+      .v13-mh-dot.dot-weak { background: #f59e0b; }
+      .v13-mh-dot.dot-stable { background: #22c55e; }
+      .v13-mh-dot.dot-automatic { background: #a78bfa; }
+      .v13-mh-insight {
+        font-size: 13px; line-height: 1.45; padding: 11px 14px; border-radius: 10px;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .v13-mh-insight-icon { flex-shrink: 0; }
+      .v13-mh-insight.warn { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.18); color: #fca5a5; }
+      .v13-mh-insight.ok { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.18); color: #86efac; font-style: italic; }
+
+      /* ========================================================
+         V13.4 — MEMORY ACTIVITY (heatmap, full-width band)
+         ======================================================== */
+      .card.v13-memory-activity { grid-column: 1 / -1; padding: 18px 22px !important; }
+      .v13-ma-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+      .v13-ma-head .card-title { margin-bottom: 0; }
+      .v13-ma-meta { font-size: 11.5px; color: rgba(255,255,255,0.45); }
+      .v13-ma-grid-wrap { display: flex; flex-direction: column; gap: 8px; }
+      .v13-ma-days {
+        display: grid; grid-template-columns: repeat(7, minmax(0, 46px));
+        justify-content: start; text-align: center; font-size: 10px;
+        color: rgba(255,255,255,0.4); letter-spacing: 0.05em; text-transform: uppercase;
+      }
+      .v13-ma-grid {
+        display: grid; grid-template-columns: repeat(7, minmax(0, 46px));
+        justify-content: start; gap: 6px;
+      }
+      .v13-ma-grid .v13-hm-cell { aspect-ratio: 1; max-width: 46px; border-radius: 4px; }
+      .v13-ma-legend { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: rgba(255,255,255,0.4); margin-top: 6px; }
+      .v13-ma-legend .v13-hm-cell { width: 14px; height: 14px; border-radius: 3px; }
+
+      /* ========================================================
+         V13.4 — TODAY FOCUS missions checklist (ROOT-CAUSE FIX)
+         Old bug: a broad [class*=mission-]{width:100%} matched the
+         empty .polish-1112-mission-check, forcing the checkbox to
+         100% width; with flex-shrink:0 it ate the row and crushed
+         the text to 0px -> one character per line. Scoped, robust
+         rules below replace that. Applied at all widths.
+         ======================================================== */
+      .polish-1112-mission-list { display: flex; flex-direction: column; gap: 8px; width: 100%; min-width: 0; }
+      .polish-1112-mission-item { display: flex; flex-direction: row; align-items: center; gap: 10px; width: 100%; min-width: 0; }
+      .polish-1112-mission-check {
+        flex: 0 0 20px !important; width: 20px !important; height: 20px !important;
+        max-width: 20px !important; min-width: 20px !important;
+      }
+      .polish-1112-mission-text {
+        flex: 1 1 auto !important; min-width: 0 !important; width: auto !important; max-width: 100% !important;
+        white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important;
+        text-align: left !important;
+      }
+
+      /* ========================================================
+         V13.4 — RESPONSIVE (single, clean cascade — no nested @media)
+         ======================================================== */
+      @media (max-width: 900px) {
+        .card.v13-hero-living { padding: 24px 20px !important; }
+        .v13-hero-grid { grid-template-columns: 1fr; gap: 22px; }
+        .v13-hero-identity-quote { display: none; }
+      }
+
       @media (max-width: 700px) {
-        #view-home, #view-dashboard, .container, .home-grid, .home, [class*="home-grid"] {
-          display: block !important;
-          grid-template-columns: 1fr !important;
-        }
-        #view-home > *, #view-dashboard > *, .container > .card, .home > .card {
-          grid-column: 1 / -1 !important;
-          width: 100% !important;
-          max-width: 100% !important;
-          min-width: 0 !important;
-          box-sizing: border-box !important;
-          margin-bottom: 12px;
-        }
-        .card, [data-section-id] {
-          grid-column: 1 / -1 !important;
-          width: 100% !important;
-          min-width: 0 !important;
-          min-height: 0 !important;
-          box-sizing: border-box !important;
-        }
-        .card[style*="grid-column"] { grid-column: 1 / -1 !important; }
-        body * { word-wrap: break-word; overflow-wrap: break-word; min-width: 0; }
-        .card-title, h1, h2, h3, p, div, span { white-space: normal !important; }
-        .v13-hero-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
-        .v13-hero-identity { text-align: center; }
-        .v13-hero-identity-tier { justify-content: center; }
-        .v13-hero-identity-quote { text-align: center; }
-        .card.v13-memory-health { padding: 16px 14px !important; }
-        .card.v13-today-compass { padding: 16px 14px !important; min-height: 0 !important; }
-        .mission-hero { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
-        .mission-hero > * { width: 100% !important; min-width: 0 !important; flex: 0 0 auto !important; }
-        .mission-body, .mission-label, .mission-content, [class*=mission-] { min-width: 0 !important; max-width: 100% !important; width: 100% !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; }
-        .mission-body *, .mission-label *, [class*=mission-] * { min-width: 0 !important; word-break: normal !important; overflow-wrap: break-word !important; white-space: normal !important; flex-shrink: 1 !important; }
-        .mission-hero h1, .mission-hero h2, .mission-hero h3, .mission-hero div { font-size: clamp(14px, 4vw, 22px) !important; }
-      /* v13.1.5: TODAY FOCUS + MEMORY STATUS compact */
-      .card.sr-engine, .sr-engine { overflow-x: hidden !important; }
-      .card.sr-engine *, .sr-engine * { min-width: 0 !important; max-width: 100% !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; flex-shrink: 1 !important; }
-      .card.sr-engine label, .sr-engine label { width: 100% !important; display: flex !important; align-items: flex-start !important; gap: 8px !important; }
-      .card.sr-engine input[type=checkbox], .sr-engine input[type=checkbox] { flex: 0 0 auto !important; min-width: 18px !important; }
-      /* v13.1.7: Sidebar hide + Stat-card + Missions-card mobile */
-      @media (max-width: 700px) {
+        /* Home + Review become a single column. #view-* uses display:contents,
+           so target its direct children to span the full track. */
+        #view-home > *, #view-dashboard > *, #view-review > * { grid-column: 1 / -1 !important; min-width: 0 !important; }
+        .card, [data-section-id] { width: 100% !important; min-width: 0 !important; box-sizing: border-box !important; }
         aside.sidebar, .sidebar, [class*="sidebar"]:not([class*="main"]) { display: none !important; }
-        .main, .content { margin-left: 0 !important; padding-left: 0 !important; max-width: 100vw !important; }
-        .card.stat-card { padding: 12px 14px !important; min-height: 0 !important; }
-        .card.stat-card h1, .card.stat-card h2, .card.stat-card .big, .card.stat-card [class*="value"], .card.stat-card [class*="num"] { font-size: 24px !important; line-height: 1.1 !important; }
-        .card.stat-card div, .card.stat-card span { font-size: 11.5px; }
-        .card.stat-card .card-title { font-size: 10px !important; }
-        .card.missions-card, .missions-card { padding: 14px 16px !important; min-height: 0 !important; }
-        .missions-card .mission-row, .mission-row { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px !important; flex-wrap: nowrap !important; padding: 6px 0 !important; width: 100% !important; }
-        .missions-card .mission-row > *, .mission-row > * { min-width: 0 !important; }
-        .missions-card .name, .mission-row .name, .mission-row span, .mission-row label { flex: 1 1 0 !important; min-width: 0 !important; max-width: 100% !important; width: auto !important; white-space: normal !important; word-break: normal !important; overflow-wrap: break-word !important; font-size: 13px !important; text-align: left !important; }
-        .mission-row input[type=checkbox], .missions-card input[type=checkbox] { flex: 0 0 18px !important; width: 18px !important; height: 18px !important; }
-        .missions-card .name * { white-space: normal !important; word-break: normal !important; }
-        .card { display: block !important; box-sizing: border-box !important; }
-        .card > * { box-sizing: border-box !important; max-width: 100% !important; }
+        .main, .content { margin-left: 0 !important; padding-left: 14px !important; padding-right: 14px !important; max-width: 100vw !important; }
+
+        .v13-hero-grid { grid-template-columns: 1fr !important; gap: 16px !important; text-align: center; }
+        .v13-hero-identity-tier { justify-content: center; }
+
+        .card.v13-memory-health { padding: 16px 16px !important; gap: 12px; }
+        .v13-mh-num { font-size: 22px; }
+        .v13-mh-insight { font-size: 12px; }
+
+        .card.v13-today-compass { padding: 16px 16px !important; min-height: 0 !important; }
+        .card.v13-memory-activity { padding: 16px !important; }
+        .v13-ma-days, .v13-ma-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .v13-ma-grid .v13-hm-cell { max-width: none; }
+
+        /* YOUR NEXT MOVE banner: stack — scoped to .mission-hero ONLY */
+        .mission-hero { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+        .mission-hero > * { width: 100% !important; min-width: 0 !important; }
+        .mission-hero h1, .mission-hero h2, .mission-hero h3 { font-size: clamp(15px, 4.5vw, 22px) !important; }
+
+        .card.stat-card { padding: 14px 16px !important; min-height: 0 !important; }
       }
+
       @media (max-width: 400px) {
-        .card.stat-card h1, .card.stat-card h2, .card.stat-card .big { font-size: 20px !important; }
-        .mission-row .name, .missions-card .name { font-size: 12.5px !important; }
-      }
-
-      .card.v13-memory-health { padding: 16px 18px !important; gap: 12px !important; }
-      .v13-memory-health .card-title { font-size: 10.5px !important; }
-      .v13-health-state { padding: 4px 0 !important; }
-      .v13-health-state-label { font-size: 9.5px !important; margin-bottom: 5px !important; }
-      .v13-health-state-badge { padding: 6px 18px !important; font-size: 12.5px !important; }
-      .v13-health-state-subtitle { font-size: 11px !important; margin-top: 5px !important; }
-      .v13-health-breakdown { gap: 6px !important; }
-      .v13-breakdown-row { padding: 7px 4px !important; gap: 4px !important; border-radius: 6px !important; }
-      .v13-breakdown-count { font-size: 18px !important; }
-      .v13-breakdown-label { font-size: 8.5px !important; letter-spacing: 0.02em !important; line-height: 1.15 !important; }
-      .v13-health-heatmap { gap: 6px !important; }
-      .v13-heatmap-label { font-size: 9.5px !important; }
-      .v13-heatmap-period { font-size: 10px !important; }
-      .v13-heatmap-days { font-size: 9px !important; }
-      .v13-heatmap-grid { gap: 3px !important; }
-      .v13-hm-cell { border-radius: 2px !important; }
-      .v13-health-insights { padding: 10px 12px !important; gap: 5px !important; }
-      .v13-insight-row { font-size: 11.5px !important; line-height: 1.4 !important; gap: 6px !important; }
-      @media (max-width: 600px) {
-        .card.v13-memory-health { padding: 12px 14px !important; gap: 10px !important; }
-        .v13-health-state-badge { padding: 5px 14px !important; font-size: 11.5px !important; }
-        .v13-health-breakdown { gap: 4px !important; }
-        .v13-breakdown-row { padding: 6px 2px !important; }
-        .v13-breakdown-count { font-size: 16px !important; }
-        .v13-breakdown-label { font-size: 7.5px !important; }
-        .v13-insight-row { font-size: 10.5px !important; }
-        .v13-health-insights { padding: 8px 10px !important; }
-      }
-      /* v13.1.6: ULTRA TIGHT cards */
-      .card.v13-memory-health { padding: 12px 14px !important; gap: 8px !important; }
-      .v13-memory-health .card-title { font-size: 10px !important; margin-bottom: 0 !important; }
-      .v13-health-state { padding: 2px 0 !important; }
-      .v13-health-state-label { font-size: 9px !important; margin-bottom: 3px !important; }
-      .v13-health-state-badge { padding: 4px 14px !important; font-size: 11.5px !important; letter-spacing: 0.08em !important; }
-      .v13-health-state-subtitle { font-size: 10.5px !important; margin-top: 4px !important; }
-      .v13-health-breakdown { gap: 4px !important; }
-      .v13-breakdown-row { padding: 5px 3px !important; gap: 3px !important; border-radius: 5px !important; }
-      .v13-breakdown-count { font-size: 16px !important; }
-      .v13-breakdown-label { font-size: 8px !important; line-height: 1.1 !important; }
-      .v13-breakdown-dot { width: 6px !important; height: 6px !important; }
-      .v13-health-heatmap { gap: 4px !important; }
-      .v13-heatmap-header { padding-bottom: 0 !important; }
-      .v13-heatmap-label { font-size: 9px !important; }
-      .v13-heatmap-period { font-size: 9.5px !important; }
-      .v13-heatmap-days { font-size: 8.5px !important; }
-      .v13-heatmap-grid { gap: 2px !important; max-width: 240px; margin: 0 auto; }
-      .v13-hm-cell { aspect-ratio: 1 !important; max-width: 28px !important; max-height: 28px !important; border-radius: 2px !important; }
-      .v13-health-insights { padding: 6px 10px !important; gap: 2px !important; border-radius: 6px !important; }
-      .v13-insight-row { font-size: 10.5px !important; line-height: 1.3 !important; gap: 4px !important; }
-      .v13-insight-icon { font-size: 11px !important; }
-      /* TODAY GOAL ultra tight */
-      .card.v13-today-compass { padding: 14px 16px !important; gap: 10px !important; min-height: 0 !important; }
-      .v13-compass-progress { gap: 6px !important; padding: 4px 0 !important; }
-      .v13-count-done { font-size: 38px !important; }
-      .v13-count-total { font-size: 22px !important; }
-      .v13-count-divider { font-size: 24px !important; }
-      .v13-compass-subtitle { font-size: 11.5px !important; }
-      .v13-mission-statement { font-size: 13px !important; line-height: 1.4 !important; }
-      .v13-mission-label { font-size: 9.5px !important; margin-bottom: 5px !important; }
-      .v13-compass-divider { margin: 6px -8px !important; }
-      /* TODAY FOCUS sr-engine card padding */
-      .card.sr-engine { padding: 14px 16px !important; }
-      @media (max-width: 600px) {
-        .v13-heatmap-grid { max-width: 200px; }
-        .v13-hm-cell { max-width: 22px !important; max-height: 22px !important; }
-        .v13-count-done { font-size: 32px !important; }
-      }
-
-
-
-      }
-      @media (max-width: 400px) {
-        .card { padding: 14px 12px !important; }
+        .card { padding: 14px 13px !important; }
+        .v13-mh-stats { gap: 6px; }
+        .v13-mh-num { font-size: 20px; }
+        .v13-mh-lab { font-size: 9px; }
         .v13-momentum-text { font-size: 11.5px; }
       }
+
     `;
     document.head.appendChild(s);
   }
