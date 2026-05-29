@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.1.5';
+  NS.version = '13.1.6';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -771,6 +771,46 @@
         .v13-insight-row { font-size: 10.5px !important; }
         .v13-health-insights { padding: 8px 10px !important; }
       }
+      /* v13.1.6: ULTRA TIGHT cards */
+      .card.v13-memory-health { padding: 12px 14px !important; gap: 8px !important; }
+      .v13-memory-health .card-title { font-size: 10px !important; margin-bottom: 0 !important; }
+      .v13-health-state { padding: 2px 0 !important; }
+      .v13-health-state-label { font-size: 9px !important; margin-bottom: 3px !important; }
+      .v13-health-state-badge { padding: 4px 14px !important; font-size: 11.5px !important; letter-spacing: 0.08em !important; }
+      .v13-health-state-subtitle { font-size: 10.5px !important; margin-top: 4px !important; }
+      .v13-health-breakdown { gap: 4px !important; }
+      .v13-breakdown-row { padding: 5px 3px !important; gap: 3px !important; border-radius: 5px !important; }
+      .v13-breakdown-count { font-size: 16px !important; }
+      .v13-breakdown-label { font-size: 8px !important; line-height: 1.1 !important; }
+      .v13-breakdown-dot { width: 6px !important; height: 6px !important; }
+      .v13-health-heatmap { gap: 4px !important; }
+      .v13-heatmap-header { padding-bottom: 0 !important; }
+      .v13-heatmap-label { font-size: 9px !important; }
+      .v13-heatmap-period { font-size: 9.5px !important; }
+      .v13-heatmap-days { font-size: 8.5px !important; }
+      .v13-heatmap-grid { gap: 2px !important; max-width: 240px; margin: 0 auto; }
+      .v13-hm-cell { aspect-ratio: 1 !important; max-width: 28px !important; max-height: 28px !important; border-radius: 2px !important; }
+      .v13-health-insights { padding: 6px 10px !important; gap: 2px !important; border-radius: 6px !important; }
+      .v13-insight-row { font-size: 10.5px !important; line-height: 1.3 !important; gap: 4px !important; }
+      .v13-insight-icon { font-size: 11px !important; }
+      /* TODAY GOAL ultra tight */
+      .card.v13-today-compass { padding: 14px 16px !important; gap: 10px !important; min-height: 0 !important; }
+      .v13-compass-progress { gap: 6px !important; padding: 4px 0 !important; }
+      .v13-count-done { font-size: 38px !important; }
+      .v13-count-total { font-size: 22px !important; }
+      .v13-count-divider { font-size: 24px !important; }
+      .v13-compass-subtitle { font-size: 11.5px !important; }
+      .v13-mission-statement { font-size: 13px !important; line-height: 1.4 !important; }
+      .v13-mission-label { font-size: 9.5px !important; margin-bottom: 5px !important; }
+      .v13-compass-divider { margin: 6px -8px !important; }
+      /* TODAY FOCUS sr-engine card padding */
+      .card.sr-engine { padding: 14px 16px !important; }
+      @media (max-width: 600px) {
+        .v13-heatmap-grid { max-width: 200px; }
+        .v13-hm-cell { max-width: 22px !important; max-height: 22px !important; }
+        .v13-count-done { font-size: 32px !important; }
+      }
+
 
 
       }
