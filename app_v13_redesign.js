@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.1.1';
+  NS.version = '13.1.2';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -701,6 +701,42 @@
         .v13-health-state-subtitle { font-size: 11.5px; margin-top: 6px; }
         .v13-insight-row { font-size: 10.5px; gap: 6px; }
         .v13-health-insights { padding: 10px 12px; gap: 6px; }
+      }
+
+      /* v13.1.2: CRITICAL mobile grid override */
+      @media (max-width: 700px) {
+        #view-home, #view-dashboard, .container, .home-grid, .home, [class*="home-grid"] {
+          display: block !important;
+          grid-template-columns: 1fr !important;
+        }
+        #view-home > *, #view-dashboard > *, .container > .card, .home > .card {
+          grid-column: 1 / -1 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          box-sizing: border-box !important;
+          margin-bottom: 12px;
+        }
+        .card, [data-section-id] {
+          grid-column: 1 / -1 !important;
+          width: 100% !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          box-sizing: border-box !important;
+        }
+        .card[style*="grid-column"] { grid-column: 1 / -1 !important; }
+        body * { word-wrap: break-word; overflow-wrap: break-word; min-width: 0; }
+        .card-title, h1, h2, h3, p, div, span { white-space: normal !important; }
+        .v13-hero-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+        .v13-hero-identity { text-align: center; }
+        .v13-hero-identity-tier { justify-content: center; }
+        .v13-hero-identity-quote { text-align: center; }
+        .card.v13-memory-health { padding: 16px 14px !important; }
+        .card.v13-today-compass { padding: 16px 14px !important; min-height: 0 !important; }
+      }
+      @media (max-width: 400px) {
+        .card { padding: 14px 12px !important; }
+        .v13-momentum-text { font-size: 11.5px; }
       }
     `;
     document.head.appendChild(s);
