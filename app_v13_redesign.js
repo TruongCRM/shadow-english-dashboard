@@ -352,7 +352,47 @@
     `;
   };
 
-  // ============= RENDER MEMORY ACTIVITY (heatmap, full-width section) =============
+  // ============= RENDER MEMORY ACTIVITY (two-column story card) =============
+  NS._distTrend = function (dist) {
+    let hist = [];
+    try { hist = JSON.parse(localStorage.getItem('shadow-en-dist-history') || '[]'); } catch (e) { hist = []; }
+    const today = new Date().toDateString();
+    const snap = { d: today, f: dist.fragile, w: dist.weak, s: dist.stable, a: dist.automatic };
+    hist = hist.filter(h => h.d !== today);
+    const past = hist.slice();
+    hist.push(snap);
+    if (hist.length > 30) hist = hist.slice(-30);
+    try { localStorage.setItem('shadow-en-dist-history', JSON.stringify(hist)); } catch (e) {}
+    const prior = past.length ? past[0] : null;
+    function dir(curr, prev, goodDown) {
+      if (prev == null) return { arrow: '·', cls: 'flat', delta: 0 };
+      const delta = curr - prev;
+      if (delta === 0) return { arrow: '→', cls: 'flat', delta: 0 };
+      const down = delta < 0;
+      const good = goodDown ? down : !down;
+      return { arrow: down ? '↓' : '↑', cls: good ? 'good' : 'bad', delta };
+    }
+    return {
+      fragile: dir(dist.fragile, prior ? prior.f : null, true),
+      weak: dir(dist.weak, prior ? prior.w : null, true),
+      stable: dir(dist.stable, prior ? prior.s : null, false),
+      automatic: dir(dist.automatic, prior ? prior.a : null, false),
+      hasHistory: !!prior
+    };
+  };
+
+  NS._nextAction = function (state, dist) {
+    const topics = state.topics || [];
+    const now = Date.now();
+    const overdue = topics.find(t => t.nextReview && new Date(t.nextReview).getTime() <= now && t.reviewStage !== 'Day 0' && t.lastReview);
+    if (overdue) return { text: 'Review "' + (overdue.name || overdue.id) + '" — it is overdue', view: 'review' };
+    const fragile = topics.find(t => t.memoryStatus === 'Fragile' && t.lastReview);
+    if (fragile) return { text: 'Shadow "' + (fragile.name || fragile.id) + '" to rescue it', view: 'review' };
+    const fresh = topics.find(t => t.reviewStage === 'Day 0' || !t.lastReview);
+    if (fresh) return { text: 'Start a new topic: "' + (fresh.name || fresh.id) + '"', view: 'review' };
+    return { text: 'Keep your streak alive with one quick review', view: 'review' };
+  };
+
   NS.renderMemoryActivity = function () {
     const home = document.getElementById('view-home') || document.getElementById('view-dashboard');
     if (!home) return;
@@ -361,12 +401,39 @@
     const totalReviews = heatmap.reduce((s, d) => s + d.count, 0);
     const activeDays = heatmap.filter(d => d.count > 0).length;
 
+    const log = state.sessionsLog || [];
+    const now = Date.now(); const DAY = 864e5;
+    const cntRange = (a, b) => log.filter(e => { const t = e.at ? new Date(e.at).getTime() : 0; return t >= a && t < b; }).length;
+    const thisWeek = cntRange(now - 7 * DAY, now + DAY);
+    const lastWeek = cntRange(now - 14 * DAY, now - 7 * DAY);
+    const weekDelta = thisWeek - lastWeek;
+    const weekArrow = weekDelta > 0 ? { a: '↑', c: 'good' } : weekDelta < 0 ? { a: '↓', c: 'bad' } : { a: '→', c: 'flat' };
+
+    const dist = NS.computeDistribution(state.topics);
+    const needAttention = dist.fragile + dist.weak;
+
+    const streak = (state.user && state.user.streak) || 0;
+    let best = streak;
+    try { best = Math.max(parseInt(localStorage.getItem('shadow-en-best-streak') || '0', 10) || 0, streak); localStorage.setItem('shadow-en-best-streak', String(best)); } catch (e) {}
+    const MILESTONES = [3, 7, 14, 21, 30, 60, 100];
+    const nextMs = MILESTONES.find(m => m > streak) || (streak + 30);
+    const toNext = nextMs - streak;
+
+    const trend = NS._distTrend(dist);
+    const action = NS._nextAction(state, dist);
+
+    const trendRow = (label, t, count) => `
+      <div class="v13-trend-row">
+        <span class="v13-trend-label">${label}</span>
+        <span class="v13-trend-count">${count}</span>
+        <span class="v13-trend-arrow t-${t.cls}">${t.arrow}</span>
+      </div>`;
+
     let card = home.querySelector('[data-section-id="memory-activity"]');
     if (!card) {
       card = document.createElement('div');
       card.className = 'card v13-memory-activity';
       card.setAttribute('data-section-id', 'memory-activity');
-      // insert right after the MEMORY STATUS / TODAY GOAL trio
       const anchor = home.querySelector('[data-section-id="today-goal"]')
         || home.querySelector('[data-section-id="memory-status"]')
         || home.querySelector('.v13-memory-health');
@@ -379,17 +446,55 @@
         <div class="card-title"><span class="icon">📅</span> MEMORY ACTIVITY</div>
         <div class="v13-ma-meta">${activeDays} active day${activeDays === 1 ? '' : 's'} · ${totalReviews} review${totalReviews === 1 ? '' : 's'} · last 28 days</div>
       </div>
-      <div class="v13-ma-grid-wrap">
-        <div class="v13-heatmap-days v13-ma-days">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => '<span>' + d + '</span>').join('')}</div>
-        <div class="v13-heatmap-grid v13-ma-grid">${heatmap.map((d, i) => {
-          const isToday = i === heatmap.length - 1;
-          const cls = NS.heatmapIntensity(d.count) + (isToday ? ' today' : '');
-          return `<div class="v13-hm-cell ${cls}" title="${escapeHTML(NS.heatmapTooltip(d.date, d.count))}"></div>`;
-        }).join('')}</div>
-        <div class="v13-ma-legend"><span>Less</span><span class="v13-hm-cell hm-0"></span><span class="v13-hm-cell hm-1"></span><span class="v13-hm-cell hm-2"></span><span class="v13-hm-cell hm-3"></span><span class="v13-hm-cell hm-4"></span><span>More</span></div>
+
+      <div class="v13-ma-cols">
+        <div class="v13-ma-left">
+          <div class="v13-ma-sub">Review heatmap</div>
+          <div class="v13-heatmap-days v13-ma-days">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => '<span>' + d + '</span>').join('')}</div>
+          <div class="v13-heatmap-grid v13-ma-grid">${heatmap.map((d, i) => {
+            const isToday = i === heatmap.length - 1;
+            const cls = NS.heatmapIntensity(d.count) + (isToday ? ' today' : '');
+            return `<div class="v13-hm-cell ${cls}" title="${escapeHTML(NS.heatmapTooltip(d.date, d.count))}"></div>`;
+          }).join('')}</div>
+          <div class="v13-ma-legend"><span>Less</span><span class="v13-hm-cell hm-0"></span><span class="v13-hm-cell hm-1"></span><span class="v13-hm-cell hm-2"></span><span class="v13-hm-cell hm-3"></span><span class="v13-hm-cell hm-4"></span><span>More</span></div>
+        </div>
+
+        <div class="v13-ma-right">
+          <div class="v13-ma-block">
+            <div class="v13-ma-sub">Memory insights</div>
+            <div class="v13-insight-line"><span class="v13-il-ico">🔥</span><span class="v13-il-txt">${thisWeek} review${thisWeek === 1 ? '' : 's'} completed this week</span></div>
+            <div class="v13-insight-line"><span class="v13-il-ico">⚠️</span><span class="v13-il-txt">${needAttention} topic${needAttention === 1 ? '' : 's'} need attention</span></div>
+            <div class="v13-insight-line"><span class="v13-il-ico">📈</span><span class="v13-il-txt">Trend vs last week <b class="t-${weekArrow.c}">${weekArrow.a} ${weekDelta > 0 ? '+' : ''}${weekDelta}</b></span></div>
+            <div class="v13-insight-line action" data-go="${action.view}"><span class="v13-il-ico">🎯</span><span class="v13-il-txt">${escapeHTML(action.text)}</span><span class="v13-il-arrow">→</span></div>
+          </div>
+
+          <div class="v13-ma-twocol">
+            <div class="v13-ma-block">
+              <div class="v13-ma-sub">Memory momentum</div>
+              <div class="v13-momentum">
+                <div class="v13-mom"><span class="v13-mom-num">${streak}</span><span class="v13-mom-lab">🔥 Current</span></div>
+                <div class="v13-mom"><span class="v13-mom-num">${best}</span><span class="v13-mom-lab">🏆 Best</span></div>
+                <div class="v13-mom"><span class="v13-mom-num">${toNext}d</span><span class="v13-mom-lab">🎯 To ${nextMs}d</span></div>
+              </div>
+            </div>
+            <div class="v13-ma-block">
+              <div class="v13-ma-sub">Memory trend ${trend.hasHistory ? '' : '<span class="v13-trend-note">· tracking…</span>'}</div>
+              <div class="v13-trend">
+                ${trendRow('Fragile', trend.fragile, dist.fragile)}
+                ${trendRow('Weak', trend.weak, dist.weak)}
+                ${trendRow('Stable', trend.stable, dist.stable)}
+                ${trendRow('Automatic', trend.automatic, dist.automatic)}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     `;
+
+    const act = card.querySelector('.v13-insight-line.action');
+    if (act) act.onclick = function () { if (window.navigate) window.navigate(act.dataset.go || 'review'); };
   };
+
 
   // ============= MAIN =============
   NS.renderAll = function() {
@@ -762,26 +867,45 @@
       .v13-mh-insight.warn { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.18); color: #fca5a5; }
       .v13-mh-insight.ok { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.18); color: #86efac; font-style: italic; }
 
-      /* ========================================================
-         V13.4 — MEMORY ACTIVITY (heatmap, full-width band)
-         ======================================================== */
-      .card.v13-memory-activity { grid-column: 1 / -1; padding: 18px 22px !important; }
-      .v13-ma-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+      /* ===== V13.4 MEMORY ACTIVITY — two-column story card ===== */
+      .card.v13-memory-activity { grid-column: 1 / -1; padding: 20px 24px !important; }
+      .v13-ma-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
       .v13-ma-head .card-title { margin-bottom: 0; }
       .v13-ma-meta { font-size: 11.5px; color: rgba(255,255,255,0.45); }
-      .v13-ma-grid-wrap { display: flex; flex-direction: column; gap: 8px; }
-      .v13-ma-days {
-        display: grid; grid-template-columns: repeat(7, minmax(0, 46px));
-        justify-content: start; text-align: center; font-size: 10px;
-        color: rgba(255,255,255,0.4); letter-spacing: 0.05em; text-transform: uppercase;
-      }
-      .v13-ma-grid {
-        display: grid; grid-template-columns: repeat(7, minmax(0, 46px));
-        justify-content: start; gap: 6px;
-      }
-      .v13-ma-grid .v13-hm-cell { aspect-ratio: 1; max-width: 46px; border-radius: 4px; }
-      .v13-ma-legend { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: rgba(255,255,255,0.4); margin-top: 6px; }
-      .v13-ma-legend .v13-hm-cell { width: 14px; height: 14px; border-radius: 3px; }
+      .v13-ma-cols { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 28px; align-items: start; }
+      .v13-ma-sub { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); font-weight: 600; margin-bottom: 10px; }
+      .v13-ma-left { min-width: 0; }
+      .v13-ma-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 9.5px; color: rgba(255,255,255,0.4); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 5px; }
+      .v13-ma-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+      .v13-ma-grid .v13-hm-cell { aspect-ratio: 1; max-width: none; border-radius: 4px; }
+      .v13-ma-legend { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: rgba(255,255,255,0.4); margin-top: 10px; }
+      .v13-ma-legend .v13-hm-cell { width: 13px; height: 13px; border-radius: 3px; }
+
+      .v13-ma-right { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+      .v13-ma-block { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 14px 16px; }
+      .v13-insight-line { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; color: rgba(255,255,255,0.82); }
+      .v13-il-ico { flex: 0 0 auto; font-size: 14px; }
+      .v13-il-txt { flex: 1 1 auto; min-width: 0; }
+      .v13-insight-line b { font-weight: 700; margin-left: 2px; }
+      .v13-insight-line.action { margin-top: 4px; padding: 10px 12px; border-radius: 10px; background: rgba(124,92,255,0.10); border: 1px solid rgba(124,92,255,0.22); cursor: pointer; color: #fff; font-weight: 600; transition: all 160ms ease-out; }
+      .v13-insight-line.action:hover { background: rgba(124,92,255,0.18); transform: translateY(-1px); }
+      .v13-il-arrow { flex: 0 0 auto; opacity: 0.7; transition: transform 160ms ease-out; }
+      .v13-insight-line.action:hover .v13-il-arrow { transform: translateX(3px); }
+
+      .v13-ma-twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .v13-momentum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .v13-mom { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; background: rgba(255,255,255,0.025); border-radius: 9px; }
+      .v13-mom-num { font-size: 22px; font-weight: 800; color: #fff; line-height: 1; }
+      .v13-mom-lab { font-size: 9.5px; color: rgba(255,255,255,0.55); text-align: center; }
+      .v13-trend { display: flex; flex-direction: column; gap: 6px; }
+      .v13-trend-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; font-size: 12.5px; color: rgba(255,255,255,0.75); }
+      .v13-trend-label { color: rgba(255,255,255,0.7); }
+      .v13-trend-count { font-weight: 700; color: rgba(255,255,255,0.92); min-width: 18px; text-align: right; }
+      .v13-trend-arrow { font-weight: 800; font-size: 14px; min-width: 16px; text-align: center; }
+      .v13-trend-note { font-weight: 400; color: rgba(255,255,255,0.35); text-transform: none; letter-spacing: 0; font-style: italic; }
+      .t-good { color: #4ade80; }
+      .t-bad { color: #f87171; }
+      .t-flat { color: rgba(255,255,255,0.45); }
 
       /* ========================================================
          V13.4 — TODAY FOCUS missions checklist (ROOT-CAUSE FIX)
@@ -829,8 +953,9 @@
 
         .card.v13-today-compass { padding: 16px 16px !important; min-height: 0 !important; }
         .card.v13-memory-activity { padding: 16px !important; }
-        .v13-ma-days, .v13-ma-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-        .v13-ma-grid .v13-hm-cell { max-width: none; }
+        .v13-ma-cols { grid-template-columns: 1fr; gap: 18px; }
+        .v13-ma-twocol { grid-template-columns: 1fr; }
+        .v13-ma-days, .v13-ma-grid { grid-template-columns: repeat(7, 1fr); }
 
         /* YOUR NEXT MOVE banner: stack — scoped to .mission-hero ONLY */
         .mission-hero { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
