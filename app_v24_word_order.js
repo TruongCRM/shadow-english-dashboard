@@ -51,7 +51,7 @@
     if (!raw) return [];
     return raw.split(/\s+/).map(function (w) {
       // strip leading/trailing punctuation but keep inner ' and -
-      return w.replace(/^[^\w'’-]+/, '').replace(/[^\w'’-]+$/, '');
+      return w.replace(/^[^\p{L}\p{N}'’-]+/u, '').replace(/[^\p{L}\p{N}'’-]+$/u, '');
     }).filter(function (w) { return w.length > 0; });
   }
 
@@ -238,6 +238,8 @@
     check('tokenize strips trailing ? (cost)', t1.indexOf('cost') !== -1 && t1.indexOf('cost?') === -1);
     var t2 = tokenize("I'd like to order a pizza.");
     check('tokenize keeps inner apostrophe (I\'d)', t2[0] === "I'd");
+    var tv = tokenize('cá nhân');
+    check('tokenize keeps Unicode letters (cá nhân)', tv.length === 2 && tv[0] === 'cá' && tv[1] === 'nhân');
 
     // shuffle: same length, same multiset, differs from original (len>1)
     var sh = shuffleTokens(t1, 'How much does it cost?');
