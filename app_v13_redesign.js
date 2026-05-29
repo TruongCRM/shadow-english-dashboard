@@ -6,7 +6,7 @@
 
 (function setupV13() {
   const NS = window.SHADOW_V13 = window.SHADOW_V13 || {};
-  NS.version = '13.0';
+  NS.version = '13.1';
 
   // ============= UTIL =============
   function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h<<5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -583,20 +583,18 @@
         margin-top: 10px; letter-spacing: 0.01em;
       }
 
-      .v13-health-breakdown { display: flex; flex-direction: column; gap: 7px; padding: 0 8px; }
-      .v13-breakdown-row {
-        display: flex; align-items: center; gap: 10px;
-        font-size: 13px; color: rgba(255,255,255,0.85); padding: 4px 0;
-      }
-      .v13-breakdown-row.dim { opacity: 0.45; }
+      .v13-health-breakdown { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 0; }
+      .v13-breakdown-row { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; text-align: center; transition: all 200ms ease-out; }
+      .v13-breakdown-row:hover { background: rgba(124,92,255,0.06); border-color: rgba(124,92,255,0.18); }
+      .v13-breakdown-row.dim { opacity: 0.4; background: rgba(255,255,255,0.015); }
       .v13-breakdown-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
       .v13-breakdown-dot.dot-fragile { background: #ef4444; }
       .v13-breakdown-dot.dot-weak { background: #f59e0b; }
       .v13-breakdown-dot.dot-building { background: #facc15; }
       .v13-breakdown-dot.dot-stable { background: #22c55e; }
       .v13-breakdown-dot.dot-automatic { background: #a78bfa; }
-      .v13-breakdown-count { font-weight: 600; min-width: 24px; text-align: right; }
-      .v13-breakdown-label { color: rgba(255,255,255,0.65); }
+      .v13-breakdown-count { font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.95); margin: 0; text-align: center; min-width: auto; }
+      .v13-breakdown-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255,255,255,0.6); font-weight: 500; line-height: 1.2; }
 
       .v13-health-heatmap { display: flex; flex-direction: column; gap: 8px; }
       .v13-heatmap-header { display: flex; justify-content: space-between; align-items: baseline; }
@@ -657,10 +655,52 @@
         .card.v13-today-compass { padding: 20px !important; min-height: 240px; }
         .v13-count-done { font-size: 48px; }
         .v13-mission-statement { font-size: 15px; }
-        .card.v13-memory-health { padding: 20px 18px !important; gap: 18px; }
+        .card.v13-memory-health { padding: 18px 14px !important; gap: 16px; }
         .v13-health-state-badge { padding: 8px 20px; font-size: 12.5px; }
-        .v13-breakdown-row { font-size: 12px; }
+        .v13-health-breakdown { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .v13-breakdown-row { padding: 8px 2px; gap: 4px; }
+        .v13-breakdown-count { font-size: 18px; }
+        .v13-breakdown-label { font-size: 8.5px; letter-spacing: 0.02em; }
+        .v13-breakdown-dot { width: 6px; height: 6px; }
         .v13-insight-row { font-size: 11.5px; }
+        .v13-heatmap-grid { gap: 3px; }
+        .v13-hm-cell { border-radius: 2px; }
+        .v13-heatmap-days { font-size: 9px; }
+        .v13-heatmap-label { font-size: 9.5px; }
+        .v13-heatmap-period { font-size: 10px; }
+        .v13-health-insights { padding: 12px 14px; }
+        .v13-journey-milestones { gap: 4px; }
+      }
+      @media (max-width: 380px) {
+        .v13-health-breakdown { grid-template-columns: repeat(3, 1fr); }
+        .v13-breakdown-row { padding: 8px 4px; }
+        .v13-breakdown-count { font-size: 20px; }
+        .v13-breakdown-label { font-size: 9px; }
+        .card.v13-hero-living { padding: 18px 16px !important; min-height: 0; }
+        .v13-tier-icon { font-size: 18px; }
+        .v13-tier-name { font-size: 15px; }
+        .v13-hero-identity-day { font-size: 11.5px; }
+        .v13-hero-identity-quote { display: none; }
+        .v13-milestone-dot { width: 12px; height: 12px; }
+        .v13-milestone.current .v13-milestone-dot { width: 16px; height: 16px; }
+        .v13-milestone-label { font-size: 8.5px; }
+        .v13-journey-status { font-size: 11px; }
+        .v13-momentum-row { padding: 4px 8px; }
+        .v13-momentum-text { font-size: 11px; }
+        .card.v13-today-compass { padding: 16px !important; min-height: 200px; gap: 12px; }
+        .v13-count-done { font-size: 40px; }
+        .v13-count-total, .v13-count-divider { font-size: 22px; }
+        .v13-mission-statement { font-size: 13.5px; }
+        .v13-mission-label { font-size: 9.5px; }
+        .v13-compass-subtitle { font-size: 12px; }
+        .v13-compass-bar { width: 90%; }
+        .v13-compass-streak { font-size: 11px; }
+        .card.v13-memory-health { padding: 14px 12px !important; gap: 14px; }
+        .v13-health-state-badge { padding: 6px 16px; font-size: 11.5px; letter-spacing: 0.08em; }
+        .v13-health-state-label { font-size: 10px; margin-bottom: 6px; }
+        .v13-health-state-subtitle { font-size: 11.5px; margin-top: 6px; }
+        .v13-insight-row { font-size: 10.5px; gap: 6px; }
+        .v13-health-insights { padding: 10px 12px; gap: 6px; }
       }
     `;
     document.head.appendChild(s);
@@ -697,6 +737,52 @@
       memoryHealth: NS.memoryHealthState(NS.computeDistribution(state.topics)).label
     };
   };
+
+  // ============= v13.1: DAY 60 REVIEW TAB =============
+  NS.addDay60Tab = function() {
+    const view = document.getElementById('view-review');
+    if (!view) return;
+    if (view.querySelector('[data-v13-day60]')) return;
+    const tabs = Array.from(view.querySelectorAll('button, [class*="tab"], [class*="chip"]'));
+    let day21Tab = null;
+    for (const t of tabs) {
+      const txt = (t.textContent || '').trim();
+      if (/^Day 21/i.test(txt) && !t.querySelector('button')) { day21Tab = t; break; }
+    }
+    if (!day21Tab) return;
+    const state = NS.getState();
+    const count = (state.topics || []).filter(t => t.reviewStage === 'Day 60').length;
+    const day60 = day21Tab.cloneNode(true);
+    day60.dataset.v13Day60 = '1';
+    day60.textContent = 'Day 60 (' + count + ')';
+    day21Tab.parentNode.insertBefore(day60, day21Tab.nextSibling);
+    day60.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      tabs.forEach(t => t.classList.remove('active'));
+      day60.classList.add('active');
+      const rows = view.querySelectorAll('tr, [class*="queue-row"], [class*="review-row"], [class*="topic-row"]');
+      rows.forEach(row => {
+        if (row.tagName === 'TR' && row.querySelector('th')) return;
+        const stageText = row.textContent || '';
+        row.style.display = /Day 60/i.test(stageText) ? '' : 'none';
+      });
+    };
+  };
+  (function hookReviewView() {
+    if (typeof window.navigate !== 'function') { setTimeout(hookReviewView, 200); return; }
+    if (window.navigate.__v13_1_review_hooked) return;
+    const orig = window.navigate;
+    window.navigate = function(viewId) {
+      orig(viewId);
+      if (viewId === 'review') {
+        setTimeout(NS.addDay60Tab, 250);
+        setTimeout(NS.addDay60Tab, 700);
+        setTimeout(NS.addDay60Tab, 1500);
+      }
+    };
+    window.navigate.__v13_1_review_hooked = true;
+  })();
 
   console.log('[v13] Living Identity / Daily Compass / Memory Health loaded · v' + NS.version);
 })();
