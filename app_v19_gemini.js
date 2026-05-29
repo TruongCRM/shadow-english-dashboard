@@ -100,7 +100,7 @@
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + NS.MODEL + ':generateContent?key=' + encodeURIComponent(key);
     const body = {
       contents: [{ role: 'user', parts: [{ text: buildPrompt(spec) }] }],
-      generationConfig: { temperature: 0.9, responseMimeType: 'application/json', maxOutputTokens: 4096 }
+      generationConfig: { temperature: 0.9, responseMimeType: 'application/json', maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } }
     };
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error('HTTP ' + res.status + ' ' + t.slice(0,160)); }))
