@@ -240,7 +240,7 @@
   // ============================================================
   function augmentTopicsView() {
     const view = document.getElementById('view-topics');
-    if (!view || view.offsetParent === null) return;
+    if (!view || !view.classList.contains("active")) return;
 
     // (a) toolbar in the header card
     const headerCard = view.querySelector('.card');
