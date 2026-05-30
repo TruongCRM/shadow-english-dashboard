@@ -325,6 +325,7 @@
       '.gp-del:hover{color:var(--red);background:rgba(239,68,68,.12)}',
       '.gp-empty{font-size:13px;color:var(--text-3);padding:10px 0}',
       '.gp-form{display:grid;gap:8px;margin-bottom:14px;padding:14px;background:var(--card-2);border:1px solid var(--border);border-radius:12px}',
+      '.gp-form[hidden]{display:none}',
       '.gp-form input{width:100%;box-sizing:border-box;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none}',
       '.gp-form input:focus{border-color:var(--purple)}',
       '.gp-form-actions,.gp-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}',
