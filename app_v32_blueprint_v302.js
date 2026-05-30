@@ -37,10 +37,10 @@
     '.v30-card.v32 .v32-why{grid-column:span 6 !important;order:1 !important;}',
     '.v30-card.v32 .v32-scene{grid-column:span 6 !important;order:1 !important;}',
     '.v30-card.v32 .v32-core{grid-column:span 12 !important;order:2 !important;}',
-    '.v30-card.v32 .v32-dialogues{grid-column:span 12 !important;order:3 !important;}',
-    '.v30-card.v32 .v32-real{grid-column:span 9 !important;order:4 !important;}',
+    '.v30-card.v32 .v32-dialogues{grid-column:span 12 !important;order:5 !important;}',
+    '.v30-card.v32 .v32-real{grid-column:span 9 !important;order:3 !important;}',
     '.v30-card.v32 .v32-grammar{grid-column:span 3 !important;order:4 !important;}',
-    '.v30-card.v32 .v32-minor{grid-column:span 2 !important;order:5 !important;}',
+    '.v30-card.v32 .v32-minor{grid-column:span 2 !important;order:6 !important;}',
 
     /* === CORE PHRASES = dominant zone (+~15-20% presence) === */
     '.v30-card.v32 .v32-core{padding:18px 18px 22px !important;border-width:2px !important;}',
@@ -232,7 +232,7 @@
   /* ------------------------------------------------------------------ *
    * 6) boot                                                            *
    * ------------------------------------------------------------------ */
-  var API = { VERSION: 'v32.0.0', apply: apply, classify: classify, injectStyle: injectStyle, selfTest: selfTest };
+  var API = { VERSION: 'v32.0.1', apply: apply, classify: classify, injectStyle: injectStyle, selfTest: selfTest };
   if (typeof window !== 'undefined') {
     window.SHADOW_V32 = API;
     try { hook(); } catch (e) {}
