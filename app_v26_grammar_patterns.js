@@ -75,10 +75,12 @@
   /* ------------------------------------------------------------------- IPA */
   function ipaFor(text) {
     try {
-      if (window.SHADOW_V23 && typeof window.SHADOW_V23.ipaFor === 'function') {
-        var r = window.SHADOW_V23.ipaFor(text);
-        if (r && r.ipa) return r.ipa;
-        if (typeof r === 'string') return r;
+      var V = window.SHADOW_V23;
+      if (V) {
+        var s = '';
+        if (typeof V.ipaFor === 'function') { var r = V.ipaFor(text); s = (r && r.ipa) ? r.ipa : (typeof r === 'string' ? r : ''); }
+        if ((!s || s.indexOf('undefined') > -1) && typeof V.clientIpa === 'function') { var c = V.clientIpa(text); s = (c && c.ipa) ? c.ipa : ''; }
+        if (s && s.indexOf('undefined') === -1) return s;
       }
     } catch (e) {}
     return '';
