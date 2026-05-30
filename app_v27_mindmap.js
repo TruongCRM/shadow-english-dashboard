@@ -1,30 +1,29 @@
 /* ============================================================================
  * SHADOW ENGLISH - v27  MINDMAP  (Lesson Framework V1, module #12)   (ADDITIVE)
+ * v27.1.0 (V29) — full framework coverage + aesthetics + mobile pan.
  * ----------------------------------------------------------------------------
  * "🧠 Generate Mindmap" — reads the data already present in the lesson modules
  * and draws a radial mindmap around the topic, matching Lesson Framework V1.
  *
- * Reads (no new data, no required AI):
- *   WHY, SCENE, CORE PHRASES, GRAMMAR PATTERNS (SHADOW_V26), DIALOGUES,
- *   ACTION (Shadowing/Ghi âm/Roleplay/Chat AI), MEMORY LOOP (Day 0..60 + current
- *   stage), REAL LIFE MISSIONS, REVIEW (Active Recall), WORD ORDER CHALLENGE.
+ * Branches (each only rendered if it has data; ACTION + MEMORY LOOP are fixed):
+ *   WHY · SCENE · CORE PHRASES (Before/During/After) · GRAMMAR (pattern→meaning,
+ *   from SHADOW_V26) · DIALOGUES · REAL ENGLISH · ACTION · MEMORY LOOP (Day 0..60
+ *   + current stage) · REAL LIFE MISSIONS · REVIEW · WORD ORDER.
  *
- * Output: a self-contained radial SVG (central topic node + colored branch nodes
- * with sub-items). Buttons: ✨ Generate / ↻ Tạo lại / ⬇ Tải PNG (canvas export,
- * no external libs, no foreignObject so PNG export is clean).
+ * Output: a self-contained radial SVG (central topic + colored branch nodes with
+ * sub-items, side-aware text anchoring to avoid overlap). Buttons: ✨ Generate /
+ * ↻ Tạo lại / ⬇ Tải PNG (canvas export, no libs, no foreignObject). On small
+ * screens the canvas pans horizontally (native touch scroll) so text stays
+ * readable instead of shrinking.
  *
- * Additive only: a "🧠 MINDMAP — TỔNG KẾT BÀI HỌC" card appended at the END of
- * the topic page. Does NOT edit any module; reads DOM + SHADOW_V26/state.
- * Generated SVG is cached per-topic so the 1.5s re-mount never wipes it.
- *
- * Run SHADOW_V27.selfTest() to verify.
+ * Additive only: a card appended at the END of the topic page. Reads DOM +
+ * SHADOW_V26 + state; edits nothing. Run SHADOW_V27.selfTest() to verify.
  * ========================================================================== */
 (function () {
   'use strict';
   if (window.SHADOW_V27) return;
-  var VERSION = 'v27.0.0';
+  var VERSION = 'v27.1.0';
 
-  // concrete hex palette (SVG/PNG must not rely on CSS vars)
   var C = {
     bg: '#0d0b1f', card: '#1a1838', card2: '#221f43', border: '#2a2750',
     text: '#ffffff', text2: '#a8a6c8', text3: '#6b6890',
@@ -32,7 +31,7 @@
     yellow: '#facc15', blue: '#3b82f6', pink: '#ec4899', teal: '#14b8a6'
   };
 
-  var svgCache = {}; // topicId -> svg string (so re-mount keeps the mindmap)
+  var svgCache = {};
 
   function log() { try { console.log.apply(console, ['[v27]'].concat([].slice.call(arguments))); } catch (e) {} }
   function esc(s) {
@@ -80,47 +79,86 @@
     for (var i = 0; i < els.length; i++) { var t = (els[i].textContent || '').trim(); if (t) out.push(t); }
     return out;
   }
+  function notPlaceholder(x) { return !/coming soon/i.test(x) && !/chưa có/i.test(x) && !/will be added/i.test(x); }
 
   /* --------------------------------------------------- collect lesson data */
   function collectLesson(view, topicId) {
     var meta = topicMeta(topicId, view);
     var branches = [];
 
+    // 1) WHY
     var why = textAfterTitle(view, /WHY THIS TOPIC/i);
-    if (why) branches.push({ key: 'why', icon: '🎯', label: 'WHY', color: C.green, items: [clip(why, 60)] });
+    if (why) branches.push({ key: 'why', icon: '🎯', label: 'WHY', color: C.green, items: [clip(why, 64)] });
 
+    // 2) SCENE
     var scene = textAfterTitle(view, /THE SCENE/i);
-    if (scene) branches.push({ key: 'scene', icon: '📍', label: 'SCENE', color: C.blue, items: [clip(scene, 60)] });
+    if (scene) branches.push({ key: 'scene', icon: '📍', label: 'SCENE', color: C.blue, items: [clip(scene, 64)] });
 
-    var phrases = [];
-    var pe = view.querySelectorAll('.phrase-row .phrase-en, .v12-phrase-row .v12-phrase-en');
-    for (var i = 0; i < pe.length && phrases.length < 4; i++) { var t = (pe[i].textContent || '').trim(); if (t) phrases.push(clip(t, 26)); }
-    if (phrases.length) branches.push({ key: 'core', icon: '⭐', label: 'CORE PHRASES', color: C.yellow, items: phrases });
+    // 3) CORE PHRASES — grouped Before / During / After
+    var coreItems = [];
+    var groups = view.querySelectorAll('.v12-phrase-group, .phrase-group');
+    if (groups.length) {
+      groups.forEach(function (g) {
+        var rawTitle = (g.querySelector('.v12-phrase-group-title, .phrase-group-title') || {}).textContent || '';
+        var title = rawTitle.replace(/[^A-Za-z]/g, ' ').replace(/\s+/g, ' ').trim();
+        var en = (g.querySelector('.v12-phrase-en, .phrase-en') || {}).textContent || '';
+        en = en.trim();
+        if (en) coreItems.push(clip((title ? title + ': ' : '') + en, 30));
+      });
+    }
+    if (!coreItems.length) {
+      var pe = view.querySelectorAll('.phrase-row .phrase-en, .v12-phrase-row .v12-phrase-en');
+      for (var i = 0; i < pe.length && coreItems.length < 4; i++) { var t = (pe[i].textContent || '').trim(); if (t) coreItems.push(clip(t, 28)); }
+    }
+    if (coreItems.length) branches.push({ key: 'core', icon: '⭐', label: 'CORE PHRASES', color: C.yellow, items: coreItems });
 
+    // 4) GRAMMAR PATTERNS — pattern → meaning
     var grammar = [];
-    try { if (window.SHADOW_V26 && window.SHADOW_V26.getPatterns) { grammar = window.SHADOW_V26.getPatterns(topicId).map(function (p) { return clip(p.pattern, 26); }).slice(0, 4); } } catch (e) {}
-    if (grammar.length) branches.push({ key: 'grammar', icon: '📐', label: 'GRAMMAR', color: C.purple, items: grammar });
+    try {
+      if (window.SHADOW_V26 && window.SHADOW_V26.getPatterns) {
+        grammar = window.SHADOW_V26.getPatterns(topicId).map(function (p) {
+          return clip(p.pattern + (p.meaning ? ' → ' + p.meaning : ''), 30);
+        }).slice(0, 4);
+      }
+    } catch (e) {}
+    if (grammar.length) branches.push({ key: 'grammar', icon: '📚', label: 'GRAMMAR', color: C.purple, items: grammar });
 
+    // 5) DIALOGUES
     var dialogues = [];
     var dt = view.querySelectorAll('.dialogue-title');
-    for (var d = 0; d < dt.length && dialogues.length < 3; d++) { var dtx = (dt[d].textContent || '').trim(); if (dtx) dialogues.push(clip(dtx, 26)); }
-    if (dialogues.length) branches.push({ key: 'dialogues', icon: '🎭', label: 'DIALOGUES', color: C.teal, items: dialogues });
+    for (var d = 0; d < dt.length && dialogues.length < 3; d++) { var dtx = (dt[d].textContent || '').trim(); if (dtx) dialogues.push(clip(dtx, 28)); }
+    if (!dialogues.length) {
+      var dl = view.querySelectorAll('.dialogue-line');
+      for (var q = 0; q < dl.length && dialogues.length < 3; q++) { var lt = (dl[q].textContent || '').replace(/^[^:]+:\s*/, '').trim(); if (lt) dialogues.push(clip(lt, 28)); }
+    }
+    if (dialogues.length) branches.push({ key: 'dialogues', icon: '🗣', label: 'DIALOGUES', color: C.teal, items: dialogues });
 
-    // ACTION — framework-fixed practice loop
+    // 6) REAL ENGLISH (only if present on the lesson page)
+    var realEng = [];
+    var reCard = cardByTitle(view, /REAL ENGLISH/i);
+    if (reCard) {
+      var res = reCard.querySelectorAll('li, .phrase-en, .v12-phrase-en');
+      for (var re = 0; re < res.length && realEng.length < 3; re++) { var rt = (res[re].textContent || '').trim(); if (rt) realEng.push(clip(rt, 28)); }
+    }
+    if (realEng.length) branches.push({ key: 'realenglish', icon: '🎧', label: 'REAL ENGLISH', color: C.pink, items: realEng });
+
+    // 7) ACTION — framework-fixed
     branches.push({ key: 'action', icon: '🔁', label: 'ACTION', color: C.orange, items: ['Shadowing', 'Ghi âm', 'Roleplay', 'Chat AI'] });
 
-    // MEMORY LOOP — framework-fixed spaced repetition + current stage
+    // 8) MEMORY LOOP — framework-fixed + current stage
     var memItems = ['Day 0 · 1 · 3 · 7 · 21 · 60'];
     if (meta.stage) memItems.push('Đang ở: ' + meta.stage);
     branches.push({ key: 'memory', icon: '🧠', label: 'MEMORY LOOP', color: C.red, items: memItems });
 
-    var missions = listItems(view, /REAL LIFE MISSIONS/i, 'li').filter(function (x) { return !/coming soon/i.test(x) && !/chưa có/i.test(x); }).slice(0, 3).map(function (x) { return clip(x, 28); });
-    if (missions.length) branches.push({ key: 'missions', icon: '🚀', label: 'MISSIONS', color: C.blue, items: missions });
+    // 9) REAL LIFE MISSIONS
+    var missions = listItems(view, /REAL LIFE MISSIONS/i, 'li').filter(notPlaceholder).slice(0, 3).map(function (x) { return clip(x, 28); });
+    if (missions.length) branches.push({ key: 'missions', icon: '🎯', label: 'MISSIONS', color: C.blue, items: missions });
 
-    var recall = listItems(view, /ACTIVE RECALL/i, 'li').filter(function (x) { return !/coming soon/i.test(x) && !/chưa có/i.test(x); }).slice(0, 3).map(function (x) { return clip(x, 28); });
-    if (recall.length) branches.push({ key: 'review', icon: '🔄', label: 'REVIEW', color: C.purple, items: recall });
+    // 10) REVIEW (from Active Recall)
+    var recall = listItems(view, /ACTIVE RECALL/i, 'li').filter(notPlaceholder).slice(0, 3).map(function (x) { return clip(x, 28); });
+    if (recall.length) branches.push({ key: 'review', icon: '📌', label: 'REVIEW', color: C.purple, items: recall });
 
-    // WORD ORDER CHALLENGE (#11) — note its presence if the module is live
+    // 11) WORD ORDER CHALLENGE
     if (window.SHADOW_V25 || window.SHADOW_V24) {
       branches.push({ key: 'wordorder', icon: '🧩', label: 'WORD ORDER', color: C.green, items: ['Sắp xếp từ → câu'] });
     }
@@ -142,37 +180,37 @@
   }
 
   function buildSVG(data) {
-    var W = 1180, H = 860, cx = W / 2, cy = H / 2, R = 84;
-    var rx = 410, ry = 312;
-    var n = data.branches.length;
+    var W = 1320, H = 1000, cx = W / 2, cy = H / 2, R = 96;
+    var rx = 452, ry = 372;
+    var n = Math.max(1, data.branches.length);
     var parts = [];
     parts.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="100%" font-family="Inter,Segoe UI,Arial,sans-serif">');
     parts.push('<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="' + C.bg + '"/>');
 
-    // connectors first (under nodes)
     var nodes = [];
     for (var i = 0; i < n; i++) {
       var ang = (-90 + i * (360 / n)) * Math.PI / 180;
       var nx = cx + rx * Math.cos(ang), ny = cy + ry * Math.sin(ang);
-      nodes.push({ b: data.branches[i], x: nx, y: ny, ang: ang });
+      nodes.push({ b: data.branches[i], x: nx, y: ny, c: Math.cos(ang) });
       var ex = cx + R * Math.cos(ang), ey = cy + R * Math.sin(ang);
-      var mx = (ex + nx) / 2, my = (ey + ny) / 2;
-      parts.push('<path d="M ' + ex.toFixed(1) + ' ' + ey.toFixed(1) + ' Q ' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' ' + nx.toFixed(1) + ' ' + ny.toFixed(1) + '" stroke="' + nodes[i].b.color + '" stroke-width="2.5" fill="none" opacity="0.55"/>');
+      var mx = (ex + nx) / 2 + Math.cos(ang) * 18, my = (ey + ny) / 2;
+      parts.push('<path d="M ' + ex.toFixed(1) + ' ' + ey.toFixed(1) + ' Q ' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' ' + nx.toFixed(1) + ' ' + ny.toFixed(1) + '" stroke="' + data.branches[i].color + '" stroke-width="2.5" fill="none" opacity="0.5"/>');
     }
 
-    // branch nodes
     for (var j = 0; j < nodes.length; j++) {
       var nd = nodes[j], b = nd.b;
-      var pw = Math.max(132, b.label.length * 9 + 46);
-      var ph = 28;
-      var topY = nd.y - ph / 2;
-      // header pill
+      var pw = Math.max(128, b.label.length * 9 + 48), ph = 28, topY = nd.y - ph / 2;
+      // header pill (centered on node point)
       parts.push('<rect x="' + (nd.x - pw / 2).toFixed(1) + '" y="' + topY.toFixed(1) + '" rx="14" ry="14" width="' + pw + '" height="' + ph + '" fill="' + b.color + '"/>');
       parts.push('<text x="' + nd.x.toFixed(1) + '" y="' + (topY + 19).toFixed(1) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#0d0b1f">' + esc(b.icon + ' ' + b.label) + '</text>');
-      // items
+      // sub-items: anchor outward by side to minimise overlap
+      var anchor, tx;
+      if (nd.c > 0.30) { anchor = 'start'; tx = nd.x - pw / 2 + 6; }
+      else if (nd.c < -0.30) { anchor = 'end'; tx = nd.x + pw / 2 - 6; }
+      else { anchor = 'middle'; tx = nd.x; }
       for (var k = 0; k < b.items.length; k++) {
         var iy = topY + ph + 16 + k * 16;
-        parts.push('<text x="' + nd.x.toFixed(1) + '" y="' + iy.toFixed(1) + '" text-anchor="middle" font-size="11" fill="' + C.text2 + '">• ' + esc(b.items[k]) + '</text>');
+        parts.push('<text x="' + tx.toFixed(1) + '" y="' + iy.toFixed(1) + '" text-anchor="' + anchor + '" font-size="11" fill="' + C.text2 + '">• ' + esc(b.items[k]) + '</text>');
       }
     }
 
@@ -183,7 +221,7 @@
     for (var m = 0; m < nameLines.length; m++) {
       parts.push('<text x="' + cx + '" y="' + (startY + m * 22).toFixed(1) + '" text-anchor="middle" font-size="18" font-weight="800" fill="' + C.text + '">' + esc(nameLines[m]) + '</text>');
     }
-    parts.push('<text x="' + cx + '" y="' + (cy + R - 18).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="' + C.text3 + '" letter-spacing="1">MINDMAP</text>');
+    parts.push('<text x="' + cx + '" y="' + (cy + R - 20).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="' + C.text3 + '" letter-spacing="1">MINDMAP</text>');
 
     parts.push('</svg>');
     return parts.join('');
@@ -201,6 +239,7 @@
       '    <button type="button" class="mm-btn mm-ghost" data-mm-png ' + (cached ? '' : 'hidden') + '>⬇ Tải PNG</button>' +
       '    <span class="mm-status" data-mm-status></span>' +
       '  </div>' +
+      '  <div class="mm-hint" data-mm-hint ' + (cached ? '' : 'hidden') + '>↔ Vuốt ngang để xem toàn bộ sơ đồ trên màn hình nhỏ.</div>' +
       '  <div class="mm-canvas" data-mm-canvas>' + (cached || '') + '</div>' +
       '</div>';
   }
@@ -209,6 +248,7 @@
     var canvas = root.querySelector('[data-mm-canvas]');
     var pngBtn = root.querySelector('[data-mm-png]');
     var genBtn = root.querySelector('[data-mm-gen]');
+    var hint = root.querySelector('[data-mm-hint]');
     var status = root.querySelector('[data-mm-status]');
     function setStatus(m, c) { if (status) { status.className = 'mm-status ' + (c || ''); status.textContent = m || ''; } }
 
@@ -220,6 +260,7 @@
         svgCache[topicId] = svg;
         if (canvas) canvas.innerHTML = svg;
         if (pngBtn) pngBtn.removeAttribute('hidden');
+        if (hint) hint.removeAttribute('hidden');
         if (genBtn) genBtn.textContent = '✨ Tạo lại Mindmap';
         setStatus(data.branches.length + ' nhánh từ bài học.', 'mm-ok');
       } catch (e) { setStatus('Lỗi khi tạo mindmap.', 'mm-bad'); log('gen err', e); }
@@ -233,7 +274,7 @@
         var blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         var url = (window.URL || window.webkitURL).createObjectURL(blob);
         img.onload = function () {
-          var scale = 2, cw = 1180 * scale, ch = 860 * scale;
+          var scale = 2, cw = 1320 * scale, ch = 1000 * scale;
           var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
           var ctx = cv.getContext('2d'); ctx.fillStyle = C.bg; ctx.fillRect(0, 0, cw, ch);
           ctx.drawImage(img, 0, 0, cw, ch);
@@ -270,7 +311,7 @@
     if (document.getElementById('mm-css')) return;
     var css = [
       '.mm-card .mm-sub{font-size:12px;color:var(--text-2);margin:-2px 0 14px}',
-      '.mm-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}',
+      '.mm-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}',
       '.mm-btn{appearance:none;cursor:pointer;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;transition:background .15s ease,color .15s ease}',
       '.mm-primary{border:1px solid var(--purple);background:var(--purple);color:#fff}',
       '.mm-primary:hover{background:var(--purple-2)}',
@@ -279,8 +320,11 @@
       '.mm-ghost[hidden]{display:none}',
       '.mm-status{font-size:12px;font-weight:600}',
       '.mm-ok{color:var(--green)}.mm-bad{color:var(--orange)}',
-      '.mm-canvas{width:100%;border-radius:12px;overflow:hidden}',
-      '.mm-canvas svg{display:block;width:100%;height:auto}'
+      '.mm-hint{font-size:11px;color:var(--text-3);margin-bottom:8px;display:none}',
+      '@media(max-width:760px){.mm-hint:not([hidden]){display:block}}',
+      '.mm-canvas{width:100%;max-width:100%;border-radius:12px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}',
+      '.mm-canvas svg{display:block;width:100%;height:auto}',
+      '@media(max-width:760px){.mm-canvas svg{width:760px}}'
     ].join('');
     var s = document.createElement('style'); s.id = 'mm-css'; s.textContent = css;
     (document.head || document.documentElement).appendChild(s);
@@ -299,24 +343,26 @@
     function check(n, c) { ok = ok && !!c; out.push((c ? 'PASS ' : 'FAIL ') + n); }
 
     check('clip truncates', clip('abcdefghij', 5).length === 5 && /…$/.test(clip('abcdefghij', 5)));
-    var lines = wrapText('one two three four five six', 9, 2);
-    check('wrapText respects maxLines', lines.length === 2);
+    check('wrapText respects maxLines', wrapText('one two three four five six', 9, 2).length === 2);
 
     var data = { name: 'Đi ăn nhà hàng', stage: 'Day 3', branches: [
       { key: 'why', icon: '🎯', label: 'WHY', color: C.green, items: ['gọi món đúng ý'] },
-      { key: 'core', icon: '⭐', label: 'CORE PHRASES', color: C.yellow, items: ['Can we see the menu?'] },
-      { key: 'grammar', icon: '📐', label: 'GRAMMAR', color: C.purple, items: ["I'd like to + V"] }
+      { key: 'core', icon: '⭐', label: 'CORE PHRASES', color: C.yellow, items: ['BEFORE: Can we see the menu?', 'DURING: Could I have water?', 'AFTER: Can we have the bill?'] },
+      { key: 'grammar', icon: '📚', label: 'GRAMMAR', color: C.purple, items: ["I'd like to + V → muốn…"] },
+      { key: 'realenglish', icon: '🎧', label: 'REAL ENGLISH', color: C.pink, items: ['I wanna…'] }
     ] };
     var svg = buildSVG(data);
     check('buildSVG returns <svg>', /^<svg[\s\S]*<\/svg>$/.test(svg));
-    check('svg has viewBox', /viewBox="0 0 1180 860"/.test(svg));
-    check('svg renders branch labels', svg.indexOf('CORE PHRASES') > -1 && svg.indexOf('GRAMMAR') > -1);
+    check('svg viewBox 1320x1000', /viewBox="0 0 1320 1000"/.test(svg));
+    check('svg renders all branch labels', svg.indexOf('CORE PHRASES') > -1 && svg.indexOf('GRAMMAR') > -1 && svg.indexOf('REAL ENGLISH') > -1);
+    check('core shows Before/During/After', svg.indexOf('BEFORE') > -1 && svg.indexOf('DURING') > -1 && svg.indexOf('AFTER') > -1);
+    check('grammar shows pattern->meaning', svg.indexOf('→ muốn') > -1);
     check('svg renders center name', svg.toUpperCase().indexOf('ĐI ĂN') > -1);
-    check('svg has bg rect (PNG-safe)', svg.indexOf(C.bg) > -1);
+    check('svg bg rect (PNG-safe)', svg.indexOf(C.bg) > -1);
     check('no foreignObject (clean PNG)', svg.indexOf('foreignObject') === -1);
 
     check('does NOT touch v26', !window.SHADOW_V26 || typeof window.SHADOW_V26.getPatterns === 'function');
-    check('does NOT touch v25', !window.SHADOW_V25 || typeof window.SHADOW_V25.selfTest === 'function');
+    check('does NOT touch v28 audio', !window.SHADOW_V28 || typeof window.SHADOW_V28.run === 'function');
     check('does NOT touch v20 engines', !window.SHADOW_V20 || typeof window.SHADOW_V20.smartNextAction === 'function');
 
     if (typeof document !== 'undefined' && document.createElement) {
@@ -331,7 +377,6 @@
     return { ok: ok, results: out };
   }
 
-  /* ------------------------------------------------------------------ boot */
   function boot() {
     injectCSS();
     run();
