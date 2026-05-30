@@ -1,7 +1,7 @@
-/*! app_v30_blueprint.js — V30 Lesson Blueprint Generator (v30.1.0 — HOTFIX)
+/*! app_v30_blueprint.js — V30 Lesson Blueprint Generator (v30.1.1 — HOTFIX)
  * ADDITIVE module. One-page A4 infographic cheat-sheet of the whole lesson (approved mockup V30.1).
  *
- * v30.1.0 HOTFIX (approved scope — BUG-018 + BUG-019 + WHY/SCENE; NO new features):
+ * v30.1.1 HOTFIX (approved scope — BUG-018 + BUG-019 + WHY/SCENE; NO new features):
  *  WHY/SCENE  : read directly from SHADOW_V12.getOverlay(topicId).{notionOverrides|v15}.{why,scene}.
  *               NO DOM scraping. NO scene->why fallback. Empty scene -> "Chưa có Scene" (why -> "Chưa có Why").
  *  ANCHOR     : mount ONLY into #view-topic-detail AND only while it has class .active (views use display:contents,
@@ -20,7 +20,7 @@
   'use strict';
   if (window.SHADOW_V30) return;
 
-  var VERSION = '30.1.0';
+  var VERSION = '30.1.1';
   var A4 = { w: 1240, h: 1754 };
   var MOUNT_INTERVAL_MS = 1500;
   var state = { open: null }; // null => decide by viewport on first mount
@@ -233,7 +233,7 @@
   function injectCSS() {
     if (!document.head || $('#v30-style')) return;
     var css =
-    '.v30-card{margin-top:16px}' +
+    '.v30-card{margin-top:16px;grid-column:1/-1}' +
     '.v30-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}' +
     '.v30-title{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}' +
     '.v30-back{display:none;cursor:pointer;font-size:18px;padding:0 4px}' +
@@ -376,7 +376,7 @@
     var r = []; function ok(n, c) { r.push({ name: n, ok: !!c }); }
     try {
       ok('namespace SHADOW_V30', !!window.SHADOW_V30);
-      ok('VERSION 30.1.0', VERSION === '30.1.0');
+      ok('VERSION 30.1.1', VERSION === '30.1.1');
       // FIX #1 — WHY/SCENE from overlay, distinct, no cross fallback
       var ws = pickWhyScene({ notionOverrides: { why: 'W-VAL', scene: 'S-VAL' } });
       ok('reads overlay why/scene (notionOverrides)', ws.why === 'W-VAL' && ws.scene === 'S-VAL');
