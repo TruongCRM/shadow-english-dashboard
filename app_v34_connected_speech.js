@@ -344,7 +344,7 @@
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick);
       else tick();
       // topic-page modules re-mount on an interval; stay idempotent via data-v34
-      window.__v34int = setInterval(tick, 1600);
+      window.__v34int = setInterval(tick, 300000);
     }
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
