@@ -112,7 +112,9 @@
       if (!f) return null;
       var r = f.call(window.SHADOW_V23 || window, w);
       if (!r || /undefined/.test(r)) return null;
-      return String(r).replace(/[\/\[\]]/g, '');
+      if (typeof r !== 'string') return null;
+         r = r.replace(/[\/\[\]]/g, '').trim();
+         return (!r || /object|undefined/i.test(r)) ? null : r;
     } catch (e) { return null; }
   }
 
