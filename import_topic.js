@@ -1,8 +1,18 @@
 // ============================================================================
-// SHADOW ENGLISH — IMPORT TOPIC (v1.1)
+// SHADOW ENGLISH — IMPORT / EXPORT TOPIC (v1.2)
 // ----------------------------------------------------------------------------
 // Muc tieu: paste/upload 1 JSON do NotebookLM xuat -> topic xuat hien ngay
 // trong App, KHONG can Notion, KHONG nhap tay tung field.
+//
+// v1.2 — EXPORT 1 TOPIC (moi):
+//   Xuat 1 topic (hoac tat ca topic U- cua ban) ra file .json THEO DUNG
+//   schema phang ma Import Topic doc duoc -> mang sang dien thoai / may khac
+//   roi Import lai. Vong tron Import/Export khep kin.
+//   * Du lieu = client-only / localStorage, KHONG dong bo giua thiet bi ->
+//     Export/Import la cach chuyen topic U- giua cac thiet bi.
+//   * Export chuyen NOI DUNG topic (why/scene/phrases/shadow/missions/recall/
+//     dialogues/realEnglish/video). Tien do hoc (mastery/streak/sessions)
+//     KHONG di kem (do la pham vi Export Backup toan bo state).
 //
 // v1.1 — IMPORT TOPIC CLEANER:
 //   NotebookLM khong phai luc nao cung xuat JSON sach. Import nay TU DONG:
@@ -16,11 +26,12 @@
 //
 // NGUYEN TAC: TAI DUNG dung luong "New Topic / Generate AI" co san
 //   (window.SHADOW_V18.saveLesson) -> it code, it bug, it rui ro.
+//   Export chi DOC localStorage (state.topics + overlay raw) -> khong dung den engine.
 // ============================================================================
 (function setupImportTopic() {
   'use strict';
   var NS = window.SHADOW_IMPORT = window.SHADOW_IMPORT || {};
-  NS.version = '1.1.0';
+  NS.version = '1.2.0';
 
   var STATE_KEY = 'shadow-en-state-v3';
   var OVERLAY_PREFIX = 'shadow-en-overlay-';
@@ -70,7 +81,7 @@
         .replace(/[ \t]+/g, ' ')                       // gop khoang trang
         .replace(/\s*\|\s*/g, ' | ')                   // chuan hoa khoang trang quanh pipe
         .replace(/\s+([,.;:!?])/g, '$1')               // bo space truoc dau cau
-        .replace(/^[\s•\-\*•‣◦]+/, '')  // bo bullet dau dong
+        .replace(/^[\s•\-\*‣◦]+/, '')   // bo bullet dau dong
         .trim();
     }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
@@ -193,7 +204,127 @@
   }
   NS.import = doImport; NS.convert = convert; NS.validate = validate;
 
+  // ============================================================================
+  // EXPORT — doc 1 topic (state.topics + overlay raw) -> flat JSON re-import duoc
+  // ============================================================================
+  // PHAI doc overlay RAW (khong dung V12.getOverlay vi no DROP bucket v15).
+  function rawOverlay(id) { try { return JSON.parse(localStorage.getItem(OVERLAY_PREFIX + id) || 'null'); } catch (e) { return null; } }
+  function getContentSafe(id) { try { if (window.SHADOW_CONTENT && SHADOW_CONTENT.getContent) return SHADOW_CONTENT.getContent(id) || {}; } catch (e) {} return {}; }
+
+  function phraseArrToText(arr) {
+    return (arr || []).map(function (p) {
+      if (typeof p === 'string') return p.trim();
+      var en = String(p && (p.en || p.english) || '').trim();
+      var vi = String(p && (p.vi || p.viet || p.vietnamese) || '').trim();
+      return vi ? (en + ' | ' + vi) : en;
+    }).filter(Boolean).join('\n');
+  }
+  function recallArrToText(arr) {
+    return (arr || []).map(function (r) {
+      if (typeof r === 'string') return r.trim();
+      var parts = [String(r && (r.question || r.q) || '').trim(), String(r && (r.answer || r.a) || '').trim()];
+      if (r && r.hint) parts.push(String(r.hint).trim());
+      return parts.join(' | ');
+    }).filter(function (l) { return l.replace(/\|/g, '').trim(); }).join('\n');
+  }
+  function missionArrToText(arr) {
+    return (arr || []).map(function (m) {
+      if (typeof m === 'string') return m.trim();
+      var parts = [String(m && m.title || '').trim()];
+      if (m && m.description) parts.push(String(m.description).trim());
+      if (m && m.success) parts.push(String(m.success).trim());
+      return parts.filter(Boolean).join(' | ');
+    }).filter(Boolean).join('\n');
+  }
+  function blockText(blocks, re) {
+    var b = (blocks || []).filter(function (x) { return x && re.test(x.title || ''); })[0];
+    return b ? String(b.text || '').trim() : '';
+  }
+  function dialoguesToText(d) {
+    if (!d) return '';
+    if (typeof d === 'string') return d.trim();
+    if (Array.isArray(d)) return d.map(function (x) {
+      if (typeof x === 'string') return x.trim();
+      var sp = x && (x.speaker || x.who || x.name);
+      var ln = x && (x.line || x.text || x.en || '');
+      return (sp ? (sp + ': ') : '') + String(ln || '').trim();
+    }).filter(Boolean).join('\n');
+    return '';
+  }
+
+  // tao object flat tu 1 topic id (overlay co san -> uu tien; fallback content.json cho topic seed)
+  function buildFlat(id) {
+    var s = getState(); if (!s || !s.topics) return null;
+    var t = s.topics.filter(function (x) { return x.id === id; })[0]; if (!t) return null;
+    var ov = rawOverlay(id) || {};
+    var no = ov.notionOverrides || {}; var ph = no.phrases || {}; var v15 = ov.v15 || {};
+    var ct = getContentSafe(id);   // seed topic: noi dung o content.json
+
+    var before = (ph.before && ph.before.length) ? ph.before : (ct.phrases && ct.phrases.before) || [];
+    var during = (ph.during && ph.during.length) ? ph.during : (ct.phrases && ct.phrases.during) || [];
+    var after = (ph.after && ph.after.length) ? ph.after : (ct.phrases && ct.phrases.after) || [];
+
+    var shadow = (v15.shadowBlocks && v15.shadowBlocks.length)
+      ? v15.shadowBlocks.map(function (b) { return String(b.text || '').trim(); }).filter(Boolean).join('\n')
+      : String(ct.shadow_script || '').trim();
+    var recall = (v15.recall && v15.recall.length) ? recallArrToText(v15.recall) : recallArrToText(ct.active_recall);
+    var missions = (v15.missions && v15.missions.length) ? missionArrToText(v15.missions) : missionArrToText(ct.missions);
+    var dialogues = blockText(ov.customBlocks, /dialogue/i) || dialoguesToText(ct.dialogues);
+    var realEnglish = blockText(ov.customBlocks, /real\s*english/i) || dialoguesToText(ct.real_english);
+    var video = ov.videoImmersionUrl || blockText(ov.customBlocks, /video/i) || '';
+
+    return {
+      topicName: t.name || '',
+      topicId: '',                                   // de trong -> Import sinh U- moi (tranh trung)
+      category: t.category || '',
+      level: String(t.level || 1),
+      emoji: t.emoji || '',
+      why: (no.why || ct.why || t.description || '').trim(),
+      scene: (no.scene || ct.scene || '').trim(),
+      phrasesBefore: phraseArrToText(before),
+      phrasesDuring: phraseArrToText(during),
+      phrasesAfter: phraseArrToText(after),
+      realEnglish: realEnglish,
+      shadowScript: shadow,
+      dialogues: dialogues,
+      activeRecall: recall,
+      realLifeMissions: missions
+    };
+  }
+
+  function safeName(s) { return (String(s || 'topic').replace(/[^\wÀ-ỹ .-]+/g, '').replace(/\s+/g, '_').slice(0, 60) || 'topic'); }
+  function downloadJson(name, obj) {
+    try {
+      var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = name;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 120);
+      return true;
+    } catch (e) { toast('Khong tai duoc file: ' + e.message); return false; }
+  }
+  function exportTopic(id) {
+    var flat = buildFlat(id);
+    if (!flat) { toast('Khong tim thay topic.'); return false; }
+    downloadJson(safeName(flat.topicName) + '.json', flat);
+    toast('📤 Da export: ' + (flat.topicName || id));
+    return true;
+  }
+  function listTopics() { var s = getState(); return (s && s.topics ? s.topics : []).slice(); }
+  function userTopics() { return listTopics().filter(function (t) { return /^U-/.test(t.id); }); }
+  function exportAllUser() {
+    var arr = userTopics().map(function (t) { return buildFlat(t.id); }).filter(Boolean);
+    if (!arr.length) { toast('Khong co topic U- nao tren thiet bi nay.'); return false; }
+    downloadJson('shadow_topics_U_' + arr.length + '.json', arr);
+    toast('📤 Da export ' + arr.length + ' topic (1 file).');
+    return true;
+  }
+  NS.buildFlat = buildFlat; NS.exportTopic = exportTopic; NS.exportAllUser = exportAllUser;
+
   // ---------- 4) UI: MODAL ----------
+  var HINT_IMPORT = 'Dán thẳng JSON từ NotebookLM — tự động làm sạch trích dẫn [1], (2), code fence…';
+  var HINT_EXPORT = 'Tải topic về máy dạng .json — mang sang thiết bị khác rồi dùng tab Paste/Upload để Import lại. (Tiến trình học không đi kèm.)';
+
   function parseInput(text) {
     var jsonText = extractJsonText(text);   // boc JSON khoi fence/loi van
     var data = JSON.parse(jsonText);        // co the throw
@@ -214,13 +345,29 @@
   function openModal() {
     closeModal(); injectCSS();
     modalEl = document.createElement('div'); modalEl.className = 'imp-overlay';
-    modalEl.innerHTML = '<div class="imp-modal"><div class="imp-top"><b>📥 Import Topic</b><button class="imp-x" data-act="close">×</button></div><div class="imp-hint">Dán thẳng JSON từ NotebookLM — tự động làm sạch trích dẫn [1], (2), code fence…</div><div class="imp-tabs"><button class="imp-tab on" data-tab="paste">Paste JSON</button><button class="imp-tab" data-tab="file">Upload .json</button></div><div class="imp-body"><div data-pane="paste"><textarea class="imp-ta" placeholder=\'Dán JSON (hoặc cả đoạn NotebookLM xuất ra)...\'></textarea></div><div data-pane="file" class="imp-hidden"><label class="imp-file">Chọn file .json<input type="file" accept="application/json,.json,.txt" class="imp-input"></label><div class="imp-fname imp-muted"></div></div><div class="imp-actions"><button class="imp-btn" data-act="check">Kiểm tra & Preview</button><span class="imp-status imp-muted"></span></div><div class="imp-preview"></div></div><div class="imp-foot"><button class="imp-btn ghost" data-act="close">Hủy</button><button class="imp-btn solid" data-act="import" disabled>Import</button></div></div>';
+    modalEl.innerHTML = '<div class="imp-modal"><div class="imp-top"><b>📦 Import / Export Topic</b><button class="imp-x" data-act="close">×</button></div><div class="imp-hint">' + esc(HINT_IMPORT) + '</div><div class="imp-tabs"><button class="imp-tab on" data-tab="paste">Paste JSON</button><button class="imp-tab" data-tab="file">Upload .json</button><button class="imp-tab" data-tab="export">📤 Export</button></div><div class="imp-body"><div data-pane="paste"><textarea class="imp-ta" placeholder=\'Dán JSON (hoặc cả đoạn NotebookLM xuất ra)...\'></textarea></div><div data-pane="file" class="imp-hidden"><label class="imp-file">Chọn file .json<input type="file" accept="application/json,.json,.txt" class="imp-input"></label><div class="imp-fname imp-muted"></div></div><div data-pane="export" class="imp-hidden imp-export"></div><div class="imp-actions"><button class="imp-btn" data-act="check">Kiểm tra & Preview</button><span class="imp-status imp-muted"></span></div><div class="imp-preview"></div></div><div class="imp-foot"><button class="imp-btn ghost" data-act="close">Hủy</button><button class="imp-btn solid" data-act="import" disabled>Import</button></div></div>';
     document.body.appendChild(modalEl);
     var parsed = null;
     var q = function (s) { return modalEl.querySelector(s); };
     function setStatus(msg, ok) { var el = q('.imp-status'); el.textContent = msg || ''; el.style.color = ok ? '#15803d' : '#b91c1c'; }
     function setPreview(html) { q('.imp-preview').innerHTML = html || ''; }
     function enableImport(on) { q('[data-act=import]').disabled = !on; }
+    function renderExportList() {
+      var pane = q('[data-pane="export"]');
+      var users = userTopics(), others = listTopics().filter(function (t) { return !/^U-/.test(t.id); });
+      function row(t) {
+        return '<div class="imp-exrow"><span class="imp-emoji" style="font-size:20px">' + esc(t.emoji || '✨') + '</span><div class="imp-exinfo"><div class="imp-name">' + esc(t.name || t.id) + '</div><div class="imp-meta">Level ' + esc(String(t.level || '?')) + (/^U-/.test(t.id) ? ' · 👤 của bạn' : ' · mặc định') + '</div></div><button class="imp-btn imp-exbtn" data-exp="' + esc(t.id) + '">⬇ Tải .json</button></div>';
+      }
+      var html = '';
+      if (users.length) {
+        html += '<div class="imp-exhead">👤 Topic của bạn (U-) — ' + users.length + '</div>' + users.map(row).join('');
+        html += '<button class="imp-btn solid imp-exall" style="margin-top:10px;width:100%">⬇ Tải tất cả topic của bạn (' + users.length + ') trong 1 file</button>';
+      } else {
+        html += '<div class="imp-muted">Chưa có topic U- nào trên thiết bị này.</div>';
+      }
+      if (others.length) html += '<div class="imp-exhead" style="margin-top:14px">Topic mặc định — ' + others.length + '</div>' + others.map(row).join('');
+      pane.innerHTML = html;
+    }
     function runCheck() {
       parsed = null; enableImport(false); setPreview('');
       var activeFile = !q('[data-pane="file"]').classList.contains('imp-hidden');
@@ -233,17 +380,31 @@
       parsed = arr; setStatus('OK — ' + arr.length + ' topic hợp lệ (đã tự làm sạch).', true); setPreview(previews.join('')); enableImport(true);
     }
     modalEl.addEventListener('click', function (e) {
-      var act = e.target.getAttribute('data-act'), tab = e.target.getAttribute('data-tab');
+      var act = e.target.getAttribute('data-act'), tab = e.target.getAttribute('data-tab'), exp = e.target.getAttribute('data-exp');
       if (act === 'close') return closeModal();
       if (act === 'check') return runCheck();
       if (act === 'import') { if (!parsed) return; parsed.forEach(function (flat) { doImport(flat); }); return; }
-      if (tab) { modalEl.querySelectorAll('.imp-tab').forEach(function (b) { b.classList.toggle('on', b === e.target); }); q('[data-pane="paste"]').classList.toggle('imp-hidden', tab !== 'paste'); q('[data-pane="file"]').classList.toggle('imp-hidden', tab !== 'file'); setStatus(''); setPreview(''); enableImport(false); }
+      if (exp) { exportTopic(exp); return; }
+      if (e.target.classList.contains('imp-exall')) { exportAllUser(); return; }
+      if (tab) {
+        modalEl.querySelectorAll('.imp-tab').forEach(function (b) { b.classList.toggle('on', b === e.target); });
+        var isExport = (tab === 'export');
+        q('[data-pane="paste"]').classList.toggle('imp-hidden', tab !== 'paste');
+        q('[data-pane="file"]').classList.toggle('imp-hidden', tab !== 'file');
+        q('[data-pane="export"]').classList.toggle('imp-hidden', !isExport);
+        q('.imp-actions').style.display = isExport ? 'none' : '';
+        q('.imp-preview').style.display = isExport ? 'none' : '';
+        q('[data-act=import]').style.display = isExport ? 'none' : '';
+        q('.imp-hint').textContent = isExport ? HINT_EXPORT : HINT_IMPORT;
+        setStatus(''); setPreview(''); enableImport(false);
+        if (isExport) renderExportList();
+      }
     });
     q('.imp-input').addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; if (!f) return; q('.imp-fname').textContent = f.name; var r = new FileReader(); r.onload = function () { modalEl._fileText = String(r.result || ''); runCheck(); }; r.readAsText(f); });
   }
   NS.open = openModal;
 
-  // ---------- 5) NUT "Import Topic" canh Import Backup ----------
+  // ---------- 5) NUT "Import / Export Topic" canh Import Backup ----------
   function findToolbar() {
     var btns = Array.prototype.slice.call(document.querySelectorAll('button, a, .btn'));
     var ib = btns.filter(function (b) { return /import\s*backup/i.test(b.textContent || ''); })[0];
@@ -253,7 +414,7 @@
     if (document.getElementById('imp-topic-btn')) return true;
     var bar = findToolbar(); if (!bar) return false;
     var anchor = Array.prototype.slice.call(bar.querySelectorAll('button, a')).filter(function (b) { return /import\s*backup/i.test(b.textContent || ''); })[0];
-    var btn = document.createElement('button'); btn.id = 'imp-topic-btn'; btn.type = 'button'; btn.textContent = '📥 Import Topic';
+    var btn = document.createElement('button'); btn.id = 'imp-topic-btn'; btn.type = 'button'; btn.textContent = '📦 Import / Export Topic';
     if (anchor) { btn.className = anchor.className; }
     btn.style.background = 'linear-gradient(90deg,#16a34a,#22c55e)'; btn.style.color = '#fff';
     btn.addEventListener('click', openModal);
@@ -266,7 +427,7 @@
   function injectCSS() {
     if (document.getElementById('imp-css')) return;
     var s = document.createElement('style'); s.id = 'imp-css';
-    s.textContent = '.imp-overlay{position:fixed;inset:0;background:rgba(8,6,20,.66);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;font-family:Inter,system-ui,sans-serif}.imp-modal{width:680px;max-width:100%;background:#14122a;color:#e9e7f5;border:1px solid #2a2748;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5)}.imp-top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #2a2748;font-size:15px}.imp-hint{padding:10px 18px 0;font-size:12px;color:#9a96bf}.imp-x{background:none;border:none;color:#9a96bf;font-size:22px;cursor:pointer;line-height:1}.imp-tabs{display:flex;gap:6px;padding:12px 18px 0}.imp-tab{background:#1c1940;border:1px solid #2a2748;color:#c9c5e8;border-radius:9px 9px 0 0;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px}.imp-tab.on{background:#241f4d;color:#fff;border-bottom-color:#241f4d}.imp-body{padding:14px 18px}.imp-ta{width:100%;min-height:160px;background:#0f0d22;border:1px solid #2a2748;border-radius:10px;color:#e9e7f5;padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;resize:vertical}.imp-file{display:inline-block;background:#1c1940;border:1px dashed #4F46E5;border-radius:10px;padding:18px 22px;cursor:pointer;color:#c9c5e8}.imp-input{display:none}.imp-actions{display:flex;align-items:center;gap:12px;margin-top:12px}.imp-btn{font-family:inherit;font-weight:700;font-size:13px;border:1.5px solid #4F46E5;color:#c7c3ee;background:#1a1640;border-radius:10px;padding:9px 16px;cursor:pointer}.imp-btn.solid{background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border-color:transparent}.imp-btn.ghost{background:transparent}.imp-btn:disabled{opacity:.45;cursor:not-allowed}.imp-status{font-size:12.5px}.imp-muted{color:#8e8ab3}.imp-preview{margin-top:12px}.imp-prev{background:#0f0d22;border:1px solid #2a2748;border-radius:12px;padding:12px;margin-bottom:10px}.imp-prev-head{display:flex;gap:10px;align-items:center}.imp-emoji{font-size:26px}.imp-name{font-weight:800}.imp-meta{font-size:12px;color:#9a96bf}.imp-why{font-size:12.5px;color:#bdb9e0;margin-top:8px}.imp-ph{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:#cfcbef}.imp-ph li{margin:2px 0}.imp-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid #2a2748}.imp-hidden{display:none}';
+    s.textContent = '.imp-overlay{position:fixed;inset:0;background:rgba(8,6,20,.66);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;font-family:Inter,system-ui,sans-serif}.imp-modal{width:680px;max-width:100%;background:#14122a;color:#e9e7f5;border:1px solid #2a2748;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5)}.imp-top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #2a2748;font-size:15px}.imp-hint{padding:10px 18px 0;font-size:12px;color:#9a96bf}.imp-x{background:none;border:none;color:#9a96bf;font-size:22px;cursor:pointer;line-height:1}.imp-tabs{display:flex;gap:6px;padding:12px 18px 0}.imp-tab{background:#1c1940;border:1px solid #2a2748;color:#c9c5e8;border-radius:9px 9px 0 0;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px}.imp-tab.on{background:#241f4d;color:#fff;border-bottom-color:#241f4d}.imp-body{padding:14px 18px}.imp-ta{width:100%;min-height:160px;background:#0f0d22;border:1px solid #2a2748;border-radius:10px;color:#e9e7f5;padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;resize:vertical}.imp-file{display:inline-block;background:#1c1940;border:1px dashed #4F46E5;border-radius:10px;padding:18px 22px;cursor:pointer;color:#c9c5e8}.imp-input{display:none}.imp-actions{display:flex;align-items:center;gap:12px;margin-top:12px}.imp-btn{font-family:inherit;font-weight:700;font-size:13px;border:1.5px solid #4F46E5;color:#c7c3ee;background:#1a1640;border-radius:10px;padding:9px 16px;cursor:pointer}.imp-btn.solid{background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border-color:transparent}.imp-btn.ghost{background:transparent}.imp-btn:disabled{opacity:.45;cursor:not-allowed}.imp-status{font-size:12.5px}.imp-muted{color:#8e8ab3}.imp-preview{margin-top:12px}.imp-prev{background:#0f0d22;border:1px solid #2a2748;border-radius:12px;padding:12px;margin-bottom:10px}.imp-prev-head{display:flex;gap:10px;align-items:center}.imp-emoji{font-size:26px}.imp-name{font-weight:800}.imp-meta{font-size:12px;color:#9a96bf}.imp-why{font-size:12.5px;color:#bdb9e0;margin-top:8px}.imp-ph{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:#cfcbef}.imp-ph li{margin:2px 0}.imp-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid #2a2748}.imp-hidden{display:none}.imp-export{max-height:360px;overflow:auto}.imp-exhead{font-size:12px;font-weight:700;color:#9a96bf;margin:6px 0 8px;text-transform:uppercase;letter-spacing:.04em}.imp-exrow{display:flex;align-items:center;gap:10px;background:#0f0d22;border:1px solid #2a2748;border-radius:10px;padding:9px 11px;margin-bottom:8px}.imp-exinfo{flex:1;min-width:0}.imp-exbtn{padding:7px 12px;font-size:12px;white-space:nowrap}';
     document.head.appendChild(s);
   }
 
@@ -276,5 +437,5 @@
     var demo = '```json\n{ "topicName": "TEST Cleaner [1]", "level": "Level 2",\n  "phrasesBefore": "Hello [1] | Xin chao (2)\\nWhat do you recommend?¹ | Ban goi y mon nao?",\n  "phrasesDuring": "I will have the steak. | Toi goi bit tet",\n  "activeRecall": "Ban noi gi? | Hello | Bat dau bang Can I",\n  "realLifeMissions": "Tu goi mon bang tieng Anh | Ghi am lai" }\n```';
     var arr = parseInput(demo); console.log('[IMPORT selfTest] cleaned =', arr); return arr;
   };
-  console.log('[SHADOW_IMPORT] ready v' + NS.version + ' — cleaner + reuse SHADOW_V18.saveLesson');
+  console.log('[SHADOW_IMPORT] ready v' + NS.version + ' — import cleaner + export 1 topic + reuse SHADOW_V18.saveLesson');
 })();
