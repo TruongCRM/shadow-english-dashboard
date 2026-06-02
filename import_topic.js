@@ -1,10 +1,17 @@
 // ============================================================================
-// SHADOW ENGLISH — IMPORT / EXPORT TOPIC (v1.2)
+// SHADOW ENGLISH — IMPORT / EXPORT TOPIC (v1.3)
 // ----------------------------------------------------------------------------
 // Muc tieu: paste/upload 1 JSON do NotebookLM xuat -> topic xuat hien ngay
 // trong App, KHONG can Notion, KHONG nhap tay tung field.
 //
-// v1.2 — EXPORT 1 TOPIC (moi):
+// v1.3 — NUT NOI (FAB) CHO MOBILE:
+//   Tren mobile (<=700px) sidebar bi an va app KHONG co menu hamburger ->
+//   khong vao duoc view "Topics Database" -> khong thay nut Import/Export.
+//   v1.3 them 1 nut noi "📦 Import / Export" co dinh goc duoi-phai, CHI hien
+//   tren man hinh nho (CSS media-query), mo modal tu BAT KY view nao.
+//   Desktop khong doi (van dung nut tren thanh cong cu Topics).
+//
+// v1.2 — EXPORT 1 TOPIC:
 //   Xuat 1 topic (hoac tat ca topic U- cua ban) ra file .json THEO DUNG
 //   schema phang ma Import Topic doc duoc -> mang sang dien thoai / may khac
 //   roi Import lai. Vong tron Import/Export khep kin.
@@ -31,7 +38,7 @@
 (function setupImportTopic() {
   'use strict';
   var NS = window.SHADOW_IMPORT = window.SHADOW_IMPORT || {};
-  NS.version = '1.2.0';
+  NS.version = '1.3.0';
 
   var STATE_KEY = 'shadow-en-state-v3';
   var OVERLAY_PREFIX = 'shadow-en-overlay-';
@@ -404,7 +411,7 @@
   }
   NS.open = openModal;
 
-  // ---------- 5) NUT "Import / Export Topic" canh Import Backup ----------
+  // ---------- 5) NUT "Import / Export Topic" canh Import Backup (desktop) ----------
   function findToolbar() {
     var btns = Array.prototype.slice.call(document.querySelectorAll('button, a, .btn'));
     var ib = btns.filter(function (b) { return /import\s*backup/i.test(b.textContent || ''); })[0];
@@ -421,13 +428,45 @@
     if (anchor && anchor.nextSibling) bar.insertBefore(btn, anchor.nextSibling); else bar.appendChild(btn);
     return true;
   }
-  function watch() { injectButton(); try { var mo = new MutationObserver(function () { injectButton(); }); mo.observe(document.body, { childList: true, subtree: true }); NS._mo = mo; } catch (e) {} }
+
+  // NUT NOI (FAB) cho mobile: luon co loi vao, khong phu thuoc sidebar/Topics view.
+  function injectFab() {
+    if (document.getElementById('imp-fab')) return;
+    if (!document.body) return;
+    var fab = document.createElement('button');
+    fab.id = 'imp-fab'; fab.type = 'button'; fab.textContent = '📦 Import / Export';
+    fab.addEventListener('click', openModal);
+    document.body.appendChild(fab);
+  }
+
+  function watch() {
+    injectCSS(); injectFab(); injectButton();
+    try { var mo = new MutationObserver(function () { injectButton(); injectFab(); }); mo.observe(document.body, { childList: true, subtree: true }); NS._mo = mo; } catch (e) {}
+  }
 
   // ---------- CSS ----------
   function injectCSS() {
     if (document.getElementById('imp-css')) return;
     var s = document.createElement('style'); s.id = 'imp-css';
-    s.textContent = '.imp-overlay{position:fixed;inset:0;background:rgba(8,6,20,.66);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;font-family:Inter,system-ui,sans-serif}.imp-modal{width:680px;max-width:100%;background:#14122a;color:#e9e7f5;border:1px solid #2a2748;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5)}.imp-top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #2a2748;font-size:15px}.imp-hint{padding:10px 18px 0;font-size:12px;color:#9a96bf}.imp-x{background:none;border:none;color:#9a96bf;font-size:22px;cursor:pointer;line-height:1}.imp-tabs{display:flex;gap:6px;padding:12px 18px 0}.imp-tab{background:#1c1940;border:1px solid #2a2748;color:#c9c5e8;border-radius:9px 9px 0 0;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px}.imp-tab.on{background:#241f4d;color:#fff;border-bottom-color:#241f4d}.imp-body{padding:14px 18px}.imp-ta{width:100%;min-height:160px;background:#0f0d22;border:1px solid #2a2748;border-radius:10px;color:#e9e7f5;padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;resize:vertical}.imp-file{display:inline-block;background:#1c1940;border:1px dashed #4F46E5;border-radius:10px;padding:18px 22px;cursor:pointer;color:#c9c5e8}.imp-input{display:none}.imp-actions{display:flex;align-items:center;gap:12px;margin-top:12px}.imp-btn{font-family:inherit;font-weight:700;font-size:13px;border:1.5px solid #4F46E5;color:#c7c3ee;background:#1a1640;border-radius:10px;padding:9px 16px;cursor:pointer}.imp-btn.solid{background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border-color:transparent}.imp-btn.ghost{background:transparent}.imp-btn:disabled{opacity:.45;cursor:not-allowed}.imp-status{font-size:12.5px}.imp-muted{color:#8e8ab3}.imp-preview{margin-top:12px}.imp-prev{background:#0f0d22;border:1px solid #2a2748;border-radius:12px;padding:12px;margin-bottom:10px}.imp-prev-head{display:flex;gap:10px;align-items:center}.imp-emoji{font-size:26px}.imp-name{font-weight:800}.imp-meta{font-size:12px;color:#9a96bf}.imp-why{font-size:12.5px;color:#bdb9e0;margin-top:8px}.imp-ph{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:#cfcbef}.imp-ph li{margin:2px 0}.imp-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid #2a2748}.imp-hidden{display:none}.imp-export{max-height:360px;overflow:auto}.imp-exhead{font-size:12px;font-weight:700;color:#9a96bf;margin:6px 0 8px;text-transform:uppercase;letter-spacing:.04em}.imp-exrow{display:flex;align-items:center;gap:10px;background:#0f0d22;border:1px solid #2a2748;border-radius:10px;padding:9px 11px;margin-bottom:8px}.imp-exinfo{flex:1;min-width:0}.imp-exbtn{padding:7px 12px;font-size:12px;white-space:nowrap}';
+    var css = '';
+    css += '.imp-overlay{position:fixed;inset:0;background:rgba(8,6,20,.66);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;font-family:Inter,system-ui,sans-serif}';
+    css += '.imp-modal{width:680px;max-width:100%;background:#14122a;color:#e9e7f5;border:1px solid #2a2748;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5)}';
+    css += '.imp-top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #2a2748;font-size:15px}';
+    css += '.imp-hint{padding:10px 18px 0;font-size:12px;color:#9a96bf}.imp-x{background:none;border:none;color:#9a96bf;font-size:22px;cursor:pointer;line-height:1}';
+    css += '.imp-tabs{display:flex;gap:6px;padding:12px 18px 0}.imp-tab{background:#1c1940;border:1px solid #2a2748;color:#c9c5e8;border-radius:9px 9px 0 0;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px}.imp-tab.on{background:#241f4d;color:#fff;border-bottom-color:#241f4d}';
+    css += '.imp-body{padding:14px 18px}.imp-ta{width:100%;min-height:160px;background:#0f0d22;border:1px solid #2a2748;border-radius:10px;color:#e9e7f5;padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;resize:vertical}';
+    css += '.imp-file{display:inline-block;background:#1c1940;border:1px dashed #4F46E5;border-radius:10px;padding:18px 22px;cursor:pointer;color:#c9c5e8}.imp-input{display:none}';
+    css += '.imp-actions{display:flex;align-items:center;gap:12px;margin-top:12px}';
+    css += '.imp-btn{font-family:inherit;font-weight:700;font-size:13px;border:1.5px solid #4F46E5;color:#c7c3ee;background:#1a1640;border-radius:10px;padding:9px 16px;cursor:pointer}.imp-btn.solid{background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border-color:transparent}.imp-btn.ghost{background:transparent}.imp-btn:disabled{opacity:.45;cursor:not-allowed}';
+    css += '.imp-status{font-size:12.5px}.imp-muted{color:#8e8ab3}.imp-preview{margin-top:12px}';
+    css += '.imp-prev{background:#0f0d22;border:1px solid #2a2748;border-radius:12px;padding:12px;margin-bottom:10px}.imp-prev-head{display:flex;gap:10px;align-items:center}.imp-emoji{font-size:26px}.imp-name{font-weight:800}.imp-meta{font-size:12px;color:#9a96bf}';
+    css += '.imp-why{font-size:12.5px;color:#bdb9e0;margin-top:8px}.imp-ph{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:#cfcbef}.imp-ph li{margin:2px 0}';
+    css += '.imp-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid #2a2748}.imp-hidden{display:none}';
+    css += '.imp-export{max-height:360px;overflow:auto}.imp-exhead{font-size:12px;font-weight:700;color:#9a96bf;margin:6px 0 8px;text-transform:uppercase;letter-spacing:.04em}';
+    css += '.imp-exrow{display:flex;align-items:center;gap:10px;background:#0f0d22;border:1px solid #2a2748;border-radius:10px;padding:9px 11px;margin-bottom:8px}.imp-exinfo{flex:1;min-width:0}.imp-exbtn{padding:7px 12px;font-size:12px;white-space:nowrap}';
+    css += '#imp-fab{position:fixed;right:14px;bottom:22px;z-index:99990;display:none;align-items:center;gap:6px;background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:999px;padding:12px 18px;font:700 13.5px Inter,system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer}';
+    css += '@media (max-width:700px){#imp-fab{display:inline-flex}}';
+    s.textContent = css;
     document.head.appendChild(s);
   }
 
@@ -437,5 +476,5 @@
     var demo = '```json\n{ "topicName": "TEST Cleaner [1]", "level": "Level 2",\n  "phrasesBefore": "Hello [1] | Xin chao (2)\\nWhat do you recommend?¹ | Ban goi y mon nao?",\n  "phrasesDuring": "I will have the steak. | Toi goi bit tet",\n  "activeRecall": "Ban noi gi? | Hello | Bat dau bang Can I",\n  "realLifeMissions": "Tu goi mon bang tieng Anh | Ghi am lai" }\n```';
     var arr = parseInput(demo); console.log('[IMPORT selfTest] cleaned =', arr); return arr;
   };
-  console.log('[SHADOW_IMPORT] ready v' + NS.version + ' — import cleaner + export 1 topic + reuse SHADOW_V18.saveLesson');
+  console.log('[SHADOW_IMPORT] ready v' + NS.version + ' — import cleaner + export 1 topic + mobile FAB + reuse SHADOW_V18.saveLesson');
 })();
