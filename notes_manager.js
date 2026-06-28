@@ -18,7 +18,7 @@
 (function setupNotesManager() {
   'use strict';
   var NS = window.SHADOW_NOTES = window.SHADOW_NOTES || {};
-  NS.version = '1.0.1';
+  NS.version = '1.0.2';
   var KEY = 'shadow-en-notes-v1';
 
   // ---------- data ----------
@@ -300,6 +300,10 @@
     // App dùng .view{display:contents} -> con bị rơi vào grid .content. Ép view này thành block + span full.
     c += '#view-notes.active{display:block!important;grid-column:1/-1!important;width:100%}';
     c += '#view-notes{padding:4px 2px}';
+    // SIDEBAR: mac dinh .sidebar la static, bi flex-stretch cao ~4700px -> muc
+    // Notes (cuoi danh sach) bi day xuong khuat mep duoi. Ep sidebar thanh cot
+    // sticky cao 100vh + cuon duoc -> Notes luon thay/cuon toi duoc. (CANH BAO #10)
+    c += '.sidebar{align-self:flex-start!important;position:sticky!important;top:0!important;max-height:100vh!important;overflow-y:auto!important}';
     c += '.nm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;flex-wrap:wrap}';
     c += '.nm-h1{font-size:24px;font-weight:800;color:var(--text)}';
     c += '.nm-h1 .nm-sub{font-size:15px;font-weight:600;color:var(--purple)}';
