@@ -18,7 +18,7 @@
 (function setupNotesManager() {
   'use strict';
   var NS = window.SHADOW_NOTES = window.SHADOW_NOTES || {};
-  NS.version = '1.0.0';
+  NS.version = '1.0.1';
   var KEY = 'shadow-en-notes-v1';
 
   // ---------- data ----------
@@ -285,7 +285,12 @@
       }
       renderList();
     });
-    bar.appendChild(item);
+    // CHEN sau nav-item cuoi (Listening Library) — KHONG appendChild vao cuoi
+    // .sidebar (sidebar bi keo dai bang chieu cao trang ~4600px -> appendChild
+    // se day Notes xuong tan day, khuat man hinh). Xem CANH BAO #10.
+    var navs = bar.querySelectorAll('.nav-item');
+    var anchor = navs.length ? navs[navs.length - 1] : null;
+    if (anchor) anchor.insertAdjacentElement('afterend', item); else bar.appendChild(item);
   }
 
   // ---------- CSS ----------

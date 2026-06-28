@@ -1,4 +1,4 @@
-const CACHE = 'shadow-en-v15';
+const CACHE = 'shadow-en-v16';
 const ASSETS = [
   './',
   './index.html',
