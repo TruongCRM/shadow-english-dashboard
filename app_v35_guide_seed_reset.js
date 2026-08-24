@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.0.0';
+  NS.version = '35.0.2';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -242,6 +242,43 @@
     var v = document.getElementById('view-topic-detail');
     return (v && v.classList.contains('active')) ? v : null;
   }
+  function currentTopicId(view) {
+    var b = view && view.querySelector('[data-action="start-session"][data-topic]');
+    return b ? b.getAttribute('data-topic') : null;
+  }
+
+  // ---------------------------------------------------------- vá lỗi WHY/SCENE
+  // Lỗi có sẵn trong app_v12_editor.js: WHY THIS TOPIC và THE SCENE nằm CHUNG một
+  // thẻ .card, nhưng _findEditableContent() luôn lấy đoạn văn ngay sau tiêu đề ĐẦU
+  // TIÊN của card. Vì thế cả 2 override cùng ghi vào một chỗ — 'scene' chạy sau nên
+  // đè mất 'why', còn mục THE SCENE thì trống. Hàm này đặt lại đúng chỗ sau khi v12 chạy.
+  function fixWhyScene() {
+    var view = detailView(); if (!view) return;
+    var id = currentTopicId(view); if (!id) return;
+    var no = (rawOverlay(id) || {}).notionOverrides || {};
+    if (no.why == null && no.scene == null) return;
+
+    var titles = view.querySelectorAll('.card-title');
+    for (var i = 0; i < titles.length; i++) {
+      var t = titles[i], txt = t.textContent || '';
+      var key = /WHY THIS TOPIC/i.test(txt) ? 'why' : (/THE SCENE/i.test(txt) ? 'scene' : null);
+      if (!key || no[key] == null || !String(no[key]).trim()) continue;
+
+      var el = t.nextElementSibling;
+      while (el && (el.tagName === 'BUTTON' ||
+             /v12-section-edit-btn|v12-overridden-badge|v15-|v35-/.test(String(el.className || '')))) {
+        el = el.nextElementSibling;
+      }
+      if (!el || el.classList.contains('card-title')) {
+        var p = document.createElement('p');
+        p.style.cssText = 'color:var(--text-2);font-size:13px;margin-top:6px';
+        t.parentNode.insertBefore(p, t.nextSibling);
+        el = p;
+      }
+      if (el.textContent !== no[key]) el.textContent = no[key];
+    }
+  }
+  NS.fixWhyScene = fixWhyScene;
 
   function attachHelp() {
     var view = detailView();
@@ -509,7 +546,9 @@
       ov.v15.missions = toMissionArr(d.missions);
       ov.v15.recall = toRecallArr(d.recall);
       ov.v15.shadowBlocks = [{ id: uid('sb'), text: d.shadow }];
+      // Bài mẫu phải hiện đủ mọi mục — bỏ mọi thiết lập "ẩn section" trên 2 topic này
       ov.v15.sections = ov.v15.sections || { order: [], hidden: [] };
+      ov.v15.sections.hidden = [];
       ov.v15.header = ov.v15.header || {};
 
       // Dialogues + Real English dưới dạng block ghi chú (đúng cách import_topic.js làm)
@@ -731,6 +770,7 @@
   function tick() {
     try { injectCSS(); } catch (e) {}
     try { attachHelp(); } catch (e) {}
+    try { fixWhyScene(); } catch (e) {}
     try { attachResetButtons(); } catch (e) {}
     try { markProtectedCards(); } catch (e) {}
     try { wrapDelete(); } catch (e) {}
