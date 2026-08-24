@@ -466,11 +466,18 @@
       return { id: uid('rc'), question: (p[0] || l).trim(), answer: (p[1] || '').trim(), hint: (p[2] || '').trim() };
     });
   }
+  // "Đã có nội dung thật" = có ít nhất 1 câu tiếng Anh KHÔNG rỗng.
+  // Các dòng placeholder {en:"",vi:""} do bấm "+ Add" rồi bỏ dở KHÔNG tính là nội dung.
   function hasContent(ov) {
     if (!ov) return false;
     var ph = (ov.notionOverrides || {}).phrases || {};
-    var n = (ph.before || []).length + (ph.during || []).length + (ph.after || []).length;
-    return n > 0;
+    var real = 0;
+    ['before', 'during', 'after'].forEach(function (k) {
+      (ph[k] || []).forEach(function (p) {
+        if (p && String(p.en || '').trim()) real++;
+      });
+    });
+    return real > 0;
   }
 
   // force = true → ghi đè kể cả khi topic đã có nội dung
@@ -768,6 +775,10 @@
     check('bài mẫu 1 có 5 pattern ngữ pháp', s1.patterns.length === 5);
     check('phrase tách đúng en | vi', toPhraseArr(['Hello | Xin chào'])[0].vi === 'Xin chào');
     check('recall tách đúng 3 phần', toRecallArr(['Q | A | H'])[0].hint === 'H');
+    check('phrase rỗng KHÔNG tính là có nội dung',
+      hasContent({ notionOverrides: { phrases: { before: [{ en: '', vi: '' }], during: [{ en: '', vi: '' }] } } }) === false);
+    check('phrase thật thì tính là có nội dung',
+      hasContent({ notionOverrides: { phrases: { before: [{ en: 'Hello', vi: 'Xin chào' }] } } }) === true);
     check('đã bọc deleteTopic', !!(window.SHADOW_V17 && window.SHADOW_V17._v35Wrapped));
     console.log('[v35] ' + pass + ' pass · ' + fail + ' fail');
     return fail === 0;
