@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.9.0';
+  NS.version = '35.9.1';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -135,6 +135,24 @@
       how : 'Chỉ ghi cái xảy ra với BẠN, đừng chép lại nội dung đã có sẵn trong bài. Ghi chú có giá trị là ghi chú không tìm được ở chỗ khác.',
       time: '1 phút' }
   ];
+
+  // Hướng dẫn riêng cho khu vực AI (không gắn vào tiêu đề mục nào nên tách ra)
+  var GUIDE_AI = {
+    icon: '✨', title: 'Tạo bài học bằng AI',
+    what: 'Tuỳ chọn thêm — KHÔNG bắt buộc. Bạn vẫn có thể tự soạn tay như bình thường. ' +
+          'Nếu bấm, AI sẽ đọc video (hoặc transcript) rồi soạn sẵn đủ 12 mục của bài học ' +
+          'để bạn duyệt: Vì sao học · Bối cảnh · Cụm từ Before/During/After · Hội thoại · ' +
+          'Shadowing script · Real English · Nối âm · Ngữ pháp · Nhiệm vụ · Active recall.',
+    how : '① Gắn link YouTube vào mục VIDEO IMMERSION ở trên. ' +
+          '② Bấm “✨ Tạo bài học từ video”. Nếu video có phụ đề Việt CHÁY SẴN trên hình, ' +
+          'hãy dùng “📄 Từ transcript” thay vì — vào YouTube bấm ⋯ → Show transcript, copy rồi dán vào; ' +
+          'cách này chính xác hơn vì AI đọc chữ thay vì nghe. ' +
+          '③ Bảng duyệt hiện ra: đọc lướt, BỎ TICK mục nào không ưng, sửa thẳng trong ô. ' +
+          '④ Bấm “Áp dụng vào bài học”. Không ưng thì bấm “↩ Hoàn tác” — trả về y nguyên như cũ. ' +
+          'Lưu ý: AI có thể nghe sai. Nội dung sai sẽ theo bạn suốt 60 ngày ôn tập, nên đừng bỏ qua bước duyệt. ' +
+          'Chỉ chạy được với video CÔNG KHAI, và cần Gemini API key.',
+    time: '30–60 giây mỗi lần'
+  };
 
   function guideFor(text) {
     var t = String(text || '');
@@ -2257,10 +2275,14 @@
       bar = document.createElement('div');
       bar.className = 'v35-ai-bar';
       bar.innerHTML =
+        '<button type="button" class="v35-help v35-ai-help" title="Khu vực này là gì? Dùng thế nào?" aria-label="Hướng dẫn tạo bài học bằng AI">!</button>' +
         '<button type="button" class="v35-btn v35-ai-go" data-v35ai="video">✨ Tạo bài học từ video</button>' +
         '<button type="button" class="v35-btn" data-v35ai="tr">📄 Từ transcript</button>' +
         '<button type="button" class="v35-btn v35-undo" data-v35ai="undo" hidden>↩ Hoàn tác</button>' +
         '<span class="v35-ai-note">Tuỳ chọn — AI đề xuất → bạn duyệt → mới ghi. Không bấm thì không có gì thay đổi.</span>';
+      (function (hb) {
+        if (hb) hb.onclick = function (e) { e.preventDefault(); e.stopPropagation(); openPop(hb, GUIDE_AI); };
+      })(bar.querySelector('.v35-ai-help'));
       bar.querySelector('[data-v35ai="video"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.lessonFromVideo(id); };
       bar.querySelector('[data-v35ai="tr"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.lessonFromTranscript(id); };
       bar.querySelector('[data-v35ai="undo"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.undoLesson(id); };
@@ -2366,6 +2388,7 @@
     })());
     check('phrase JSON → dòng en | vi', phrasesToLines([{ en: 'Hi', vi: 'Chào' }]) === 'Hi | Chào');
     check('AI sinh đủ 12 mục bài học', PREVIEW_FIELDS.length === 12);
+    check('khu vực AI có hướng dẫn ❗', !!(GUIDE_AI && GUIDE_AI.what && GUIDE_AI.how && GUIDE_AI.time));
     check('schema buộc có mọi mục suy ra', ['why', 'scene', 'phrases', 'shadow_script', 'real_english',
       'grammar_patterns', 'missions', 'active_recall', 'connected_speech']
       .every(function (k) { return LESSON_SCHEMA.required.indexOf(k) !== -1; }));
