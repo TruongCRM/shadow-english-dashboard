@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.13.0';
+  NS.version = '35.14.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -2702,6 +2702,60 @@
     return (s && s.currentSession) ? s : null;
   }
 
+  /* SỐ BƯỚC THẬT của một buổi học.
+     app_v8 VẼ 8 bước, nhưng máy chạy buổi học (advanceStep trong app.js) kết thúc
+     buổi ngay khi qua bước 5 — nên 3 bước cuối chưa bao giờ tới được, chỉ làm
+     người học tưởng còn việc phải làm. Ở đây giấu 3 bước đó đi để GIAO DIỆN
+     KHỚP VỚI THỰC TẾ. Không đổi luật hoàn thành, không đổi XP.
+     Nếu sau này muốn mở đủ 8 bước thì sửa advanceStep trong app.js
+     và đổi số này — đây là chỗ duy nhất quyết định. */
+  var SESSION_STEPS = 5;
+  NS.SESSION_STEPS = SESSION_STEPS;
+
+  function trimSessionSteps() {
+    var view = document.getElementById('view-session');
+    if (!view || !view.classList.contains('active')) return;
+    var steps = view.querySelectorAll('.session-step');
+    if (steps.length <= SESSION_STEPS) return;
+
+    // 1) giấu các bước không chạy tới được
+    Array.prototype.forEach.call(steps, function (el, i) {
+      if ((i + 1) > SESSION_STEPS && el.style.display !== 'none') {
+        el.style.display = 'none';
+        el.setAttribute('data-v35hidden', '1');
+      }
+    });
+
+    // 2) "Step 4/8" -> "Step 4/5"
+    var sub = view.querySelector('.session-sub');
+    if (sub) {
+      var t = sub.textContent, t2 = t.replace(/Step\s+(\d+)\s*\/\s*\d+/, 'Step $1/' + SESSION_STEPS);
+      if (t2 !== t) sub.textContent = t2;
+    }
+
+    // 3) vòng tiến trình "3/8" -> "3/5" và vẽ lại đúng tỉ lệ
+    var ring = view.querySelector('.session-progress-ring');
+    if (ring) {
+      var span = ring.querySelector('span');
+      var m = span ? String(span.textContent).match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/) : null;
+      if (m && m[2] !== String(SESSION_STEPS)) {
+        var doneN = Math.min(parseInt(m[1], 10), SESSION_STEPS);
+        span.textContent = doneN + '/' + SESSION_STEPS;
+        var pct = Math.round(doneN / SESSION_STEPS * 100);
+        ring.style.background = 'conic-gradient(#7c5cff ' + pct + '%, #2a2750 ' + pct + '%)';
+      }
+    }
+
+    // 4) ở bước cuối, nút phải nói đúng là "hoàn thành" chứ không phải "Next"
+    var nextBtn = view.querySelector('[data-action="next-step"]');
+    if (nextBtn) {
+      var cs = (getState() || {}).currentSession;
+      var label = (cs && cs.step >= SESSION_STEPS) ? 'Hoàn thành ✨' : 'Next →';
+      if (nextBtn.textContent.trim() !== label) nextBtn.textContent = label;
+    }
+  }
+  NS.trimSessionSteps = trimSessionSteps;
+
   /* Bọc advanceStep để chặn cộng XP trùng khi học lại bước cũ.
      Phần còn lại vẫn do hàm gốc của app.js chạy — không thay logic. */
   function wrapAdvanceStep() {
@@ -2801,6 +2855,7 @@
   function tick() {
     try { installBridge(); } catch (e) {}
     try { wrapAdvanceStep(); } catch (e) {}
+    try { trimSessionSteps(); } catch (e) {}
     try { attachStepNav(); } catch (e) {}
     try { dedupeDialogueCard(); } catch (e) {}
     try { injectCSS(); } catch (e) {}
@@ -2997,6 +3052,24 @@
       return shown === 0;
     })());
     check('advanceStep đã được bọc chống XP trùng', !!(window.advanceStep && window.advanceStep.__v35));
+    check('buổi học chỉ hiện đúng 5 bước chạy được', (function () {
+      var v = document.getElementById('view-session');
+      if (!v || !v.classList.contains('active')) return true;      // không ở màn buổi học thì bỏ qua
+      trimSessionSteps();
+      var vis = 0;
+      v.querySelectorAll('.session-step').forEach(function (el) { if (el.style.display !== 'none') vis++; });
+      return vis === SESSION_STEPS;
+    })());
+    check('thanh tiến trình đếm theo 5 bước', (function () {
+      var v = document.getElementById('view-session');
+      if (!v || !v.classList.contains('active')) return true;
+      trimSessionSteps();
+      var sub = v.querySelector('.session-sub');
+      var ring = v.querySelector('.session-progress-ring span');
+      var okSub = !sub || /Step\s+\d+\/5\b/.test(sub.textContent);
+      var okRing = !ring || /^\s*\d+\s*\/\s*5\s*$/.test(ring.textContent);
+      return okSub && okRing;
+    })());
     check('gotoStep không vượt quá bước đã mở', (function () {
       var s = getState(); if (!s) return true;
       var keep = s.currentSession;
