@@ -187,7 +187,14 @@
   /* ============================================================ TASK 3
    * DAILY STUDY PLAN - ordered: due reviews -> rescue -> new. Minutes + total.
    * Capped to ~6 items / ~40 min so the daily load stays realistic.
+   *
+   * MAX_NEW_PER_DAY = trần cứng số chủ đề MỚI mỗi ngày.
+   * Ôn luôn được xếp trước và không bị giới hạn; học mới vào sau cùng và bị
+   * chặn ở con số này. Đây là chỗ duy nhất quyết định "học nhiều hay ôn nhiều".
+   * Đổi số này là đổi toàn hệ thống — câu Coach và Kế hoạch hôm nay tự tính theo.
    * ======================================================================== */
+  var MAX_NEW_PER_DAY = 1;
+
   function dailyPlan() {
     var s = getState();
     if (!s || !s.topics) return { items: [], total: 0 };
@@ -208,8 +215,8 @@
     // b) rescue (at-risk, maybe not due yet)
     rescueList().forEach(function (r) { add(r.topic, 'review', 'Rescue'); });
 
-    // c) learn new (limit 2)
-    s.topics.filter(isNew).slice(0, 2).forEach(function (t) { add(t, 'learn', 'Learn'); });
+    // c) learn new — vào cuối cùng, trần cứng MAX_NEW_PER_DAY
+    s.topics.filter(isNew).slice(0, MAX_NEW_PER_DAY).forEach(function (t) { add(t, 'learn', 'Learn'); });
 
     // cap
     var capped = [], total = 0;
@@ -532,6 +539,16 @@
     check('dailyPlan returns items[] + total', Array.isArray(plan.items) && typeof plan.total === 'number');
     check('plan total == sum(item.min)', plan.items.reduce(function (a, i) { return a + i.min; }, 0) === plan.total);
     check('plan capped <= 6 items', plan.items.length <= 6);
+    check('new topics capped at MAX_NEW_PER_DAY (' + MAX_NEW_PER_DAY + ')',
+      plan.items.filter(function (i) { return i.mode === 'learn'; }).length <= MAX_NEW_PER_DAY);
+    check('reviews always come before new in the plan', (function () {
+      var lastReview = -1, firstLearn = -1;
+      plan.items.forEach(function (i, idx) {
+        if (i.mode === 'review') lastReview = idx;
+        if (i.mode === 'learn' && firstLearn === -1) firstLearn = idx;
+      });
+      return firstLearn === -1 || lastReview === -1 || lastReview < firstLearn;
+    })());
 
     var coach = coachRecommendation();
     check('coach has text', !!(coach && coach.text));
