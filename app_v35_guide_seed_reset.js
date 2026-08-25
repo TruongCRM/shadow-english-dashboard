@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.6.0';
+  NS.version = '35.7.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -1600,6 +1600,61 @@
   }
   NS.refreshStaleCards = refreshStaleCards;
 
+  // ---------------------------------------------------------- LEVEL MAP
+  // Các chip trong LEVEL MAP là HTML gõ tay: tên ("Restaurant", "Taxi", "Hotel")
+  // không khớp topic thật, và 5 chip đầu luôn mang class "done" (chấm xanh) dù
+  // tiến trình thật là 0%. Chỉ % và thanh bar là thật.
+  // nav_polish.js tìm topic theo EMOJI của chip → render bằng emoji thật thì
+  // click mở topic vẫn chạy đúng, không cần sửa file cũ.
+  function shortLabel(name) {
+    var n = String(name || '').split(/\s*[&,(]\s*/)[0].trim();
+    var w = n.split(/\s+/);
+    if (n.length > 13 && w.length > 1) n = w.slice(0, 2).join(' ');
+    return n.length > 15 ? n.slice(0, 14) + '…' : n;
+  }
+  function renderRealLevelMap() {
+    var card = document.querySelector('[data-section-id="level-map"]');
+    if (!card) return;
+    var s = getState(); if (!s || !s.topics) return;
+    var cards = card.querySelectorAll('.level-card');
+
+    for (var lv = 1; lv <= cards.length; lv++) {
+      var lc = cards[lv - 1];
+      var list = (s.topics || []).filter(function (t) { return Number(t.level) === lv; });
+
+      var subSpan = lc.querySelector('.level-sub span');
+      if (subSpan) {
+        var cnt = list.length + ' topics';
+        if (subSpan.textContent !== cnt) subSpan.textContent = cnt;
+      }
+
+      var row = lc.querySelector('.topics-row');
+      if (!row) continue;
+
+      var html = list.slice(0, 7).map(function (t) {
+        var done = (t.masteryPct || 0) >= 60 || t.memoryStatus === 'Stable' || t.memoryStatus === 'Automatic';
+        var touched = (t.sessions || 0) > 0 || !!t.lastReview;
+        return '<div class="topic-icon' + (done ? ' done' : '') + '"' +
+          (touched ? '' : ' style="opacity:.55"') +
+          ' data-topic="' + esc(t.id) + '" title="' + esc(t.name + ' · ' + (t.reviewStage || 'Day 0') + ' · ' + Math.round(t.masteryPct || 0) + '%') + '">' +
+          '<div class="bubble">' + esc(t.emoji || '✨') + '</div>' + esc(shortLabel(t.name)) + '</div>';
+      }).join('');
+      if (list.length > 7) {
+        html += '<div class="topic-icon locked" title="Xem tất cả ' + list.length + ' chủ đề Level ' + lv + '">' +
+          '<div class="bubble">⋯</div>More...</div>';
+      }
+      if (!list.length) {
+        html = '<div style="font-size:11px;color:var(--text-3);padding:6px 0">Chưa có chủ đề nào ở cấp độ này.</div>';
+      }
+
+      if (row.getAttribute('data-v35sig') !== html) {
+        row.innerHTML = html;
+        row.setAttribute('data-v35sig', html);
+      }
+    }
+  }
+  NS.renderRealLevelMap = renderRealLevelMap;
+
   // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
@@ -1617,6 +1672,7 @@
     try { renderRealProgress(); } catch (e) {}
     try { renderRealNextUp(); } catch (e) {}
     try { renderRealCloseSub(); } catch (e) {}
+    try { renderRealLevelMap(); } catch (e) {}
     try { refreshStaleCards(false); } catch (e) {}
   }
 
