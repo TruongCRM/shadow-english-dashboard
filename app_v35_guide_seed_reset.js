@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.2.0';
+  NS.version = '35.6.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -289,9 +289,12 @@
       '.v35-panel.lose li::before{background:#f87171}',
       '.v35-panel.keep li::before{background:#4ade80}',
 
-      '.v35-note{margin-top:14px;font-size:12.5px;line-height:1.6;color:#8f89ad;',
-      'padding:11px 14px;border-radius:11px;background:rgba(255,255,255,.035);',
-      'border-left:2px solid rgba(167,139,250,.5)}',
+      '.v35-note{margin-top:14px;font-size:12.5px;line-height:1.6;color:#a49dc4;',
+      'padding:10px 14px 10px 12px;border-radius:0 10px 10px 0;',
+      'background:linear-gradient(90deg,rgba(250,204,21,.1),rgba(250,204,21,.02));',
+      'border-left:3px solid rgba(250,204,21,.65);display:flex;gap:9px;align-items:flex-start}',
+      '.v35-note::before{content:"\\1F4A1";flex:0 0 auto;font-size:13px;line-height:1.5}',
+      '.v35-note b{color:#e3dff5;font-weight:700}',
 
       '.v35-field{margin-top:16px}',
       '.v35-flabel{display:block;font-size:12.5px;color:#b8b2d0;margin-bottom:8px}',
@@ -959,6 +962,7 @@
     try { s.sessionsLog = (s.sessionsLog || []).filter(function (r) { return r && r.topicId !== id; }); saveState(s); } catch (e) {}
     toast('🔄 Đã reset "' + t.name + '" về Day 0');
     refreshAll();
+    try { renderRealQueue(); renderRealInsight(); } catch (e) {}
     return true;
   }
 
@@ -1000,6 +1004,7 @@
 
     toast('🔄 Đã reset toàn hệ thống — bắt đầu lại từ Day 0');
     refreshAll();
+    try { _queueFilter = 'All'; renderRealQueue(); renderRealInsight(); } catch (e) {}
     return true;
   }
 
@@ -1269,6 +1274,333 @@
   }
 
   // ============================================================
+  // F. DỮ LIỆU THẬT cho REVIEW ENGINE — TODAY QUEUE + dòng Insight
+  // ------------------------------------------------------------
+  // Hai khối này trong index.html là HTML GÕ TAY, không có code render:
+  //   • Bảng queue: "Hotel Check-in / Small Talk / Taxi / Directions…"
+  //     — tên không khớp topic thật, số % và "3 days ago" đều là bịa.
+  //   • Dòng "Insight: … Automatic (Day 60) là 35% — vượt mục tiêu tháng".
+  // Vì không đọc state nên bấm Reset xong chúng vẫn đứng yên.
+  // Ở đây render lại cả hai từ state.topics thật.
+  // ============================================================
+  var STAGE_CLASS = { 'Day 0': 'day-0', 'Day 1': 'day-1', 'Day 3': 'day-3', 'Day 7': 'day-7', 'Day 21': 'day-21', 'Day 60': 'day-60' };
+  var _queueFilter = 'All';
+
+  function startOfToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); }
+
+  function dueTopics(s) {
+    var now = Date.now();
+    var due = (s.topics || []).filter(function (t) {
+      return t.nextReview && new Date(t.nextReview).getTime() <= now && t.reviewStage !== 'Day 60';
+    });
+    try {
+      if (window.SHADOW_ADAPTIVE && typeof SHADOW_ADAPTIVE.prioritizeReviewQueue === 'function') {
+        var ordered = SHADOW_ADAPTIVE.prioritizeReviewQueue(s.topics);
+        if (ordered && ordered.length === due.length) return ordered;
+      }
+    } catch (e) {}
+    return due.sort(function (a, b) { return new Date(a.nextReview) - new Date(b.nextReview); });
+  }
+
+  function relDay(iso) {
+    if (!iso) return 'Chưa học';
+    var d = Math.floor((startOfToday() - new Date(iso).setHours(0, 0, 0, 0)) / 86400000);
+    if (d <= 0) return 'Hôm nay';
+    if (d === 1) return 'Hôm qua';
+    if (d < 30) return d + ' ngày trước';
+    if (d < 365) return Math.round(d / 30) + ' tháng trước';
+    return Math.round(d / 365) + ' năm trước';
+  }
+
+  function riskMark(t) {
+    var r = 0.5;
+    try { if (window.SHADOW_ADAPTIVE) r = SHADOW_ADAPTIVE.calculateForgetRisk(t); } catch (e) {}
+    var overdue = t.nextReview && new Date(t.nextReview).getTime() < startOfToday();
+    if (overdue || r >= 0.7) return '<span class="priority high">🔥</span>';
+    if (r >= 0.45) return '<span class="priority high">↑</span>';
+    return '<span class="priority med">•</span>';
+  }
+
+  function renderRealQueue() {
+    var card = document.querySelector('[data-section-id="review-queue"]');
+    if (!card) return;
+    var tbody = card.querySelector('.queue-table tbody');
+    var tabsEl = card.querySelector('.queue-tabs');
+    if (!tbody) return;
+
+    var s = getState(); if (!s || !s.topics) return;
+    var due = dueTopics(s);
+
+    var counts = { 'All': due.length, 'Overdue': 0 };
+    ['Day 1', 'Day 3', 'Day 7', 'Day 21'].forEach(function (k) { counts[k] = 0; });
+    due.forEach(function (t) {
+      if (counts[t.reviewStage] != null) counts[t.reviewStage]++;
+      if (t.nextReview && new Date(t.nextReview).getTime() < startOfToday()) counts.Overdue++;
+    });
+
+    if (tabsEl) {
+      var order = ['All', 'Day 1', 'Day 3', 'Day 7', 'Day 21', 'Overdue'];
+      var tabsHtml = order.map(function (k) {
+        return '<span class="queue-tab' + (k === _queueFilter ? ' active' : '') + '" data-v35q="' + k + '">' +
+          esc(k) + ' (' + counts[k] + ')</span>';
+      }).join('');
+      if (tabsEl.getAttribute('data-v35sig') !== tabsHtml) {
+        tabsEl.innerHTML = tabsHtml;
+        tabsEl.setAttribute('data-v35sig', tabsHtml);
+        tabsEl.querySelectorAll('[data-v35q]').forEach(function (b) {
+          b.onclick = function () { _queueFilter = b.getAttribute('data-v35q'); renderRealQueue(); };
+        });
+      }
+    }
+
+    var rows = due;
+    if (_queueFilter === 'Overdue') {
+      rows = due.filter(function (t) { return t.nextReview && new Date(t.nextReview).getTime() < startOfToday(); });
+    } else if (_queueFilter !== 'All') {
+      rows = due.filter(function (t) { return t.reviewStage === _queueFilter; });
+    }
+
+    var html;
+    if (!rows.length) {
+      html = '<tr><td colspan="5" style="padding:22px 4px;text-align:center;color:var(--text-3);font-size:12px">' +
+        (due.length
+          ? 'Không có topic nào ở mục “' + esc(_queueFilter) + '”.'
+          : '✅ Hôm nay không có topic nào tới hạn ôn — học một chủ đề mới đi.') +
+        '</td></tr>';
+    } else {
+      html = rows.slice(0, 12).map(function (t) {
+        var m = Math.round(t.masteryPct || 0);
+        return '<tr data-v35topic="' + esc(t.id) + '" style="cursor:pointer">' +
+          '<td>' + riskMark(t) + '</td>' +
+          '<td>' + esc((t.emoji ? t.emoji + ' ' : '') + (t.name || t.id)) + '</td>' +
+          '<td><span class="day-tag ' + (STAGE_CLASS[t.reviewStage] || 'day-0') + '">' + esc(t.reviewStage || 'Day 0') + '</span></td>' +
+          '<td><span class="mem-bar"><span class="mem-bar-fill" style="width:' + m + '%"></span></span> ' + m + '%</td>' +
+          '<td style="color:var(--text-2)">' + esc(relDay(t.lastReview)) + '</td>' +
+          '</tr>';
+      }).join('');
+      if (rows.length > 12) {
+        html += '<tr><td colspan="5" style="padding:8px 4px;text-align:center;color:var(--text-3);font-size:11px">' +
+          '… và ' + (rows.length - 12) + ' topic nữa</td></tr>';
+      }
+    }
+
+    if (tbody.getAttribute('data-v35sig') !== html) {
+      tbody.innerHTML = html;
+      tbody.setAttribute('data-v35sig', html);
+      tbody.querySelectorAll('[data-v35topic]').forEach(function (tr) {
+        tr.onclick = function () {
+          var id = tr.getAttribute('data-v35topic');
+          try { if (typeof window.openTopic === 'function') return window.openTopic(id); } catch (e) {}
+          var c2 = document.querySelector('.topic-card-real[data-topic="' + id + '"]');
+          if (c2) c2.click();
+        };
+      });
+    }
+  }
+  NS.renderRealQueue = renderRealQueue;
+
+  function renderRealInsight() {
+    var el = null, spans = document.querySelectorAll('span');
+    for (var i = 0; i < spans.length; i++) {
+      if (/Automatic \(Day 60\)|^\s*Insight:/.test(spans[i].textContent || '') && spans[i].children.length) { el = spans[i]; break; }
+    }
+    if (!el) return;
+
+    var s = getState(); if (!s || !s.topics) return;
+    var topics = s.topics, total = topics.length || 1;
+    var auto = topics.filter(function (t) { return t.reviewStage === 'Day 60'; }).length;
+    var stable = topics.filter(function (t) { return t.reviewStage === 'Day 7' || t.reviewStage === 'Day 21'; }).length;
+    var fresh = topics.filter(function (t) { return t.reviewStage === 'Day 0'; }).length;
+    var due = dueTopics(s).length;
+    var pct = Math.round(auto / total * 100);
+
+    var msg;
+    if (due > 0) {
+      msg = 'Hôm nay có <b style="color:#fde047">' + due + '</b> chủ đề tới hạn ôn. ' +
+            'Ôn xong rồi hãy học chủ đề mới — bỏ ôn thì cả cũ lẫn mới cùng rơi.';
+    } else if (fresh === total) {
+      msg = 'Bạn đang bắt đầu lại từ đầu với <b style="color:#a78bfa">' + total + '</b> chủ đề. ' +
+            'Chọn <b style="color:#a78bfa">một</b> chủ đề bạn sẽ dùng trong 7 ngày tới rồi bắt đầu từ đó.';
+    } else if (auto === 0) {
+      msg = '<b style="color:#a78bfa">' + stable + '/' + total + '</b> chủ đề đã vào vùng ổn định, ' +
+            'chưa có chủ đề nào lên Automatic. Cứ ôn đúng hạn là tới.';
+    } else {
+      msg = 'Tỉ lệ chủ đề đạt Automatic (Day 60) là <b style="color:#a78bfa">' + pct + '%</b> ' +
+            '(' + auto + '/' + total + '). Hôm nay không có chủ đề nào tới hạn.';
+    }
+
+    var html = '<span style="color:var(--text);font-weight:600">Insight:</span> ' + msg;
+    if (el.getAttribute('data-v35sig') !== html) {
+      el.innerHTML = html;
+      el.setAttribute('data-v35sig', html);
+    }
+  }
+  NS.renderRealInsight = renderRealInsight;
+
+  // ---------------------------------------------------------- PROGRESS TRACKER
+  // 4 ô "New This Week 5 / Reviews Done 28 / Study Time 6h 24m / Accuracy 78%"
+  // là số gõ tay trong index.html — không id, không code render.
+  function renderRealProgress() {
+    var card = document.querySelector('[data-section-id="progress-tracker"]');
+    if (!card) return;
+    var vals = card.querySelectorAll('.mini-stat .val');
+    var lbls = card.querySelectorAll('.mini-stat .lbl');
+    if (vals.length < 4) return;
+
+    var s = getState(); if (!s) return;
+    var log = s.sessionsLog || [];
+    var weekAgo = Date.now() - 7 * 86400000;
+    var week = log.filter(function (r) { return r && r.at && new Date(r.at).getTime() > weekAgo; });
+
+    var firstSeen = {};
+    log.forEach(function (r) {
+      if (!r || !r.at || !r.topicId) return;
+      var t = new Date(r.at).getTime();
+      if (firstSeen[r.topicId] == null || t < firstSeen[r.topicId]) firstSeen[r.topicId] = t;
+    });
+    var newThisWeek = Object.keys(firstSeen).filter(function (id) { return firstSeen[id] > weekAgo; }).length;
+
+    var reviews = week.filter(function (r) { return r.type === 'review'; }).length;
+    var sessions = week.filter(function (r) { return r.type === 'session'; }).length;
+
+    // App không bấm giờ thật → ước lượng: 1 buổi đầy đủ ~20', 1 lần ôn ~5'.
+    var mins = sessions * 20 + reviews * 5;
+    var timeTxt = mins >= 60 ? (Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm') : (mins + 'm');
+
+    var confs = week.filter(function (r) { return typeof r.confidence === 'number' && r.confidence > 0; });
+    var acc = confs.length
+      ? Math.round(confs.reduce(function (a, r) { return a + r.confidence; }, 0) / confs.length / 5 * 100) + '%'
+      : '—';
+
+    var out = [String(newThisWeek), String(reviews), (mins ? '~' + timeTxt : '—'), acc];
+    for (var i = 0; i < 4; i++) if (vals[i].textContent !== out[i]) vals[i].textContent = out[i];
+
+    if (lbls.length >= 3 && !lbls[2].getAttribute('data-v35lbl')) {
+      lbls[2].setAttribute('data-v35lbl', '1');
+      lbls[2].setAttribute('title', 'Ước lượng: 1 buổi học đầy đủ ≈ 20 phút, 1 lần ôn nhanh ≈ 5 phút. App chưa bấm giờ thật.');
+      lbls[2].textContent = 'Study Time (ước lượng)';
+    }
+    if (lbls.length >= 4 && !lbls[3].getAttribute('data-v35lbl')) {
+      lbls[3].setAttribute('data-v35lbl', '1');
+      lbls[3].setAttribute('title', 'Trung bình điểm confidence (1–5) bạn tự chấm sau mỗi lần ôn, tính trong 7 ngày qua.');
+    }
+  }
+  NS.renderRealProgress = renderRealProgress;
+
+  // ---------------------------------------------------------- NEXT UP
+  // Cả thẻ này là tên topic gõ tay ("Ordering Food", "Shopping") trong index.html.
+  function renderRealNextUp() {
+    var card = document.querySelector('[data-section-id="next-up"]');
+    if (!card) return;
+    var s = getState(); if (!s || !s.topics) return;
+
+    var tmStart = startOfToday() + 86400000, tmEnd = tmStart + 86400000;
+    var nextNew = (s.topics || []).filter(function (t) { return t.reviewStage === 'Day 0'; })[0];
+    var tmReviews = (s.topics || []).filter(function (t) {
+      if (!t.nextReview || t.reviewStage === 'Day 60') return false;
+      var ms = new Date(t.nextReview).getTime();
+      return ms >= tmStart && ms < tmEnd;
+    }).slice(0, 4);
+
+    var html =
+      '<div class="next-section"><div class="next-label">🆕 CHỦ ĐỀ MỚI</div>' +
+      (nextNew
+        ? '<div class="next-title" data-v35next="' + esc(nextNew.id) + '" style="cursor:pointer">' +
+          esc((nextNew.emoji || '') + ' ' + nextNew.name) +
+          '<span class="day-tag day-0" style="margin-left:auto">Day 0</span></div>'
+        : '<div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Đã bắt đầu hết các chủ đề — giờ tập trung ôn.</div>') +
+      '</div>' +
+      '<div class="next-section"><div class="next-label">🔁 ÔN NGÀY MAI</div>' +
+      (tmReviews.length
+        ? tmReviews.map(function (t) {
+            return '<div style="font-size:11.5px;margin-top:4px;cursor:pointer" data-v35next="' + esc(t.id) + '">• ' +
+              esc(t.name) + ' <span class="day-tag ' + (STAGE_CLASS[t.reviewStage] || 'day-0') + '">' +
+              esc(t.reviewStage) + '</span></div>';
+          }).join('')
+        : '<div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Ngày mai chưa có chủ đề nào tới hạn.</div>') +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--purple);margin-top:10px;cursor:pointer" data-nav="review">Xem lịch đầy đủ →</div>';
+
+    var body = card.querySelector('[data-v35body]');
+    if (!body) {
+      var title = card.querySelector('.card-title');
+      Array.prototype.slice.call(card.children).forEach(function (c) { if (c !== title) c.remove(); });
+      body = document.createElement('div');
+      body.setAttribute('data-v35body', '1');
+      card.appendChild(body);
+    }
+    if (body.getAttribute('data-v35sig') !== html) {
+      body.innerHTML = html;
+      body.setAttribute('data-v35sig', html);
+      body.querySelectorAll('[data-v35next]').forEach(function (el) {
+        el.onclick = function () {
+          var id = el.getAttribute('data-v35next');
+          try { if (typeof window.openTopic === 'function') return window.openTopic(id); } catch (e) {}
+          var c2 = document.querySelector('.topic-card-real[data-topic="' + id + '"]');
+          if (c2) c2.click();
+        };
+      });
+    }
+  }
+  NS.renderRealNextUp = renderRealNextUp;
+
+  // ---------------------------------------------------------- NEXT SMALL WIN
+  // Dòng phụ "3 topics đang gần chuyển…" là số gõ tay, trong khi danh sách bên
+  // dưới lại tính thật → hai chỗ trên cùng một thẻ nói khác nhau.
+  function renderRealCloseSub() {
+    var card = document.querySelector('[data-section-id="close-to-levelup"]');
+    if (!card) return;
+    var sub = null, kids = card.children;
+    for (var i = 0; i < kids.length; i++) {
+      if (/đang gần|level-up/i.test(kids[i].textContent || '') && !kids[i].id) { sub = kids[i]; break; }
+    }
+    if (!sub) return;
+
+    var s = getState(); if (!s || !s.topics) return;
+    var n = (s.topics || []).filter(function (t) {
+      return (t.masteryPct || 0) >= 60 && t.reviewStage !== 'Day 0' && t.reviewStage !== 'Day 60';
+    }).length;
+
+    var txt = n
+      ? n + ' chủ đề đang gần chuyển sang trạng thái cao hơn — chỉ cần 1 buổi ôn đúng cách.'
+      : 'Chưa có chủ đề nào gần level-up. Cứ ôn đúng hạn, mastery sẽ lên.';
+    if (sub.textContent !== txt) sub.textContent = txt;
+  }
+  NS.renderRealCloseSub = renderRealCloseSub;
+
+  // ---------------------------------------------------------- CALENDAR + MEMORY ACTIVITY
+  // Hai thẻ này có logic ĐÚNG nhưng KHÔNG ai gọi lại khi state đổi:
+  //   • renderRealCalendar() (app.js) chỉ chạy 1 lần lúc DOMContentLoaded và
+  //     khi mở trang Calendar View — không chạy khi đang ở Dashboard.
+  //   • SHADOW_V13.renderMemoryActivity() chỉ chạy khi điều hướng.
+  // Kết quả: bấm Reset xong, lịch và heatmap vẫn giữ số cũ.
+  // Gọi lại chúng, nhưng CHỈ khi dữ liệu thật sự đổi — tránh vòng lặp
+  // render → MutationObserver → render.
+  var _lastSig = null;
+  function stateSignature(s) {
+    if (!s) return '';
+    var t = (s.topics || []).map(function (x) {
+      return x.id + ':' + x.reviewStage + ':' + Math.round(x.masteryPct || 0) + ':' + (x.nextReview || '') + ':' + (x.sessions || 0);
+    }).join('|');
+    var u = s.user || {};
+    return t + '#' + (s.sessionsLog || []).length + '#' + u.xp + '#' + u.level + '#' + u.streak;
+  }
+  function refreshStaleCards(force) {
+    var s = getState(); if (!s) return;
+    var sig = stateSignature(s);
+    if (!force && sig === _lastSig) return;
+    _lastSig = sig;
+    try { if (typeof window.renderRealCalendar === 'function') window.renderRealCalendar(); } catch (e) {}
+    try { if (typeof window.renderRealHeatmap === 'function') window.renderRealHeatmap(); } catch (e) {}
+    // renderAll() vẽ lại HERO STATS + TODAY GOAL + MEMORY STATUS + MEMORY ACTIVITY
+    try {
+      if (window.SHADOW_V13 && typeof SHADOW_V13.renderAll === 'function') SHADOW_V13.renderAll();
+      else if (window.SHADOW_V13 && typeof SHADOW_V13.renderMemoryActivity === 'function') SHADOW_V13.renderMemoryActivity();
+    } catch (e) {}
+  }
+  NS.refreshStaleCards = refreshStaleCards;
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
@@ -1280,6 +1612,12 @@
     try { wrapDelete(); } catch (e) {}
     try { applyVoice(); } catch (e) {}
     try { attachVoiceButton(); } catch (e) {}
+    try { renderRealQueue(); } catch (e) {}
+    try { renderRealInsight(); } catch (e) {}
+    try { renderRealProgress(); } catch (e) {}
+    try { renderRealNextUp(); } catch (e) {}
+    try { renderRealCloseSub(); } catch (e) {}
+    try { refreshStaleCards(false); } catch (e) {}
   }
 
   var _t = null;
@@ -1332,6 +1670,13 @@
     check('ưu tiên giọng nam nhận diện đúng', MALE_PREFS.some(function (r) { return r.test('Microsoft David - English (United States)'); }));
     check('nhận diện giọng nữ để tránh', FEMALE_HINT.test('Samantha') && FEMALE_HINT.test('Microsoft Zira'));
     check('đã nạp font Inter', !!document.getElementById('v35-font-inter'));
+    check('có renderer queue thật', typeof NS.renderRealQueue === 'function');
+    check('bảng queue KHÔNG còn dữ liệu giả', (function () {
+      var tb = document.querySelector('[data-section-id="review-queue"] .queue-table tbody');
+      return !tb || !/Hotel Check-in|Taxi/.test(tb.textContent || '');
+    })());
+    check('dòng Insight KHÔNG còn số bịa 35%', !/Automatic \(Day 60\) là 35%/.test(document.body.textContent || ''));
+    check('relDay dịch đúng', relDay(new Date().toISOString()) === 'Hôm nay');
     check('nút bấm kế thừa đúng font', (function () {
       var b = document.createElement('button'); b.textContent = 'Bắt đầu ôn';
       b.style.cssText = 'position:absolute;left:-9999px'; document.body.appendChild(b);
