@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.11.1';
+  NS.version = '35.12.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -2486,9 +2486,209 @@
   }
 
   // ============================================================
+  // J. CONTENT BRIDGE — nối nội dung THẬT vào Today Session
+  // ------------------------------------------------------------
+  // VẤN ĐỀ GỐC: hệ thống có HAI nguồn nội dung không nói chuyện với nhau.
+  //   • Topic Detail  đọc overlay trong localStorage  (shadow-en-overlay-<id>)
+  //     — đây là nơi bạn gõ tay, v15 lưu, và AI ghi vào.
+  //   • Today Session / Review modal / metrics đọc SHADOW_CONTENT.getContent()
+  //     — đây là nơi lấy từ content.json do Notion sync sinh ra.
+  // content.json đang RỖNG (Notion pipeline hỏng) nên getContent() trả về
+  // bản mặc định trống → Session hiện "0 phrases", bước REPEAT không có câu nào.
+  //
+  // CÁCH SỬA: bọc getContent() lại. Nếu topic có overlay thật thì dựng nội dung
+  // từ overlay theo đúng SHAPE của content.json rồi phủ lên bản gốc.
+  // Không đụng content.json, không đụng Notion, không sửa file cũ nào.
+  // ============================================================
+  var _bridgeOrig = null;
+
+  function ovText(b) { return String((b && (b.text || b.content)) || ''); }
+
+  function blockByTitle(ov, re) {
+    var list = (ov && ov.customBlocks) || [], i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i] && re.test(String(list[i].title || ''))) return ovText(list[i]);
+    }
+    return '';
+  }
+
+  /* overlay lưu cụm từ dạng {en,vi}; content.json dùng dạng cặp [en, vi].
+     Trả về dạng cặp để mọi màn hình cũ (app_v8 dùng p[0], p[1]) đọc được. */
+  function phrasePairs(arr) {
+    var out = [];
+    (arr || []).forEach(function (p) {
+      if (!p) return;
+      var en = Array.isArray(p) ? p[0] : p.en;
+      var vi = Array.isArray(p) ? p[1] : p.vi;
+      en = String(en || '').trim();
+      if (!en) return;                       // bỏ dòng trống do bấm "+ Add" rồi thoát
+      out.push([en, String(vi || '').trim()]);
+    });
+    return out;
+  }
+
+  /* "A: Hello.\nB: Hi." -> [{title, lines:[['A','Hello.'],['B','Hi.']]}] */
+  function parseDialogue(txt, title) {
+    var lines = String(txt || '').split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var rows = [];
+    lines.forEach(function (ln) {
+      var m = ln.match(/^([A-Za-zÀ-ỹ][^:]{0,20}):\s*(.+)$/);
+      if (m) rows.push([m[1].trim(), m[2].trim()]);
+      else if (rows.length) rows[rows.length - 1][1] += ' ' + ln;
+      else rows.push(['', ln]);
+    });
+    if (!rows.length) return [];
+    return [{ title: String(title || 'Dialogue').replace(/^[^\wÀ-ỹ]+/, '').trim() || 'Dialogue', lines: rows }];
+  }
+
+  function mergeFromOverlay(id, base) {
+    var ov = rawOverlay(id);
+    if (!ov) return base;
+    var out = {}, k;
+    for (k in base) if (Object.prototype.hasOwnProperty.call(base, k)) out[k] = base[k];
+
+    var no = ov.notionOverrides || {};
+    var v15 = ov.v15 || {};
+
+    // 1) cụm từ
+    var ph = no.phrases || {};
+    var before = phrasePairs(ph.before), during = phrasePairs(ph.during), after = phrasePairs(ph.after);
+    if (before.length + during.length + after.length > 0) {
+      out.phrases = { before: before, during: during, after: after };
+    }
+
+    // 2) why / scene
+    if (String(no.why || '').trim()) out.why = no.why;
+    if (String(no.scene || '').trim()) out.scene = no.scene;
+
+    // 3) shadow script — ưu tiên khối v15, rồi khối tự tạo, cuối cùng ghép từ cụm từ
+    var sb = (v15.shadowBlocks || []).map(ovText).filter(Boolean).join('\n');
+    if (!sb) sb = blockByTitle(ov, /shadow|script/i);
+    if (!sb) {
+      var seed = during.concat(before).slice(0, 6).map(function (p) { return p[0]; });
+      if (seed.length) sb = seed.join(' ');
+    }
+    if (sb) out.shadow_script = sb;
+
+    // 4) dialogues
+    var dlg = blockByTitle(ov, /dialogue|hội thoại/i);
+    if (dlg) out.dialogues = parseDialogue(dlg, '🎭 Dialogues');
+
+    // 5) missions -> mảng chuỗi (màn Session render thẳng ra text)
+    var ms = (v15.missions || []).map(function (m) {
+      if (!m) return '';
+      var t = String(m.title || m).trim();
+      var d = String(m.description || '').trim();
+      return d ? (t + ' — ' + d) : t;
+    }).filter(Boolean);
+    if (ms.length) out.missions = ms;
+
+    // 6) active recall -> mảng câu hỏi
+    var rc = (v15.recall || []).map(function (r) {
+      return String((r && (r.question || r.q)) || r || '').trim();
+    }).filter(Boolean);
+    if (rc.length) out.active_recall = rc;
+
+    // 7) real english
+    var re = blockByTitle(ov, /real english|native/i);
+    if (re) out.real_english = re;
+
+    out._v35Bridged = true;
+    return out;
+  }
+
+  /* Sau khi bridge bật, thẻ "🎭 DIALOGUES" gốc mới có dữ liệu để hiện.
+     Nhưng nội dung đó đang nằm trong khối ghi chú SỬA ĐƯỢC ngay bên dưới —
+     hiện cả hai là đọc trùng. Giữ khối sửa được, ẩn thẻ suy ra.
+     Chỉ ẩn ở màn Topic Detail — Today Session vẫn dùng dialogues bình thường. */
+  function dedupeDialogueCard() {
+    var v = detailView(); if (!v) return;
+    var notes = [];
+    v.querySelectorAll('.block-note').forEach(function (n) {
+      var t = (n.querySelector('.block-title') || {}).textContent || '';
+      if (/dialogue|hội thoại/i.test(t)) notes.push(n);
+    });
+    v.querySelectorAll('.card').forEach(function (c) {
+      var t = (c.querySelector('.card-title') || {}).textContent || '';
+      if (!/DIALOGUES|HỘI THOẠI/i.test(t)) return;
+      var ownsNote = notes.some(function (n) { return c.contains(n); });
+      var dup = notes.length > 0 && !ownsNote;
+      if (dup) { c.style.display = 'none'; c.setAttribute('data-v35dup', '1'); }
+      else if (c.getAttribute('data-v35dup')) { c.style.display = ''; c.removeAttribute('data-v35dup'); }
+    });
+  }
+  NS._mergeFromOverlay = mergeFromOverlay;
+  NS.dedupeDialogueCard = dedupeDialogueCard;
+
+  function installBridge() {
+    var C = window.SHADOW_CONTENT;
+    if (!C || typeof C.getContent !== 'function' || C._v35Bridge) return false;
+    _bridgeOrig = C.getContent.bind(C);
+    C.getContent = function (topicId) {
+      var base;
+      try { base = _bridgeOrig(topicId); } catch (e) { base = null; }
+      if (!base || typeof base !== 'object') {
+        base = { why: '', scene: '', phrases: { before: [], during: [], after: [] },
+                 dialogues: [], shadow_script: '', missions: [], active_recall: [] };
+      }
+      try { return mergeFromOverlay(topicId, base); } catch (e) { return base; }
+    };
+    // getAllPhrases cũng phải thấy nội dung thật (phrase bank, tìm kiếm…)
+    C.getAllPhrases = function () {
+      var ids = {}, all = [];
+      Object.keys(C.TOPIC_CONTENT || {}).forEach(function (k) { ids[k] = 1; });
+      try { (getState().topics || []).forEach(function (t) { ids[t.id] = 1; }); } catch (e) {}
+      Object.keys(ids).forEach(function (tid) {
+        var c = C.getContent(tid) || {};
+        ['before', 'during', 'after'].forEach(function (when) {
+          ((c.phrases || {})[when] || []).forEach(function (item) {
+            var en = Array.isArray(item) ? item[0] : (item.en || '');
+            var vi = Array.isArray(item) ? item[1] : (item.vi || '');
+            if (String(en).trim()) all.push({ topicId: tid, when: when, en: en, vi: vi });
+          });
+        });
+      });
+      return all;
+    };
+    C._v35Bridge = true;
+    log('content bridge ON — Today Session đọc nội dung thật từ overlay');
+    // vẽ lại nếu đang đứng ở màn Session
+    try { if (typeof window.renderSessionView === 'function') window.renderSessionView(); } catch (e) {}
+    return true;
+  }
+  NS.installBridge = installBridge;
+
+  /* Bài mẫu seed từ v35.0.0 chưa có v15 (shadow/missions/recall).
+     Bổ sung phần THIẾU, không ghi đè phần đã có. */
+  function backfillSamples() {
+    var changed = 0;
+    PROTECTED.forEach(function (id) {
+      var d = SAMPLES[id]; if (!d) return;
+      var ov = rawOverlay(id); if (!ov) return;
+      ov.v15 = ov.v15 || { missions: [], recall: [], shadowBlocks: [], sections: { order: [], hidden: [] }, header: {} };
+      var touched = false;
+      if (!(ov.v15.shadowBlocks || []).length && d.shadow) {
+        ov.v15.shadowBlocks = [{ id: uid('sb'), text: d.shadow }]; touched = true;
+      }
+      if (!(ov.v15.missions || []).length && d.missions) {
+        ov.v15.missions = toMissionArr(d.missions); touched = true;
+      }
+      if (!(ov.v15.recall || []).length && d.recall) {
+        ov.v15.recall = toRecallArr(d.recall); touched = true;
+      }
+      if (touched) { writeOverlay(id, ov); changed++; }
+    });
+    if (changed) log('bổ sung shadow/missions/recall cho ' + changed + ' bài mẫu');
+    return changed;
+  }
+  NS.backfillSamples = backfillSamples;
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
+    try { installBridge(); } catch (e) {}
+    try { dedupeDialogueCard(); } catch (e) {}
     try { injectCSS(); } catch (e) {}
     try { attachHelp(); } catch (e) {}
     try { fixWhyScene(); } catch (e) {}
@@ -2521,6 +2721,8 @@
     injectCSS();
     // seed bài mẫu 1 lần (không ghi đè nếu topic đã có nội dung của bạn)
     try { if (localStorage.getItem(SEED_FLAG) !== NS.version) NS.seedSamples(false); } catch (e) { NS.seedSamples(false); }
+    try { backfillSamples(); } catch (e) {}
+    try { installBridge(); } catch (e) {}
 
     tick();
     try {
@@ -2631,6 +2833,58 @@
       b.style.cssText = 'position:absolute;left:-9999px'; document.body.appendChild(b);
       var f = getComputedStyle(b).fontFamily; b.remove();
       return /Inter|Segoe UI/i.test(f);
+    })());
+    // ---- content bridge ----
+    check('bridge đã gắn vào SHADOW_CONTENT', !!(window.SHADOW_CONTENT && window.SHADOW_CONTENT._v35Bridge));
+    check('gắn 2 lần không chồng lớp', installBridge() === false);
+    check('cụm từ đổi sang dạng cặp [en, vi]', (function () {
+      var p = phrasePairs([{ en: 'Hi', vi: 'Chào' }, { en: '', vi: 'rỗng' }, { en: '  ' }]);
+      return p.length === 1 && p[0][0] === 'Hi' && p[0][1] === 'Chào';
+    })());
+    check('tách hội thoại theo người nói', (function () {
+      var d = parseDialogue('A: Hello there.\nB: Hi!', '🎭 Dialogues');
+      return d.length === 1 && d[0].lines.length === 2 && d[0].lines[0][0] === 'A' && d[0].lines[1][1] === 'Hi!';
+    })());
+    check('topic không có overlay thì giữ nguyên bản gốc', (function () {
+      var base = { why: 'x', phrases: { before: [], during: [], after: [] } };
+      return mergeFromOverlay('__khong_ton_tai__', base) === base;
+    })());
+    check('bài mẫu L1-01 có cụm từ cho Today Session', (function () {
+      try {
+        var c = window.SHADOW_CONTENT.getContent('L1-01');
+        var n = (c.phrases.before.length + c.phrases.during.length + c.phrases.after.length);
+        return n > 0 && Array.isArray(c.phrases.during[0]) && !!c.phrases.during[0][0];
+      } catch (e) { return false; }
+    })());
+    check('bài mẫu L1-01 có shadow script', (function () {
+      try { return String(window.SHADOW_CONTENT.getContent('L1-01').shadow_script || '').length > 20; }
+      catch (e) { return false; }
+    })());
+    check('bài mẫu L1-01 có missions & recall', (function () {
+      try {
+        var c = window.SHADOW_CONTENT.getContent('L1-01');
+        return (c.missions || []).length > 0 && (c.active_recall || []).length > 0;
+      } catch (e) { return false; }
+    })());
+    check('không hiện hội thoại 2 lần ở Topic Detail', (function () {
+      var v = detailView(); if (!v) return true;         // không ở màn chi tiết thì bỏ qua
+      dedupeDialogueCard();
+      var seen = 0;
+      v.querySelectorAll('.block-note').forEach(function (n) {
+        var t = (n.querySelector('.block-title') || {}).textContent || '';
+        if (/dialogue|hội thoại/i.test(t)) seen++;
+      });
+      if (!seen) return true;
+      var shown = 0;
+      v.querySelectorAll('.card').forEach(function (c) {
+        var t = (c.querySelector('.card-title') || {}).textContent || '';
+        if (/DIALOGUES|HỘI THOẠI/i.test(t) && c.style.display !== 'none') shown++;
+      });
+      return shown === 0;
+    })());
+    check('bridge không sinh câu rỗng trong phrase bank', (function () {
+      try { return window.SHADOW_CONTENT.getAllPhrases().every(function (p) { return !!String(p.en).trim(); }); }
+      catch (e) { return false; }
     })());
     console.log('[v35] ' + pass + ' pass · ' + fail + ' fail');
     return fail === 0;
