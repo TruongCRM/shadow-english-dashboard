@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.0.2';
+  NS.version = '35.2.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -142,8 +142,63 @@
     return null;
   }
 
+  // ============================================================
+  // E. FONT — vá lỗi chữ trên nút bấm bị lệch font
+  // ------------------------------------------------------------
+  // index.html chỉ đặt font-family cho body. Nhưng <button>, <input>,
+  // <select>, <textarea> KHÔNG kế thừa font-family — trình duyệt áp font mặc
+  // định của hệ điều hành. Font đó thiếu ký tự có dấu tiếng Việt, nên
+  // "Bắt đầu ôn" bị vẽ chắp vá: chữ cái một font, dấu một font khác.
+  // Cách sửa: nạp Inter (đủ bộ chữ Việt) + ép mọi form control kế thừa font.
+  // ============================================================
+  function injectFont() {
+    var FID = 'v35-font-inter';
+    if (!document.getElementById(FID)) {
+      var pre = document.createElement('link');
+      pre.rel = 'preconnect'; pre.href = 'https://fonts.gstatic.com'; pre.crossOrigin = '';
+      document.head.appendChild(pre);
+
+      var l = document.createElement('link');
+      l.id = FID; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
+      document.head.appendChild(l);
+    }
+
+    var SID = 'v35-font-fix-' + NS.version;
+    if (document.getElementById(SID)) return;
+    var oldF = document.querySelectorAll('style[id^="v35-font-fix-"]');
+    for (var k = 0; k < oldF.length; k++) oldF[k].remove();
+
+    var sf = document.createElement('style'); sf.id = SID;
+    sf.textContent = [
+      ':root{--v35-font:"Inter","Segoe UI Variable Text","Segoe UI",-apple-system,',
+      'BlinkMacSystemFont,"Helvetica Neue",Arial,"Noto Sans",sans-serif}',
+
+      /* 1. Nút và ô nhập KHÔNG tự kế thừa font — phải ép */
+      'button,input,select,textarea,optgroup{font-family:var(--v35-font);',
+      'font-feature-settings:inherit;font-variant-ligatures:inherit}',
+
+      /* 2. Thân trang dùng cùng một font để nút và chữ thường khớp nhau */
+      'body,.app,.sidebar,.main,.content{font-family:var(--v35-font)}',
+
+      /* 3. Các nút có tên lớp riêng trong app — quét hết cho chắc */
+      '.mission-btn,.step-btn,.audio-btn,.v12-edit-toggle,.v12-section-edit-btn,',
+      '.v17-btn,.imp-btn,.imp-tab,.ssa-btn,.gp-btn,.v21-btn,.v22-btn,.v13-btn,',
+      '.nav-item,.card-title,.chip,.tag,.badge,.pill,.day-tag,.topic-stage-tag',
+      '{font-family:var(--v35-font)}',
+
+      /* 4. Giữ nguyên chỗ CỐ Ý dùng font khác (script đọc, code, IPA) */
+      '.shadow-text{font-family:Georgia,"Times New Roman",serif}',
+      '.quote-text{font-family:Georgia,serif}',
+      '.ai-prompt-text,.audio-hint{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}'
+    ].join('');
+    document.head.appendChild(sf);
+  }
+  NS.injectFont = injectFont;
+
   // ---------------------------------------------------------- CSS
   function injectCSS() {
+    try { injectFont(); } catch (e) {}
     var id = 'v35-styles-' + NS.version;
     if (document.getElementById(id)) return;
     // dọn bản cũ nếu có (tránh lỗi TD-5: CSS không cập nhật giữa các phiên)
@@ -186,17 +241,113 @@
       '.v35-btn.warn:hover{background:rgba(239,68,68,.22);color:#fff}',
       '.v35-hero-reset{width:100%;margin-top:6px}',
 
-      '.v35-modal{position:fixed;inset:0;z-index:100000;background:rgba(6,4,18,.72);',
-      'display:flex;align-items:center;justify-content:center;padding:20px}',
-      '.v35-box{width:min(420px,100%);background:#171331;border:1px solid rgba(255,255,255,.14);',
-      'border-radius:16px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.6);color:#e9e6f7}',
-      '.v35-box h3{margin:0 0 8px;font-size:16px;color:#fff}',
-      '.v35-box p{margin:0 0 14px;font-size:13px;line-height:1.6;color:#b8b2d0}',
-      '.v35-box input{width:100%;padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.18);',
-      'background:rgba(0,0,0,.28);color:#fff;font-size:14px;font-family:inherit;box-sizing:border-box}',
-      '.v35-box input:focus{outline:none;border-color:#a78bfa}',
-      '.v35-err{color:#fca5a5;font-size:12px;margin-top:8px;min-height:16px}',
-      '.v35-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}'
+      /* ---------- MODAL ---------- */
+      '.v35-modal{position:fixed;inset:0;z-index:100000;background:rgba(6,4,18,.78);',
+      '-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);',
+      'display:flex;align-items:center;justify-content:center;padding:20px;',
+      'animation:v35fade .16s ease-out}',
+      '@keyframes v35fade{from{opacity:0}to{opacity:1}}',
+      '@keyframes v35rise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}',
+
+      '.v35-box{width:min(520px,100%);max-height:calc(100vh - 40px);overflow:auto;',
+      'background:linear-gradient(160deg,#1b1638 0%,#141029 100%);',
+      'border:1px solid rgba(167,139,250,.28);border-radius:20px;',
+      'box-shadow:0 30px 90px rgba(0,0,0,.68),0 0 0 1px rgba(255,255,255,.03) inset;',
+      'color:#e9e6f7;animation:v35rise .2s cubic-bezier(.2,.8,.3,1);position:relative}',
+      '.v35-box::-webkit-scrollbar{width:8px}',
+      '.v35-box::-webkit-scrollbar-thumb{background:rgba(167,139,250,.3);border-radius:8px}',
+
+      '.v35-mhead{display:flex;gap:14px;align-items:flex-start;padding:24px 26px 18px;',
+      'border-bottom:1px solid rgba(255,255,255,.07)}',
+      '.v35-micon{flex:0 0 auto;width:44px;height:44px;border-radius:13px;display:flex;',
+      'align-items:center;justify-content:center;font-size:21px}',
+      '.v35-micon.danger{background:linear-gradient(140deg,rgba(239,68,68,.26),rgba(239,68,68,.1));',
+      'border:1px solid rgba(239,68,68,.34)}',
+      '.v35-micon.lock{background:linear-gradient(140deg,rgba(250,204,21,.24),rgba(250,204,21,.08));',
+      'border:1px solid rgba(250,204,21,.36)}',
+      '.v35-mtitle{font-size:17px;font-weight:800;color:#fff;line-height:1.35;margin-bottom:4px;letter-spacing:-.01em}',
+      '.v35-msub{font-size:13px;line-height:1.6;color:#a49dc4}',
+      '.v35-mx{position:absolute;top:16px;right:18px;width:30px;height:30px;border:none;border-radius:9px;',
+      'background:rgba(255,255,255,.05);color:#8b85a8;font-size:18px;line-height:1;cursor:pointer;',
+      'display:flex;align-items:center;justify-content:center;transition:all .15s}',
+      '.v35-mx:hover{background:rgba(255,255,255,.12);color:#fff}',
+
+      '.v35-mbody{padding:20px 26px 4px}',
+      '.v35-panels{display:grid;grid-template-columns:1fr 1fr;gap:12px}',
+      '@media(max-width:520px){.v35-panels{grid-template-columns:1fr}}',
+      '.v35-panel{border-radius:13px;padding:13px 15px;border:1px solid transparent}',
+      '.v35-panel.lose{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.22)}',
+      '.v35-panel.keep{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.22)}',
+      '.v35-plabel{font-size:10px;font-weight:800;letter-spacing:.1em;margin-bottom:8px;display:block}',
+      '.v35-panel.lose .v35-plabel{color:#f87171}',
+      '.v35-panel.keep .v35-plabel{color:#4ade80}',
+      '.v35-panel ul{margin:0;padding:0;list-style:none}',
+      '.v35-panel li{position:relative;padding-left:15px;font-size:12.5px;line-height:1.55;',
+      'color:#cfcae4;margin-bottom:5px}',
+      '.v35-panel li:last-child{margin-bottom:0}',
+      '.v35-panel li::before{content:"";position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:50%}',
+      '.v35-panel.lose li::before{background:#f87171}',
+      '.v35-panel.keep li::before{background:#4ade80}',
+
+      '.v35-note{margin-top:14px;font-size:12.5px;line-height:1.6;color:#8f89ad;',
+      'padding:11px 14px;border-radius:11px;background:rgba(255,255,255,.035);',
+      'border-left:2px solid rgba(167,139,250,.5)}',
+
+      '.v35-field{margin-top:16px}',
+      '.v35-flabel{display:block;font-size:12.5px;color:#b8b2d0;margin-bottom:8px}',
+      '.v35-flabel b{color:#fff;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;',
+      'background:rgba(167,139,250,.18);padding:1px 7px;border-radius:5px;letter-spacing:.06em}',
+      '.v35-box input{width:100%;padding:12px 15px;border-radius:11px;',
+      'border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.32);color:#fff;',
+      'font-size:14.5px;font-family:inherit;box-sizing:border-box;transition:all .15s;',
+      'letter-spacing:.02em}',
+      '.v35-box input::placeholder{color:#6b6588}',
+      '.v35-box input:focus{outline:none;border-color:rgba(167,139,250,.75);',
+      'background:rgba(0,0,0,.42);box-shadow:0 0 0 3px rgba(124,92,255,.14)}',
+      '.v35-box input.bad{border-color:rgba(239,68,68,.7);box-shadow:0 0 0 3px rgba(239,68,68,.12);',
+      'animation:v35shake .3s}',
+      '@keyframes v35shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}',
+      '.v35-err{color:#fca5a5;font-size:12.5px;margin-top:8px;min-height:17px;display:flex;align-items:center;gap:5px}',
+
+      '.v35-acts{display:flex;gap:10px;justify-content:flex-end;padding:18px 26px 22px;margin-top:6px}',
+      '.v35-mbtn{padding:11px 20px;border-radius:11px;font-size:13.5px;font-weight:700;',
+      'cursor:pointer;font-family:inherit;border:1px solid transparent;transition:all .15s}',
+      '.v35-mbtn.ghost{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.13);color:#c9c4e0}',
+      '.v35-mbtn.ghost:hover{background:rgba(255,255,255,.12);color:#fff}',
+      '.v35-mbtn.go{background:linear-gradient(135deg,#e0483c,#b93226);color:#fff;',
+      'box-shadow:0 6px 18px rgba(206,62,43,.32)}',
+      '.v35-mbtn.go:hover:not(:disabled){filter:brightness(1.12);transform:translateY(-1px);',
+      'box-shadow:0 9px 24px rgba(206,62,43,.42)}',
+      '.v35-mbtn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;transform:none}',
+      '.v35-mbtn.save{background:linear-gradient(135deg,#7c5cff,#a78bfa);color:#fff;',
+      'box-shadow:0 6px 18px rgba(124,92,255,.34)}',
+      '.v35-mbtn.save:hover{filter:brightness(1.1);transform:translateY(-1px)}',
+
+      /* ---------- VOICE PICKER ---------- */
+      '.v35-voice-btn{margin-left:10px;padding:7px 13px;font-size:12px}',
+      '.v35-vlist{max-height:230px;overflow:auto;border:1px solid rgba(255,255,255,.09);',
+      'border-radius:13px;padding:5px;background:rgba(0,0,0,.2)}',
+      '.v35-vlist::-webkit-scrollbar{width:7px}',
+      '.v35-vlist::-webkit-scrollbar-thumb{background:rgba(167,139,250,.3);border-radius:7px}',
+      '.v35-vrow{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;',
+      'cursor:pointer;transition:background .13s}',
+      '.v35-vrow:hover{background:rgba(255,255,255,.05)}',
+      '.v35-vrow.on{background:rgba(124,92,255,.17);box-shadow:inset 0 0 0 1px rgba(167,139,250,.42)}',
+      '.v35-vrow input[type=radio]{accent-color:#a78bfa;width:15px;height:15px;flex:0 0 auto;margin:0}',
+      '.v35-vname{flex:1;font-size:12.5px;color:#e3dff5;display:flex;align-items:center;gap:7px;',
+      'overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.v35-vtag{font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:999px;flex:0 0 auto}',
+      '.v35-vtag.m{background:rgba(56,189,248,.18);color:#7dd3fc;border:1px solid rgba(56,189,248,.35)}',
+      '.v35-vtag.f{background:rgba(244,114,182,.15);color:#f9a8d4;border:1px solid rgba(244,114,182,.3)}',
+      '.v35-vlang{font-size:10.5px;color:#7b7599;flex:0 0 auto;font-family:ui-monospace,Menlo,monospace}',
+      '.v35-vplay{flex:0 0 auto;width:27px;height:27px;border-radius:50%;border:1px solid rgba(167,139,250,.4);',
+      'background:rgba(124,92,255,.2);color:#c4b5fd;font-size:10px;cursor:pointer;padding:0;',
+      'display:flex;align-items:center;justify-content:center;transition:all .14s}',
+      '.v35-vplay:hover{background:#7c5cff;color:#fff;transform:scale(1.1)}',
+      '.v35-box input[type=range]{width:100%;accent-color:#a78bfa;padding:0;background:none;border:none;',
+      'height:22px;cursor:pointer}',
+      '.v35-box input[type=range]:focus{box-shadow:none}',
+      '.v35-range-ends{display:flex;justify-content:space-between;font-size:11px;color:#7b7599;margin-top:2px}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -584,37 +735,130 @@
   function isProtected(id) { return PROTECTED.indexOf(id) !== -1; }
   NS.isProtected = isProtected;
 
+  // ============================================================
+  // MODAL DÙNG CHUNG — thay hẳn confirm()/prompt() mặc định của trình duyệt
+  // ============================================================
   var modalEl = null;
-  function closeModal() { if (modalEl) { modalEl.remove(); modalEl = null; } }
+  function closeModal() {
+    if (modalEl) { modalEl.remove(); modalEl = null; }
+    document.documentElement.style.overflow = '';
+  }
 
-  function askPassword(topicName, onOk) {
+  /**
+   * opts = {
+   *   icon, iconStyle:'danger'|'lock', title, subtitle,
+   *   lose:[...], keep:[...],          // 2 bảng đối chiếu (tuỳ chọn)
+   *   note,                            // dòng nhắc dưới cùng (tuỳ chọn)
+   *   fieldLabel, placeholder, password:bool,
+   *   mustEqual, wrongMsg,             // buộc gõ đúng chuỗi này mới cho tiếp
+   *   confirmText, cancelText
+   * }
+   * → gọi onConfirm() khi người dùng xác nhận thành công.
+   */
+  function openConfirm(opts, onConfirm) {
     closeModal(); injectCSS();
+    var needInput = !!opts.mustEqual;
+
+    var panels = '';
+    if ((opts.lose && opts.lose.length) || (opts.keep && opts.keep.length)) {
+      panels = '<div class="v35-panels">' +
+        (opts.lose && opts.lose.length
+          ? '<div class="v35-panel lose"><span class="v35-plabel">SẼ XOÁ</span><ul>' +
+            opts.lose.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '') +
+        (opts.keep && opts.keep.length
+          ? '<div class="v35-panel keep"><span class="v35-plabel">GIỮ NGUYÊN</span><ul>' +
+            opts.keep.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '') +
+        '</div>';
+    }
+
+    var field = '';
+    if (needInput) {
+      field = '<div class="v35-field">' +
+        '<label class="v35-flabel">' + (opts.fieldLabel || '') + '</label>' +
+        '<input type="' + (opts.password ? 'password' : 'text') + '" autocomplete="off" spellcheck="false"' +
+        ' placeholder="' + esc(opts.placeholder || '') + '">' +
+        '<div class="v35-err"></div></div>';
+    }
+
     modalEl = document.createElement('div');
     modalEl.className = 'v35-modal';
+    modalEl.setAttribute('role', 'dialog');
+    modalEl.setAttribute('aria-modal', 'true');
     modalEl.innerHTML =
       '<div class="v35-box">' +
-      '<h3>🔒 Bài mẫu được bảo vệ</h3>' +
-      '<p>"' + esc(topicName) + '" là bài mẫu của hệ thống — dùng để người mới xem cách một bài học đầy đủ trông như thế nào.<br><br>Nhập mật khẩu để xoá:</p>' +
-      '<input type="password" autocomplete="off" placeholder="Mật khẩu">' +
-      '<div class="v35-err"></div>' +
-      '<div class="v35-acts">' +
-      '<button class="v35-btn" data-a="cancel">Huỷ</button>' +
-      '<button class="v35-btn warn" data-a="ok">Xác nhận xoá</button>' +
-      '</div></div>';
+        '<button class="v35-mx" aria-label="Đóng">×</button>' +
+        '<div class="v35-mhead">' +
+          '<div class="v35-micon ' + (opts.iconStyle || 'danger') + '">' + esc(opts.icon || '⚠️') + '</div>' +
+          '<div><div class="v35-mtitle">' + esc(opts.title || '') + '</div>' +
+          (opts.subtitle ? '<div class="v35-msub">' + esc(opts.subtitle) + '</div>' : '') + '</div>' +
+        '</div>' +
+        '<div class="v35-mbody">' + panels +
+          (opts.note ? '<div class="v35-note">' + esc(opts.note) + '</div>' : '') +
+          field +
+        '</div>' +
+        '<div class="v35-acts">' +
+          '<button class="v35-mbtn ghost" data-a="cancel">' + esc(opts.cancelText || 'Huỷ') + '</button>' +
+          '<button class="v35-mbtn go" data-a="ok"' + (needInput ? ' disabled' : '') + '>' +
+          esc(opts.confirmText || 'Xác nhận') + '</button>' +
+        '</div>' +
+      '</div>';
     document.body.appendChild(modalEl);
+    document.documentElement.style.overflow = 'hidden';
 
+    var okBtn = modalEl.querySelector('[data-a="ok"]');
     var input = modalEl.querySelector('input');
     var err = modalEl.querySelector('.v35-err');
-    input.focus();
 
-    function submit() {
-      if (input.value === PASSWORD) { closeModal(); onOk(); }
-      else { err.textContent = '❌ Mật khẩu không đúng.'; input.value = ''; input.focus(); }
+    function value() { return input ? input.value : ''; }
+    function matches() {
+      if (!needInput) return true;
+      return opts.password ? value() === opts.mustEqual
+                           : value().trim().toUpperCase() === String(opts.mustEqual).toUpperCase();
     }
-    modalEl.querySelector('[data-a="ok"]').onclick = submit;
+    function submit() {
+      if (!matches()) {
+        if (!input) return;
+        input.classList.add('bad');
+        err.textContent = '✕ ' + (opts.wrongMsg || 'Chưa đúng — kiểm tra lại.');
+        setTimeout(function () { input.classList.remove('bad'); }, 320);
+        input.select(); input.focus();
+        return;
+      }
+      closeModal();
+      onConfirm();
+    }
+
+    if (input) {
+      input.oninput = function () {
+        err.textContent = '';
+        input.classList.remove('bad');
+        // mật khẩu: luôn cho bấm (để hiện thông báo sai); gõ-xác-nhận: chỉ mở khi đúng
+        okBtn.disabled = opts.password ? !value() : !matches();
+      };
+      input.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } };
+      setTimeout(function () { input.focus(); }, 60);
+    }
+    okBtn.onclick = submit;
     modalEl.querySelector('[data-a="cancel"]').onclick = closeModal;
-    input.onkeydown = function (e) { if (e.key === 'Enter') submit(); };
+    modalEl.querySelector('.v35-mx').onclick = closeModal;
     modalEl.onclick = function (e) { if (e.target === modalEl) closeModal(); };
+  }
+  NS.openConfirm = openConfirm;
+
+  function askPassword(topicName, onOk) {
+    openConfirm({
+      icon: '🔒', iconStyle: 'lock',
+      title: 'Bài mẫu được bảo vệ',
+      subtitle: '“' + topicName + '” là bài mẫu của hệ thống — để người mới thấy một bài học đầy đủ trông như thế nào.',
+      lose: ['Toàn bộ nội dung bài mẫu', 'Không thể hoàn tác'],
+      keep: ['Các topic khác', 'Tiến trình học của bạn'],
+      fieldLabel: 'Nhập mật khẩu quản trị để xoá:',
+      placeholder: 'Mật khẩu',
+      password: true,
+      mustEqual: PASSWORD,
+      wrongMsg: 'Mật khẩu không đúng.',
+      confirmText: 'Xoá bài mẫu'
+    }, onOk);
   }
 
   function wrapDelete() {
@@ -623,11 +867,35 @@
     if (V17._v35Wrapped) return true;
 
     var orig = V17.deleteTopic;
+
+    // v17.deleteTopic gọi confirm() mặc định của trình duyệt bên trong.
+    // Ta hỏi bằng modal riêng trước, rồi tạm thời cho confirm() trả về true
+    // đúng một lần để chạy phần xoá — không phải sửa file v17.
+    function runDelete(id, fromArchive) {
+      var nativeConfirm = window.confirm;
+      window.confirm = function () { return true; };
+      try { orig.call(V17, id, fromArchive); }
+      finally { window.confirm = nativeConfirm; }
+    }
+
     V17.deleteTopic = function (id, fromArchive) {
-      if (!isProtected(id)) return orig.call(V17, id, fromArchive);
       var s = getState();
       var t = s && s.topics ? s.topics.filter(function (x) { return x.id === id; })[0] : null;
-      askPassword(t ? t.name : id, function () { orig.call(V17, id, fromArchive); });
+      var name = t ? t.name : id;
+
+      if (isProtected(id)) {
+        askPassword(name, function () { runDelete(id, fromArchive); });
+        return;
+      }
+      openConfirm({
+        icon: '🗑', iconStyle: 'danger',
+        title: 'Xoá topic này?',
+        subtitle: '“' + name + '” sẽ bị xoá vĩnh viễn khỏi thiết bị này.',
+        lose: ['Toàn bộ nội dung bài học', 'Cụm từ, missions, ghi chú', 'Tiến trình học của topic'],
+        keep: ['Các topic khác', 'XP và streak của bạn'],
+        note: 'Chỉ muốn ẩn tạm thì bấm 📦 Archive — vẫn khôi phục lại được.',
+        confirmText: 'Xoá vĩnh viễn'
+      }, function () { runDelete(id, fromArchive); });
     };
     V17._v35Wrapped = true;
     log('đã khoá xoá cho: ' + PROTECTED.join(', '));
@@ -672,39 +940,49 @@
     var s = getState(); if (!s || !s.topics) return false;
     var t = s.topics.filter(function (x) { return x.id === id; })[0];
     if (!t) { toast('Không tìm thấy topic.'); return false; }
-    if (!confirm(
-      'Reset ngày bắt đầu cho "' + t.name + '"?\n\n' +
-      '• Tiến trình về Day 0, mastery 0%, số session 0\n' +
-      '• NỘI DUNG BÀI HỌC giữ nguyên (cụm từ, missions, ghi chú…)\n' +
-      '• XP và streak toàn hệ thống không đổi\n\n' +
-      'Hành động này không hoàn tác được.'
-    )) return false;
 
+    openConfirm({
+      icon: '🔄', iconStyle: 'danger',
+      title: 'Reset ngày bắt đầu',
+      subtitle: 'Đưa “' + t.name + '” về Day 0 để học lại từ đầu.',
+      lose: ['Tiến trình về Day 0', 'Mastery về 0%', 'Số buổi học về 0', 'Lịch sử ôn của topic này'],
+      keep: ['Toàn bộ nội dung bài học', 'Cụm từ, missions, ghi chú', 'XP và streak của bạn', 'Các topic khác'],
+      note: 'Chỉ ảnh hưởng riêng topic này. Không hoàn tác được.',
+      confirmText: 'Reset về Day 0'
+    }, function () { doResetTopic(s, t, id); });
+    return true;
+  };
+
+  function doResetTopic(s, t, id) {
     blankTopic(t);
     saveState(s);
     try { s.sessionsLog = (s.sessionsLog || []).filter(function (r) { return r && r.topicId !== id; }); saveState(s); } catch (e) {}
     toast('🔄 Đã reset "' + t.name + '" về Day 0');
     refreshAll();
     return true;
-  };
+  }
 
   NS.resetAll = function () {
     var s = getState(); if (!s) return false;
-    if (!confirm(
-      '⚠️ RESET TOÀN HỆ THỐNG — bắt đầu lại từ đầu\n\n' +
-      'SẼ XOÁ:\n' +
-      '• Tiến trình của TẤT CẢ topic → về Day 0\n' +
-      '• XP về 0, Level về 1, Streak về 0\n' +
-      '• Toàn bộ lịch sử buổi học\n\n' +
-      'SẼ GIỮ NGUYÊN:\n' +
-      '• Toàn bộ nội dung bài học và 2 bài mẫu\n' +
-      '• Các topic bạn tự tạo\n\n' +
-      'Tiếp tục?'
-    )) return false;
+    var n = (s.topics || []).length;
 
-    var confirmWord = prompt('Gõ chính xác:  RESET  rồi bấm OK để xác nhận.');
-    if (String(confirmWord || '').trim().toUpperCase() !== 'RESET') { toast('Đã huỷ — không thay đổi gì.'); return false; }
+    openConfirm({
+      icon: '⚠️', iconStyle: 'danger',
+      title: 'Reset toàn hệ thống',
+      subtitle: 'Đưa cả ' + n + ' topic về Day 0 — dùng khi bắt đầu lại từ đầu, hoặc giao máy cho một người học mới.',
+      lose: ['Tiến trình của cả ' + n + ' topic → Day 0', 'XP về 0 · Level về 1', 'Streak về 0', 'Toàn bộ lịch sử buổi học'],
+      keep: ['Toàn bộ nội dung bài học', '2 bài mẫu Level 1', 'Các topic bạn tự tạo', 'Ghi chú và cấu trúc ngữ pháp'],
+      note: 'Không hoàn tác được. Nên bấm ⬇ Export Backup trước khi làm việc này.',
+      fieldLabel: 'Gõ <b>RESET</b> để xác nhận bạn hiểu điều gì sẽ xảy ra:',
+      placeholder: 'RESET',
+      mustEqual: 'RESET',
+      wrongMsg: 'Phải gõ đúng chữ RESET.',
+      confirmText: 'Reset toàn hệ thống'
+    }, function () { doResetAll(s); });
+    return true;
+  };
 
+  function doResetAll(s) {
     (s.topics || []).forEach(blankTopic);
     s.user = s.user || {};
     s.user.xp = 0;
@@ -723,7 +1001,7 @@
     toast('🔄 Đã reset toàn hệ thống — bắt đầu lại từ Day 0');
     refreshAll();
     return true;
-  };
+  }
 
   // ---------------------------------------------------------- gắn nút reset
   function attachResetButtons() {
@@ -765,6 +1043,232 @@
   }
 
   // ============================================================
+  // D. GIỌNG ĐỌC — ưu tiên giọng NAM, trầm ấm, chuẩn Mỹ
+  // ------------------------------------------------------------
+  // audio.js đang ưu tiên 'Samantha' và 'Google US English' — cả hai đều là
+  // giọng NỮ. Ở đây ta chọn lại theo thứ tự ưu tiên giọng nam en-US, hạ pitch
+  // xuống một chút cho trầm, và cho phép tự đổi qua bảng chọn giọng.
+  // ============================================================
+  var VOICE_KEY = 'shadow-en-voice-name';
+  var PITCH_KEY = 'shadow-en-voice-pitch';
+  var DEFAULT_PITCH = 0.88;   // < 1 = trầm hơn
+
+  // Xếp theo độ tự nhiên giảm dần. Nhóm "Natural/Online" là giọng neural — hay nhất.
+  var MALE_PREFS = [
+    /\bGuy\b.*(Natural|Online)/i, /\bAndrew\b.*(Natural|Online)/i,
+    /\bBrian\b.*(Natural|Online)/i, /\bChristopher\b.*(Natural|Online)/i,
+    /\bEric\b.*(Natural|Online)/i, /\bRoger\b.*(Natural|Online)/i,
+    /\bSteffan\b.*(Natural|Online)/i, /\bDavis\b.*(Natural|Online)/i,
+    /\bTony\b.*(Natural|Online)/i, /\bJason\b.*(Natural|Online)/i,
+    /Microsoft David/i, /Microsoft Mark/i,
+    /Google US English Male/i,
+    /\bAlex\b/i, /\bAaron\b/i, /\bFred\b/i, /\bTom\b/i, /\bNathan\b/i,
+    /\bmale\b/i
+  ];
+  var FEMALE_HINT = /(Samantha|Zira|Aria|Jenny|Michelle|Ana|Susan|Karen|Moira|Tessa|Victoria|Allison|Ava|Serena|Female)/i;
+
+  function allEnVoices() {
+    try { return (speechSynthesis.getVoices() || []).filter(function (v) { return /^en/i.test(v.lang); }); }
+    catch (e) { return []; }
+  }
+  function getPitch() {
+    var p = parseFloat(localStorage.getItem(PITCH_KEY));
+    return (isFinite(p) && p >= 0.5 && p <= 1.5) ? p : DEFAULT_PITCH;
+  }
+  function pickVoice() {
+    var all = allEnVoices();
+    if (!all.length) return null;
+
+    var saved = null;
+    try { saved = localStorage.getItem(VOICE_KEY); } catch (e) {}
+    if (saved) {
+      var chosen = all.filter(function (v) { return v.name === saved; })[0];
+      if (chosen) return chosen;
+    }
+    var us = all.filter(function (v) { return /^en[-_]US/i.test(v.lang); });
+    var pool = us.length ? us : all;
+
+    for (var i = 0; i < MALE_PREFS.length; i++) {
+      var m = pool.filter(function (v) { return MALE_PREFS[i].test(v.name); })[0];
+      if (m) return m;
+    }
+    // không tìm được giọng nam → ít nhất tránh giọng nữ đã biết
+    return pool.filter(function (v) { return !FEMALE_HINT.test(v.name); })[0] || pool[0];
+  }
+  NS.pickVoice = pickVoice;
+
+  function applyVoice() {
+    var A = window.SHADOW_AUDIO;
+    if (!A || typeof A.speak !== 'function') return false;
+    if (A._v35Voice) { var cur = pickVoice(); if (cur) A.voice = cur; return true; }
+
+    var origSpeak = A.speak;
+    A.speak = function (text, opts) {
+      opts = opts || {};
+      var v = pickVoice();
+      if (v) { this.voice = v; if (opts.lang == null) opts.lang = v.lang; }
+      if (opts.pitch == null) opts.pitch = getPitch();
+      return origSpeak.call(this, text, opts);
+    };
+    A._v35Voice = true;
+
+    var v0 = pickVoice();
+    if (v0) { A.voice = v0; log('giọng đọc: ' + v0.name + ' (' + v0.lang + ') · pitch ' + getPitch()); }
+    else { try { speechSynthesis.onvoiceschanged = function () { var x = pickVoice(); if (x) A.voice = x; }; } catch (e) {} }
+    return true;
+  }
+
+  // ---------------------------------------------------------- bảng chọn giọng
+  function openVoicePicker() {
+    closeModal(); injectCSS();
+    var all = allEnVoices();
+    var current = pickVoice();
+    var savedName = current ? current.name : '';
+    var pitch = getPitch();
+
+    if (!all.length) {
+      openConfirm({
+        icon: '🎙', iconStyle: 'lock',
+        title: 'Chưa tải được giọng đọc',
+        subtitle: 'Trình duyệt chưa nạp xong danh sách giọng. Thử tải lại trang rồi bấm lại nút này.',
+        confirmText: 'Đã hiểu', cancelText: 'Đóng'
+      }, function () {});
+      return;
+    }
+
+    // giọng nam en-US lên đầu
+    function score(v) {
+      var s = 0;
+      if (/^en[-_]US/i.test(v.lang)) s -= 100;
+      for (var i = 0; i < MALE_PREFS.length; i++) if (MALE_PREFS[i].test(v.name)) { s -= (50 - i); break; }
+      if (FEMALE_HINT.test(v.name)) s += 40;
+      return s;
+    }
+    var sorted = all.slice().sort(function (a, b) { return score(a) - score(b); });
+
+    function tag(v) {
+      if (FEMALE_HINT.test(v.name)) return '<span class="v35-vtag f">Nữ</span>';
+      for (var i = 0; i < MALE_PREFS.length; i++) if (MALE_PREFS[i].test(v.name)) return '<span class="v35-vtag m">Nam</span>';
+      return '';
+    }
+
+    modalEl = document.createElement('div');
+    modalEl.className = 'v35-modal';
+    modalEl.innerHTML =
+      '<div class="v35-box">' +
+        '<button class="v35-mx" aria-label="Đóng">×</button>' +
+        '<div class="v35-mhead">' +
+          '<div class="v35-micon lock">🎙</div>' +
+          '<div><div class="v35-mtitle">Giọng đọc</div>' +
+          '<div class="v35-msub">Chọn giọng và độ trầm cho nút ▶ trong bài học. Bấm ▶ để nghe thử trước khi lưu.</div></div>' +
+        '</div>' +
+        '<div class="v35-mbody">' +
+          '<div class="v35-vlist">' +
+            sorted.map(function (v) {
+              return '<label class="v35-vrow' + (v.name === savedName ? ' on' : '') + '">' +
+                '<input type="radio" name="v35voice" value="' + esc(v.name) + '"' + (v.name === savedName ? ' checked' : '') + '>' +
+                '<span class="v35-vname">' + esc(v.name) + tag(v) + '</span>' +
+                '<span class="v35-vlang">' + esc(v.lang) + '</span>' +
+                '<button type="button" class="v35-vplay" data-test="' + esc(v.name) + '" title="Nghe thử">▶</button>' +
+              '</label>';
+            }).join('') +
+          '</div>' +
+          '<div class="v35-field">' +
+            '<label class="v35-flabel">Độ trầm — <b id="v35-pv">' + pitch.toFixed(2) + '</b></label>' +
+            '<input type="range" id="v35-pitch" min="0.6" max="1.2" step="0.02" value="' + pitch + '">' +
+            '<div class="v35-range-ends"><span>Trầm hơn</span><span>Cao hơn</span></div>' +
+          '</div>' +
+          '<div class="v35-note">Máy nào có giọng nào là do hệ điều hành. Giọng có chữ <b>Natural</b> hoặc <b>Online</b> nghe thật nhất — nếu máy bạn có thì nên chọn.</div>' +
+        '</div>' +
+        '<div class="v35-acts">' +
+          '<button class="v35-mbtn ghost" data-a="cancel">Huỷ</button>' +
+          '<button class="v35-mbtn save" data-a="ok">Lưu giọng đọc</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modalEl);
+    document.documentElement.style.overflow = 'hidden';
+
+    var pitchEl = modalEl.querySelector('#v35-pitch');
+    var pvEl = modalEl.querySelector('#v35-pv');
+    pitchEl.oninput = function () { pvEl.textContent = parseFloat(pitchEl.value).toFixed(2); };
+
+    function selectedName() {
+      var r = modalEl.querySelector('input[name="v35voice"]:checked');
+      return r ? r.value : savedName;
+    }
+    function preview(name) {
+      try {
+        speechSynthesis.cancel();
+        var v = all.filter(function (x) { return x.name === name; })[0];
+        var u = new SpeechSynthesisUtterance('Excuse me, could you help me? I am looking for the train station.');
+        if (v) { u.voice = v; u.lang = v.lang; }
+        u.pitch = parseFloat(pitchEl.value) || DEFAULT_PITCH;
+        u.rate = 0.95;
+        speechSynthesis.speak(u);
+      } catch (e) {}
+    }
+
+    modalEl.addEventListener('click', function (e) {
+      var t = e.target.getAttribute && e.target.getAttribute('data-test');
+      if (t) {
+        e.preventDefault(); e.stopPropagation();
+        var radio = modalEl.querySelector('input[value="' + t.replace(/"/g, '\\"') + '"]');
+        if (radio) radio.checked = true;
+        modalEl.querySelectorAll('.v35-vrow').forEach(function (r) { r.classList.remove('on'); });
+        if (radio) radio.closest('.v35-vrow').classList.add('on');
+        preview(t);
+      }
+    });
+    modalEl.addEventListener('change', function () {
+      modalEl.querySelectorAll('.v35-vrow').forEach(function (r) {
+        r.classList.toggle('on', !!r.querySelector('input:checked'));
+      });
+    });
+
+    modalEl.querySelector('[data-a="ok"]').onclick = function () {
+      try {
+        localStorage.setItem(VOICE_KEY, selectedName());
+        localStorage.setItem(PITCH_KEY, String(parseFloat(pitchEl.value)));
+      } catch (e) {}
+      try { speechSynthesis.cancel(); } catch (e) {}
+      applyVoice();
+      closeModal();
+      toast('🎙 Đã đổi giọng đọc: ' + selectedName());
+    };
+    modalEl.querySelector('[data-a="cancel"]').onclick = function () { try { speechSynthesis.cancel(); } catch (e) {} closeModal(); };
+    modalEl.querySelector('.v35-mx').onclick = function () { try { speechSynthesis.cancel(); } catch (e) {} closeModal(); };
+    modalEl.onclick = function (e) { if (e.target === modalEl) { try { speechSynthesis.cancel(); } catch (e2) {} closeModal(); } };
+  }
+  NS.openVoicePicker = openVoicePicker;
+
+  function attachVoiceButton() {
+    var bar = document.getElementById('ssa-toolbar');
+    if (bar && !bar.querySelector('[data-v35="voice"]')) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'v35-btn v35-voice-btn';
+      b.setAttribute('data-v35', 'voice');
+      b.innerHTML = '🎙 Giọng đọc';
+      b.title = 'Đổi giọng đọc cho nút ▶ (mặc định: giọng nam Mỹ, trầm)';
+      b.onclick = function (e) { e.preventDefault(); e.stopPropagation(); openVoicePicker(); };
+      bar.appendChild(b);
+    }
+    var tv = document.getElementById('view-topics');
+    if (tv && tv.classList.contains('active')) {
+      var tb = tv.querySelector('.v17-toolbar');
+      if (tb && !tb.querySelector('[data-v35="voice2"]')) {
+        var b2 = document.createElement('button');
+        b2.type = 'button';
+        b2.className = 'v35-btn';
+        b2.setAttribute('data-v35', 'voice2');
+        b2.innerHTML = '🎙 Giọng đọc';
+        b2.onclick = function (e) { e.preventDefault(); e.stopPropagation(); openVoicePicker(); };
+        tb.appendChild(b2);
+      }
+    }
+  }
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
@@ -774,6 +1278,8 @@
     try { attachResetButtons(); } catch (e) {}
     try { markProtectedCards(); } catch (e) {}
     try { wrapDelete(); } catch (e) {}
+    try { applyVoice(); } catch (e) {}
+    try { attachVoiceButton(); } catch (e) {}
   }
 
   var _t = null;
@@ -820,6 +1326,18 @@
     check('phrase thật thì tính là có nội dung',
       hasContent({ notionOverrides: { phrases: { before: [{ en: 'Hello', vi: 'Xin chào' }] } } }) === true);
     check('đã bọc deleteTopic', !!(window.SHADOW_V17 && window.SHADOW_V17._v35Wrapped));
+    check('có modal thay confirm()', typeof NS.openConfirm === 'function');
+    check('có bảng chọn giọng', typeof NS.openVoicePicker === 'function');
+    check('pitch mặc định là giọng trầm', getPitch() < 1);
+    check('ưu tiên giọng nam nhận diện đúng', MALE_PREFS.some(function (r) { return r.test('Microsoft David - English (United States)'); }));
+    check('nhận diện giọng nữ để tránh', FEMALE_HINT.test('Samantha') && FEMALE_HINT.test('Microsoft Zira'));
+    check('đã nạp font Inter', !!document.getElementById('v35-font-inter'));
+    check('nút bấm kế thừa đúng font', (function () {
+      var b = document.createElement('button'); b.textContent = 'Bắt đầu ôn';
+      b.style.cssText = 'position:absolute;left:-9999px'; document.body.appendChild(b);
+      var f = getComputedStyle(b).fontFamily; b.remove();
+      return /Inter|Segoe UI/i.test(f);
+    })());
     console.log('[v35] ' + pass + ' pass · ' + fail + ' fail');
     return fail === 0;
   };
