@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.10.0';
+  NS.version = '35.10.1';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -2459,7 +2459,10 @@
     check('đã bọc deleteTopic', !!(window.SHADOW_V17 && window.SHADOW_V17._v35Wrapped));
     check('có modal thay confirm()', typeof NS.openConfirm === 'function');
     check('có bảng chọn giọng', typeof NS.openVoicePicker === 'function');
-    check('pitch mặc định là giọng trầm', getPitch() < 1);
+    // Kiểm tra giá trị MẶC ĐỊNH, không phải giá trị đang dùng — người dùng có
+    // quyền tự kéo độ trầm lên cao hơn 1 trong bảng chọn giọng.
+    check('pitch mặc định là giọng trầm', DEFAULT_PITCH < 1);
+    check('pitch đang dùng nằm trong khoảng hợp lệ', getPitch() >= 0.5 && getPitch() <= 1.5);
     check('ưu tiên giọng nam nhận diện đúng', MALE_PREFS.some(function (r) { return r.test('Microsoft David - English (United States)'); }));
     check('nhận diện giọng nữ để tránh', FEMALE_HINT.test('Samantha') && FEMALE_HINT.test('Microsoft Zira'));
     check('đã nạp font Inter', !!document.getElementById('v35-font-inter'));
