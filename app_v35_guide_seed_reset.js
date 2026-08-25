@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.8.0';
+  NS.version = '35.9.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -361,6 +361,8 @@
       '.v35-undo{border-color:rgba(250,204,21,.45)!important;color:#fde047!important;',
       'background:rgba(250,204,21,.1)!important}',
       '.v35-ai-note{font-size:11px;color:#7b7599;flex:1;min-width:180px}',
+      /* .v35-btn dùng display:inline-flex nên đè mất thuộc tính [hidden] mặc định của HTML */
+      '.v35-btn[hidden],.v35-help[hidden]{display:none!important}',
 
       '.v35-box-wide{width:min(680px,100%)}',
       '.v35-spin{animation:v35pulse 1.4s ease-in-out infinite}',
@@ -1713,18 +1715,33 @@
     'Bạn là biên tập viên giáo trình tiếng Anh cho người Việt trình độ sơ–trung cấp.',
     'Nhiệm vụ: bóc tách nội dung thành một bài học shadowing hoàn chỉnh.',
     '',
-    'QUY TẮC BẮT BUỘC:',
-    '1. CHỈ dùng câu tiếng Anh THỰC SỰ ĐƯỢC NÓI. Nếu là video, bỏ qua mọi chữ hiện trên màn hình',
-    '   (phụ đề tiếng Việt cháy sẵn, watermark, tên blog) — đó KHÔNG phải lời thoại.',
-    '2. Không bịa. Nếu không nghe/đọc rõ phần nào thì để mảng rỗng, KHÔNG đoán.',
-    '3. Câu tiếng Anh giữ nguyên như được nói. Phần tiếng Việt là bản dịch tự nhiên, không dịch từng chữ.',
-    '4. phrases chia theo trình tự tình huống: before = trước khi bắt đầu, during = trong lúc nói chuyện,',
-    '   after = khi kết thúc. Mỗi nhóm tối đa 8 câu, ưu tiên câu dùng lại được nhiều lần.',
-    '5. shadow_script: nối các câu cốt lõi thành đoạn liền mạch để nói đuổi theo, 5–8 dòng.',
-    '6. grammar_patterns: khuôn câu rút ra từ chính các câu trên, dạng "Mẫu + [chỗ thay được]".',
-    '   meaning viết tiếng Việt. Mỗi pattern 3 ví dụ tiếng Anh.',
-    '7. missions: việc làm được NGOÀI app trong 24h. active_recall: câu hỏi tiếng Việt, đáp án tiếng Anh.',
-    '8. why và scene viết bằng tiếng Việt.',
+    'Có 2 loại nội dung, luật khác nhau:',
+    '',
+    '=== A. PHẦN TRÍCH (phải trung thực tuyệt đối) ===',
+    'phrases · dialogues · shadow_script · real_english',
+    'A1. CHỈ dùng câu tiếng Anh THỰC SỰ ĐƯỢC NÓI. Bỏ qua mọi chữ hiện trên màn hình',
+    '    (phụ đề tiếng Việt cháy sẵn, watermark, tên blog) — đó KHÔNG phải lời thoại.',
+    'A2. Không bịa lời thoại. Chỗ nào không nghe/đọc rõ thì bỏ, KHÔNG đoán.',
+    'A3. Giữ nguyên câu tiếng Anh như được nói. Tiếng Việt là bản dịch tự nhiên, không dịch từng chữ.',
+    '',
+    '=== B. PHẦN SUY RA (BẮT BUỘC phải có, không được để rỗng) ===',
+    'why · scene · grammar_patterns · missions · active_recall · connected_speech',
+    'Đây là phần bạn SOẠN dựa trên nội dung đã trích ở A — không phải chép lại,',
+    'nên luôn tạo được. Kể cả khi A chỉ lấy được vài câu, vẫn phải soạn đủ B.',
+    '',
+    'SỐ LƯỢNG TỐI THIỂU (cố gắng đạt, đừng trả về rỗng):',
+    '• phrases: chia before (trước khi bắt đầu) / during (trong lúc nói) / after (khi kết thúc).',
+    '  Mỗi nhóm 3–8 câu, ưu tiên câu dùng lại được nhiều lần. Nếu video chỉ thuộc một giai đoạn,',
+    '  hãy soạn thêm câu cùng tình huống cho 2 nhóm còn lại và ghi rõ trong scene.',
+    '• shadow_script: 5–8 dòng, nối các câu cốt lõi thành đoạn liền mạch để nói đuổi theo.',
+    '• real_english: 4–6 dòng — cách người bản xứ nói tắt / nuốt âm so với sách vở.',
+    '• grammar_patterns: 4–5 khuôn, dạng "Mẫu + [chỗ thay được]". meaning tiếng Việt. Mỗi khuôn 3 ví dụ.',
+    '• missions: 3 việc làm được NGOÀI app trong 24h, có tiêu chí biết là xong.',
+    '• active_recall: 5–6 câu. question tiếng Việt, answer tiếng Anh, hint là gợi ý ngắn.',
+    '• connected_speech: 4–6 chỗ nối âm rút từ chính các câu ở phrases.',
+    '  sentence = câu đầy đủ có chứa chỗ nối; pair = hai từ dính nhau (vd "want to");',
+    '  sound = cách đọc thật khi nói nhanh (vd "wanna"); note = giải thích tiếng Việt một dòng.',
+    '• why và scene: mỗi mục 2–4 câu tiếng Việt.',
     '',
     'Trả về DUY NHẤT một JSON đúng schema, không kèm giải thích, không bọc trong ```.'
   ].join('\n');
@@ -1762,9 +1779,18 @@
       active_recall: {
         type: 'array',
         items: { type: 'object', properties: { question: { type: 'string' }, answer: { type: 'string' }, hint: { type: 'string' } }, required: ['question', 'answer'] }
+      },
+      connected_speech: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { sentence: { type: 'string' }, pair: { type: 'string' }, sound: { type: 'string' }, note: { type: 'string' } },
+          required: ['sentence', 'pair', 'sound']
+        }
       }
     },
-    required: ['why', 'scene', 'phrases', 'shadow_script']
+    required: ['why', 'scene', 'phrases', 'shadow_script', 'real_english',
+               'grammar_patterns', 'missions', 'active_recall', 'connected_speech']
   };
 
   function callGemini(parts, onDone, onErr) {
@@ -1857,6 +1883,32 @@
         .filter(Boolean).join(' | ');
     }).filter(Boolean).join('\n');
   }
+  function linkingToLines(arr) {
+    return (arr || []).map(function (l) {
+      return [String(l.sentence || '').trim(), String(l.pair || '').trim(),
+              String(l.sound || '').trim(), String(l.note || '').trim()].filter(Boolean).join(' | ');
+    }).filter(Boolean).join('\n');
+  }
+  // Dựng cache đúng định dạng app_v34 đọc: { "câu": [{a,b,ipa,type}] } — a,b là chỉ số TỪ.
+  function linesToLinking(txt) {
+    var out = {};
+    String(txt || '').split(/\r?\n/).forEach(function (line) {
+      var p = line.split(/\s*\|\s*/);
+      var sent = (p[0] || '').trim(), pair = (p[1] || '').trim(), sound = (p[2] || '').trim();
+      if (!sent || !pair || !sound) return;
+      var words = sent.split(/\s+/);
+      var pw = pair.split(/\s+/);
+      if (pw.length < 2) return;
+      var norm = function (w) { return w.replace(/[^\w']/g, '').toLowerCase(); };
+      for (var i = 0; i < words.length - 1; i++) {
+        if (norm(words[i]) === norm(pw[0]) && norm(words[i + 1]) === norm(pw[1])) {
+          (out[sent] = out[sent] || []).push({ a: i, b: i + 1, ipa: '/' + sound.replace(/^\/|\/$/g, '') + '/', type: 'linking' });
+          break;
+        }
+      }
+    });
+    return out;
+  }
   function linesToPatterns(txt) {
     return String(txt || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
       var p = l.split(/\s*\|\s*/);
@@ -1880,6 +1932,7 @@
     { k: 'dialogue', label: '🎭 Hội thoại',             hint: 'Mỗi dòng một lượt nói' },
     { k: 'shadow',   label: '🎧 Shadowing script',      hint: 'Đoạn để nói đuổi theo' },
     { k: 'real',     label: '🎤 Real English (native)', hint: 'Cách người bản xứ nói tắt / nuốt âm' },
+    { k: 'linking',  label: '🔗 Nối âm',                hint: 'Mỗi dòng: Câu | cặp từ dính | cách đọc | ghi chú' },
     { k: 'patterns', label: '📐 Cấu trúc ngữ pháp',     hint: 'Mỗi dòng: Mẫu | Nghĩa | VD1 ; VD2 ; VD3' },
     { k: 'missions', label: '🚀 Nhiệm vụ đời thật',     hint: 'Mỗi dòng: Việc | Mô tả | Tiêu chí xong' },
     { k: 'recall',   label: '🧠 Active recall',         hint: 'Mỗi dòng: Câu hỏi | Đáp án | Gợi ý' }
@@ -1896,6 +1949,7 @@
       dialogue: String(d.dialogues || '').trim(),
       shadow: String(d.shadow_script || '').trim(),
       real: String(d.real_english || '').trim(),
+      linking: linkingToLines(d.connected_speech),
       patterns: patternsToLines(d.grammar_patterns),
       missions: missionsToLines(d.missions),
       recall: recallToLines(d.active_recall)
@@ -1978,7 +2032,8 @@
         topicId: topicId,
         at: new Date().toISOString(),
         overlay: rawOverlay(topicId),
-        patterns: gp[topicId] || null
+        patterns: gp[topicId] || null,
+        linking: localStorage.getItem('shadow-en-linking-' + topicId)
       }));
     } catch (e) {}
   }
@@ -2005,6 +2060,8 @@
         var gp = JSON.parse(localStorage.getItem(GP_KEY) || '{}') || {};
         if (u.patterns) gp[u.topicId] = u.patterns; else delete gp[u.topicId];
         localStorage.setItem(GP_KEY, JSON.stringify(gp));
+        if (u.linking) localStorage.setItem('shadow-en-linking-' + u.topicId, u.linking);
+        else localStorage.removeItem('shadow-en-linking-' + u.topicId);
         localStorage.removeItem(UNDO_KEY);
       } catch (e) {}
       toast('↩ Đã trả bài học về nguyên trạng');
@@ -2056,8 +2113,25 @@
     }
     putBlock(/dialogue|hội thoại/i, '🎭 Dialogues', f.dialogue);
     putBlock(/real\s*english/i, '🎤 Real English (native)', f.real);
+    putBlock(/connected\s*speech|nối âm/i, '🔗 Connected Speech — Nối âm', f.linking);
 
     writeOverlay(topicId, ov);
+
+    // Nối âm còn được nạp vào cache app_v34 đọc để vẽ dấu nối dưới câu
+    if (f.linking != null) {
+      try {
+        var lk = linesToLinking(f.linking);
+        var lkKey = 'shadow-en-linking-' + topicId;
+        if (append) {
+          var old = {};
+          try { old = JSON.parse(localStorage.getItem(lkKey) || '{}') || {}; } catch (e) {}
+          Object.keys(lk).forEach(function (k) { old[k] = (old[k] || []).concat(lk[k]); });
+          lk = old;
+        }
+        if (Object.keys(lk).length) localStorage.setItem(lkKey, JSON.stringify(lk));
+        try { if (window.SHADOW_V34 && SHADOW_V34.applyAiCache) SHADOW_V34.applyAiCache(topicId); } catch (e) {}
+      } catch (e) {}
+    }
 
     if (f.patterns != null) {
       try {
@@ -2279,12 +2353,27 @@
       && ytId('https://youtu.be/eIi86aGyQuE') === 'eIi86aGyQuE' && ytId('https://vimeo.com/123') === null);
     check('có lối vào AI từ video + transcript', typeof NS.lessonFromVideo === 'function' && typeof NS.lessonFromTranscript === 'function');
     check('có hoàn tác', typeof NS.undoLesson === 'function');
+    check('nút [hidden] thật sự bị ẩn', (function () {
+      var b = document.createElement('button'); b.className = 'v35-btn'; b.hidden = true;
+      b.textContent = 'x'; document.body.appendChild(b);
+      var d = getComputedStyle(b).display; b.remove();
+      return d === 'none';
+    })());
     check('AI KHÔNG tự chạy khi load', !localStorage.getItem('shadow-en-v35-undo') || true);
     check('parse pattern 3 phần', (function () {
       var p = linesToPatterns('How do I get to + [X]? | Hỏi đường | A ; B ; C')[0];
       return p && p.pattern === 'How do I get to + [X]?' && p.meaning === 'Hỏi đường' && p.examples.length === 3;
     })());
     check('phrase JSON → dòng en | vi', phrasesToLines([{ en: 'Hi', vi: 'Chào' }]) === 'Hi | Chào');
+    check('AI sinh đủ 12 mục bài học', PREVIEW_FIELDS.length === 12);
+    check('schema buộc có mọi mục suy ra', ['why', 'scene', 'phrases', 'shadow_script', 'real_english',
+      'grammar_patterns', 'missions', 'active_recall', 'connected_speech']
+      .every(function (k) { return LESSON_SCHEMA.required.indexOf(k) !== -1; }));
+    check('nối âm dựng đúng chỉ số từ', (function () {
+      var o = linesToLinking('I want to go home | want to | wanna | nói nhanh');
+      var arr = o['I want to go home'];
+      return arr && arr[0].a === 1 && arr[0].b === 2 && arr[0].ipa === '/wanna/';
+    })());
     check('nút bấm kế thừa đúng font', (function () {
       var b = document.createElement('button'); b.textContent = 'Bắt đầu ôn';
       b.style.cssText = 'position:absolute;left:-9999px'; document.body.appendChild(b);
