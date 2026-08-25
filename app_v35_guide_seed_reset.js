@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.9.1';
+  NS.version = '35.10.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -407,7 +407,17 @@
       '.v35-box textarea:focus{outline:none;border-color:rgba(167,139,250,.7);',
       'box-shadow:0 0 0 3px rgba(124,92,255,.13)}',
       '.v35-pv-mode{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#a49dc4;cursor:pointer}',
-      '.v35-pv-mode input{accent-color:#a78bfa;width:15px;height:15px;margin:0}'
+      '.v35-pv-mode input{accent-color:#a78bfa;width:15px;height:15px;margin:0}',
+
+      /* ---------- GIỮ KÝ TỰ XUỐNG DÒNG TRONG KHỐI NỘI DUNG ---------- */
+      /* blocks.js render note trong <div> trần, không đặt white-space nên mọi */
+      /* dấu xuống dòng bị nuốt → cả bài dồn thành một cục chữ. */
+      '.block-note > div:not(.block-title),',
+      '.block-paragraph > div:not(.block-title),',
+      '.v12-block .blk-body,',
+      '.v15-shadow-text,',
+      '.shadow-text{white-space:pre-wrap}',
+      '.block-note{padding-top:2px}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -1875,6 +1885,58 @@
     modalEl.querySelector('[data-a="cancel"]').onclick = function () { if (onCancel) onCancel(); closeModal(); };
   }
 
+  // ---------------------------------------------------------- NGẮT DÒNG TỰ ĐỘNG
+  // Gemini hay trả về cả đoạn dính liền một dòng. Hàm này tách ra cho dễ đọc:
+  //   dialogue  → xuống dòng trước mỗi lượt nói ("A:", "Waiter:")
+  //   list      → xuống dòng trước mỗi mục đánh số ("1.", "2)") hoặc gạch đầu dòng
+  //   sentences → mỗi câu một dòng
+  // Đồng thời bỏ ký hiệu markdown ** __ vì app không render markdown
+  // (đang hiện ra chữ sống "**Who is it?**" trên màn hình).
+  function tidyText(s, kind) {
+    var t = String(s || '').replace(/\r\n?/g, '\n').trim();
+    if (!t) return '';
+    t = t.replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').replace(/\*\*|__/g, '');
+
+    if (kind === 'dialogue') {
+      // nhãn người nói = 1–2 từ viết hoa rồi tới dấu hai chấm
+      t = t.replace(/[ \t]+(?=[A-Z][a-zA-Z]{0,14}(?: [A-Z][a-zA-Z]{0,14})?:[ \t])/g, '\n');
+    } else if (kind === 'list') {
+      t = t.replace(/[ \t]+(?=\d{1,2}[.)][ \t])/g, '\n');
+      t = t.replace(/[ \t]+(?=[•‣▪][ \t])/g, '\n');
+    } else if (kind === 'sentences') {
+      if (t.indexOf('\n') === -1) t = t.replace(/([.!?])[ \t]+(?=[A-Z"'“])/g, '$1\n');
+    }
+    return t.split('\n').map(function (x) { return x.trim(); }).filter(Boolean).join('\n');
+  }
+  NS.tidyText = tidyText;
+
+  // Sửa lại các khối AI đã ghi TỪ TRƯỚC mà còn dính liền một cục.
+  // Chỉ đụng đúng 3 khối do AI tạo, và chỉ đổi CÁCH XUỐNG DÒNG — không đổi chữ.
+  var TIDY_BLOCKS = [
+    { re: /dialogue|hội thoại/i, kind: 'dialogue' },
+    { re: /real\s*english/i, kind: 'list' },
+    { re: /connected\s*speech|nối âm/i, kind: 'lines' }
+  ];
+  function tidyStoredBlocks(topicId) {
+    var ov = rawOverlay(topicId);
+    if (!ov || !ov.customBlocks || !ov.customBlocks.length) return false;
+    var changed = false;
+    ov.customBlocks.forEach(function (b) {
+      if (!b || b.v35tidy || typeof b.text !== 'string') return;
+      for (var i = 0; i < TIDY_BLOCKS.length; i++) {
+        if (!TIDY_BLOCKS[i].re.test(b.title || '')) continue;
+        var next = tidyText(b.text, TIDY_BLOCKS[i].kind);
+        if (next && next !== b.text) b.text = next;
+        b.v35tidy = true;
+        changed = true;
+        break;
+      }
+    });
+    if (changed) writeOverlay(topicId, ov);
+    return changed;
+  }
+  NS.tidyStoredBlocks = tidyStoredBlocks;
+
   // ---------------------------------------------------------- chuyển JSON → dạng dòng để sửa
   function phrasesToLines(arr) {
     return (arr || []).map(function (p) {
@@ -1964,9 +2026,9 @@
       before: phrasesToLines(ph.before),
       during: phrasesToLines(ph.during),
       after: phrasesToLines(ph.after),
-      dialogue: String(d.dialogues || '').trim(),
-      shadow: String(d.shadow_script || '').trim(),
-      real: String(d.real_english || '').trim(),
+      dialogue: tidyText(d.dialogues, 'dialogue'),
+      shadow: tidyText(d.shadow_script, 'sentences'),
+      real: tidyText(d.real_english, 'list'),
       linking: linkingToLines(d.connected_speech),
       patterns: patternsToLines(d.grammar_patterns),
       missions: missionsToLines(d.missions),
@@ -2254,6 +2316,36 @@
     };
   };
 
+  // ============================================================
+  // H. LÀM SẠCH KHUNG VIDEO — bớt thứ gây mất tập trung
+  // ------------------------------------------------------------
+  // LƯU Ý THẬT: KHÔNG chặn được quảng cáo YouTube từ trong trang.
+  // iframe là khác miền (cross-origin) nên JS của ta không chạm được vào bên
+  // trong, và chặn quảng cáo cũng vi phạm điều khoản YouTube. Cái làm được là
+  // bỏ các thứ gây phân tâm KHÁC bằng tham số chính thức của trình phát:
+  //   rel=0             → hết video không đổ video kênh khác ra
+  //   modestbranding=1  → bớt logo YouTube
+  //   iv_load_policy=3  → tắt chú thích/annotation đè lên hình
+  //   playsinline=1     → không tự bung toàn màn hình trên điện thoại
+  //   cc_load_policy=1  → bật sẵn phụ đề (hữu ích khi shadowing)
+  // Đổi sang youtube-nocookie.com để YouTube không đặt cookie theo dõi.
+  function tuneYouTubeEmbeds() {
+    var view = detailView(); if (!view) return;
+    var frames = view.querySelectorAll('iframe[src*="youtube.com/embed/"], iframe[src*="youtube-nocookie.com/embed/"]');
+    for (var i = 0; i < frames.length; i++) {
+      var f = frames[i];
+      if (f.getAttribute('data-v35tuned') === '1') continue;
+      var src = f.getAttribute('src') || '';
+      var m = src.match(/embed\/([A-Za-z0-9_-]+)/);
+      if (!m) { f.setAttribute('data-v35tuned', '1'); continue; }
+      var next = 'https://www.youtube-nocookie.com/embed/' + m[1] +
+                 '?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&cc_load_policy=1';
+      f.setAttribute('data-v35tuned', '1');
+      if (src !== next) f.setAttribute('src', next);
+    }
+  }
+  NS.tuneYouTubeEmbeds = tuneYouTubeEmbeds;
+
   // ---------------------------------------------------------- gắn nút
   function attachAiButtons() {
     var view = detailView(); if (!view) return;
@@ -2311,6 +2403,13 @@
     try { renderRealCloseSub(); } catch (e) {}
     try { renderRealLevelMap(); } catch (e) {}
     try { attachAiButtons(); } catch (e) {}
+    try { tuneYouTubeEmbeds(); } catch (e) {}
+    try {
+      var _dv = detailView();
+      if (_dv) { var _id = currentTopicId(_dv); if (_id && tidyStoredBlocks(_id)) {
+        try { if (window.SHADOW_V12 && SHADOW_V12._rerender) SHADOW_V12._rerender(); } catch (e2) {}
+      } }
+    } catch (e) {}
     try { refreshStaleCards(false); } catch (e) {}
   }
 
@@ -2389,6 +2488,17 @@
     check('phrase JSON → dòng en | vi', phrasesToLines([{ en: 'Hi', vi: 'Chào' }]) === 'Hi | Chào');
     check('AI sinh đủ 12 mục bài học', PREVIEW_FIELDS.length === 12);
     check('khu vực AI có hướng dẫn ❗', !!(GUIDE_AI && GUIDE_AI.what && GUIDE_AI.how && GUIDE_AI.time));
+    check('ngắt dòng hội thoại theo lượt nói', (function () {
+      var r = tidyText('A: Hello! Who is it? B: It\'s me, Bob. A: Come on in.', 'dialogue');
+      return r.split('\n').length === 3 && r.split('\n')[1].indexOf('B:') === 0;
+    })());
+    check('ngắt dòng danh sách đánh số', (function () {
+      var r = tidyText('1. Who is it? - Cách nói. 2. Come on in. - Mời vào. 3. That is too bad. - Tiếc.', 'list');
+      return r.split('\n').length === 3;
+    })());
+    check('bỏ markdown ** mà app không render', tidyText('**Who is it?** - abc', 'list').indexOf('*') === -1);
+    check('mỗi câu một dòng cho shadow script', tidyText('One two. Three four. Five six.', 'sentences').split('\n').length === 3);
+    check('có làm sạch khung video', typeof NS.tuneYouTubeEmbeds === 'function');
     check('schema buộc có mọi mục suy ra', ['why', 'scene', 'phrases', 'shadow_script', 'real_english',
       'grammar_patterns', 'missions', 'active_recall', 'connected_speech']
       .every(function (k) { return LESSON_SCHEMA.required.indexOf(k) !== -1; }));
