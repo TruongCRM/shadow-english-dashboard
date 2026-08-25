@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.7.0';
+  NS.version = '35.8.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -350,7 +350,44 @@
       '.v35-box input[type=range]{width:100%;accent-color:#a78bfa;padding:0;background:none;border:none;',
       'height:22px;cursor:pointer}',
       '.v35-box input[type=range]:focus{box-shadow:none}',
-      '.v35-range-ends{display:flex;justify-content:space-between;font-size:11px;color:#7b7599;margin-top:2px}'
+      '.v35-range-ends{display:flex;justify-content:space-between;font-size:11px;color:#7b7599;margin-top:2px}',
+
+      /* ---------- AI: THANH NÚT + BẢNG DUYỆT ---------- */
+      '.v35-ai-bar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:14px;',
+      'padding-top:13px;border-top:1px dashed rgba(167,139,250,.22)}',
+      '.v35-ai-go{border-color:rgba(167,139,250,.5)!important;color:#c4b5fd!important;',
+      'background:rgba(124,92,255,.14)!important}',
+      '.v35-ai-go:hover{background:rgba(124,92,255,.3)!important;color:#fff!important}',
+      '.v35-undo{border-color:rgba(250,204,21,.45)!important;color:#fde047!important;',
+      'background:rgba(250,204,21,.1)!important}',
+      '.v35-ai-note{font-size:11px;color:#7b7599;flex:1;min-width:180px}',
+
+      '.v35-box-wide{width:min(680px,100%)}',
+      '.v35-spin{animation:v35pulse 1.4s ease-in-out infinite}',
+      '@keyframes v35pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.9)}}',
+      '.v35-bar{height:5px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}',
+      '.v35-bar span{display:block;height:100%;width:38%;border-radius:99px;',
+      'background:linear-gradient(90deg,#7c5cff,#ec4899);animation:v35slide 1.3s ease-in-out infinite}',
+      '@keyframes v35slide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}',
+
+      '.v35-pv-list{max-height:44vh;overflow:auto;margin-top:12px;padding-right:4px}',
+      '.v35-pv-list::-webkit-scrollbar{width:7px}',
+      '.v35-pv-list::-webkit-scrollbar-thumb{background:rgba(167,139,250,.3);border-radius:7px}',
+      '.v35-pv-row{border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:11px 13px;margin-bottom:9px;',
+      'background:rgba(255,255,255,.025)}',
+      '.v35-pv-row.empty{opacity:.5}',
+      '.v35-pv-head{display:flex;align-items:center;gap:9px;cursor:pointer}',
+      '.v35-pv-head input{accent-color:#a78bfa;width:15px;height:15px;flex:0 0 auto;margin:0}',
+      '.v35-pv-lb{font-size:12.5px;font-weight:700;color:#e3dff5;flex:1}',
+      '.v35-pv-n{font-size:10.5px;color:#7b7599;flex:0 0 auto}',
+      '.v35-pv-hint{font-size:10.5px;color:#6f6a8c;margin:6px 0 5px}',
+      '.v35-box textarea{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:9px;',
+      'border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.3);color:#e3dff5;',
+      'font-family:inherit;font-size:12.5px;line-height:1.55;resize:vertical}',
+      '.v35-box textarea:focus{outline:none;border-color:rgba(167,139,250,.7);',
+      'box-shadow:0 0 0 3px rgba(124,92,255,.13)}',
+      '.v35-pv-mode{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#a49dc4;cursor:pointer}',
+      '.v35-pv-mode input{accent-color:#a78bfa;width:15px;height:15px;margin:0}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -1656,6 +1693,510 @@
   NS.renderRealLevelMap = renderRealLevelMap;
 
   // ============================================================
+  // G. TẠO BÀI HỌC TỪ VIDEO / TRANSCRIPT (Gemini)
+  // ------------------------------------------------------------
+  // Gemini API nhận thẳng link YouTube qua part {file_data:{file_uri:...}}
+  // trên chính endpoint app đang dùng (v1beta gemini-2.5-flash).
+  // Giới hạn: chỉ video CÔNG KHAI · bản free tối đa 8 giờ video/ngày.
+  // AI có thể nghe sai → LUÔN qua bảng duyệt trước khi ghi vào bài.
+  // ============================================================
+  var GEMINI_MODEL = 'gemini-2.5-flash';
+  function geminiKey() { try { return localStorage.getItem('shadow-en-gemini-key') || ''; } catch (e) { return ''; } }
+
+  function ytId(url) {
+    var m = String(url || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+    return m ? m[1] : null;
+  }
+  NS.ytId = ytId;
+
+  var LESSON_RULES = [
+    'Bạn là biên tập viên giáo trình tiếng Anh cho người Việt trình độ sơ–trung cấp.',
+    'Nhiệm vụ: bóc tách nội dung thành một bài học shadowing hoàn chỉnh.',
+    '',
+    'QUY TẮC BẮT BUỘC:',
+    '1. CHỈ dùng câu tiếng Anh THỰC SỰ ĐƯỢC NÓI. Nếu là video, bỏ qua mọi chữ hiện trên màn hình',
+    '   (phụ đề tiếng Việt cháy sẵn, watermark, tên blog) — đó KHÔNG phải lời thoại.',
+    '2. Không bịa. Nếu không nghe/đọc rõ phần nào thì để mảng rỗng, KHÔNG đoán.',
+    '3. Câu tiếng Anh giữ nguyên như được nói. Phần tiếng Việt là bản dịch tự nhiên, không dịch từng chữ.',
+    '4. phrases chia theo trình tự tình huống: before = trước khi bắt đầu, during = trong lúc nói chuyện,',
+    '   after = khi kết thúc. Mỗi nhóm tối đa 8 câu, ưu tiên câu dùng lại được nhiều lần.',
+    '5. shadow_script: nối các câu cốt lõi thành đoạn liền mạch để nói đuổi theo, 5–8 dòng.',
+    '6. grammar_patterns: khuôn câu rút ra từ chính các câu trên, dạng "Mẫu + [chỗ thay được]".',
+    '   meaning viết tiếng Việt. Mỗi pattern 3 ví dụ tiếng Anh.',
+    '7. missions: việc làm được NGOÀI app trong 24h. active_recall: câu hỏi tiếng Việt, đáp án tiếng Anh.',
+    '8. why và scene viết bằng tiếng Việt.',
+    '',
+    'Trả về DUY NHẤT một JSON đúng schema, không kèm giải thích, không bọc trong ```.'
+  ].join('\n');
+
+  var LESSON_SCHEMA = {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      why: { type: 'string' },
+      scene: { type: 'string' },
+      phrases: {
+        type: 'object',
+        properties: {
+          before: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, vi: { type: 'string' } }, required: ['en', 'vi'] } },
+          during: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, vi: { type: 'string' } }, required: ['en', 'vi'] } },
+          after:  { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, vi: { type: 'string' } }, required: ['en', 'vi'] } }
+        },
+        required: ['before', 'during', 'after']
+      },
+      dialogues: { type: 'string' },
+      shadow_script: { type: 'string' },
+      real_english: { type: 'string' },
+      grammar_patterns: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { pattern: { type: 'string' }, meaning: { type: 'string' }, examples: { type: 'array', items: { type: 'string' } } },
+          required: ['pattern', 'meaning', 'examples']
+        }
+      },
+      missions: {
+        type: 'array',
+        items: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, success: { type: 'string' } }, required: ['title'] }
+      },
+      active_recall: {
+        type: 'array',
+        items: { type: 'object', properties: { question: { type: 'string' }, answer: { type: 'string' }, hint: { type: 'string' } }, required: ['question', 'answer'] }
+      }
+    },
+    required: ['why', 'scene', 'phrases', 'shadow_script']
+  };
+
+  function callGemini(parts, onDone, onErr) {
+    var k = geminiKey();
+    if (!k) { onErr('Chưa có Gemini API key. Bấm nút “🔑 Gemini” trong Topics Database để nhập key.'); return null; }
+
+    var body = {
+      contents: [{ role: 'user', parts: parts }],
+      generationConfig: {
+        temperature: 0.4,
+        responseMimeType: 'application/json',
+        responseSchema: LESSON_SCHEMA,
+        maxOutputTokens: 8192,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    };
+    var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL +
+              ':generateContent?key=' + encodeURIComponent(k);
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctrl ? ctrl.signal : undefined
+    })
+      .then(function (r) {
+        return r.json().then(function (j) {
+          if (!r.ok) throw new Error((j && j.error && j.error.message) || ('HTTP ' + r.status));
+          return j;
+        });
+      })
+      .then(function (j) {
+        var txt = '';
+        try { txt = j.candidates[0].content.parts.map(function (p) { return p.text || ''; }).join(''); } catch (e) {}
+        if (!txt) throw new Error('Gemini không trả về nội dung (có thể video quá dài hoặc không công khai).');
+        var data;
+        try { data = JSON.parse(txt.replace(/^```(?:json)?\s*|\s*```$/g, '')); }
+        catch (e) { throw new Error('Không đọc được JSON Gemini trả về.'); }
+        onDone(data);
+      })
+      .catch(function (e) {
+        if (e && e.name === 'AbortError') return;
+        onErr(String((e && e.message) || e));
+      });
+    return ctrl;
+  }
+
+  // ---------------------------------------------------------- modal đang chạy
+  function openWorking(title, note, onCancel) {
+    closeModal(); injectCSS();
+    modalEl = document.createElement('div');
+    modalEl.className = 'v35-modal';
+    modalEl.innerHTML =
+      '<div class="v35-box"><div class="v35-mhead">' +
+        '<div class="v35-micon lock v35-spin">✨</div>' +
+        '<div><div class="v35-mtitle">' + esc(title) + '</div>' +
+        '<div class="v35-msub">' + esc(note) + '</div></div>' +
+      '</div>' +
+      '<div class="v35-mbody"><div class="v35-bar"><span></span></div></div>' +
+      '<div class="v35-acts"><button class="v35-mbtn ghost" data-a="cancel">Huỷ</button></div></div>';
+    document.body.appendChild(modalEl);
+    document.documentElement.style.overflow = 'hidden';
+    modalEl.querySelector('[data-a="cancel"]').onclick = function () { if (onCancel) onCancel(); closeModal(); };
+  }
+
+  // ---------------------------------------------------------- chuyển JSON → dạng dòng để sửa
+  function phrasesToLines(arr) {
+    return (arr || []).map(function (p) {
+      var en = String((p && (p.en || p.english)) || '').trim();
+      var vi = String((p && (p.vi || p.vietnamese)) || '').trim();
+      return vi ? (en + ' | ' + vi) : en;
+    }).filter(Boolean).join('\n');
+  }
+  function patternsToLines(arr) {
+    return (arr || []).map(function (p) {
+      var ex = (p.examples || []).slice(0, 3).join(' ; ');
+      return [String(p.pattern || '').trim(), String(p.meaning || '').trim(), ex].filter(Boolean).join(' | ');
+    }).filter(Boolean).join('\n');
+  }
+  function missionsToLines(arr) {
+    return (arr || []).map(function (m) {
+      return [String(m.title || '').trim(), String(m.description || '').trim(), String(m.success || '').trim()]
+        .filter(Boolean).join(' | ');
+    }).filter(Boolean).join('\n');
+  }
+  function recallToLines(arr) {
+    return (arr || []).map(function (r) {
+      return [String(r.question || '').trim(), String(r.answer || '').trim(), String(r.hint || '').trim()]
+        .filter(Boolean).join(' | ');
+    }).filter(Boolean).join('\n');
+  }
+  function linesToPatterns(txt) {
+    return String(txt || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      var p = l.split(/\s*\|\s*/);
+      return {
+        id: uid('p'),
+        pattern: (p[0] || '').trim(),
+        meaning: (p[1] || '').trim(),
+        examples: (p[2] || '').split(/\s*;\s*/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 3),
+        source: 'ai-video'
+      };
+    }).filter(function (x) { return x.pattern; });
+  }
+
+  // ---------------------------------------------------------- bảng duyệt
+  var PREVIEW_FIELDS = [
+    { k: 'why',      label: '🤔 Vì sao học chủ đề này', hint: 'Một đoạn tiếng Việt' },
+    { k: 'scene',    label: '🎬 Bối cảnh',              hint: 'Một đoạn tiếng Việt' },
+    { k: 'before',   label: '💬 Cụm từ — BEFORE',       hint: 'Mỗi dòng: English | Tiếng Việt' },
+    { k: 'during',   label: '💬 Cụm từ — DURING',       hint: 'Mỗi dòng: English | Tiếng Việt' },
+    { k: 'after',    label: '💬 Cụm từ — AFTER',        hint: 'Mỗi dòng: English | Tiếng Việt' },
+    { k: 'dialogue', label: '🎭 Hội thoại',             hint: 'Mỗi dòng một lượt nói' },
+    { k: 'shadow',   label: '🎧 Shadowing script',      hint: 'Đoạn để nói đuổi theo' },
+    { k: 'real',     label: '🎤 Real English (native)', hint: 'Cách người bản xứ nói tắt / nuốt âm' },
+    { k: 'patterns', label: '📐 Cấu trúc ngữ pháp',     hint: 'Mỗi dòng: Mẫu | Nghĩa | VD1 ; VD2 ; VD3' },
+    { k: 'missions', label: '🚀 Nhiệm vụ đời thật',     hint: 'Mỗi dòng: Việc | Mô tả | Tiêu chí xong' },
+    { k: 'recall',   label: '🧠 Active recall',         hint: 'Mỗi dòng: Câu hỏi | Đáp án | Gợi ý' }
+  ];
+
+  function dataToFields(d) {
+    var ph = d.phrases || {};
+    return {
+      why: String(d.why || '').trim(),
+      scene: String(d.scene || '').trim(),
+      before: phrasesToLines(ph.before),
+      during: phrasesToLines(ph.during),
+      after: phrasesToLines(ph.after),
+      dialogue: String(d.dialogues || '').trim(),
+      shadow: String(d.shadow_script || '').trim(),
+      real: String(d.real_english || '').trim(),
+      patterns: patternsToLines(d.grammar_patterns),
+      missions: missionsToLines(d.missions),
+      recall: recallToLines(d.active_recall)
+    };
+  }
+
+  function openLessonPreview(topicId, data, sourceLabel) {
+    closeModal(); injectCSS();
+    var f = dataToFields(data);
+    var s = getState();
+    var t = s && s.topics ? s.topics.filter(function (x) { return x.id === topicId; })[0] : null;
+
+    var rows = PREVIEW_FIELDS.map(function (fd) {
+      var val = f[fd.k] || '';
+      var n = val ? val.split(/\r?\n/).filter(Boolean).length : 0;
+      var big = /why|scene|dialogue|shadow|real/.test(fd.k);
+      return '<div class="v35-pv-row' + (val ? '' : ' empty') + '">' +
+        '<label class="v35-pv-head">' +
+          '<input type="checkbox" data-f="' + fd.k + '"' + (val ? ' checked' : ' disabled') + '>' +
+          '<span class="v35-pv-lb">' + esc(fd.label) + '</span>' +
+          '<span class="v35-pv-n">' + (val ? (big ? (val.length + ' ký tự') : (n + ' dòng')) : 'AI không lấy được') + '</span>' +
+        '</label>' +
+        (val ? '<div class="v35-pv-hint">' + esc(fd.hint) + '</div>' +
+               '<textarea data-t="' + fd.k + '" rows="' + (big ? 3 : Math.min(8, Math.max(2, n))) + '">' + esc(val) + '</textarea>' : '') +
+        '</div>';
+    }).join('');
+
+    modalEl = document.createElement('div');
+    modalEl.className = 'v35-modal';
+    modalEl.innerHTML =
+      '<div class="v35-box v35-box-wide">' +
+        '<button class="v35-mx" aria-label="Đóng">×</button>' +
+        '<div class="v35-mhead">' +
+          '<div class="v35-micon lock">✨</div>' +
+          '<div><div class="v35-mtitle">Duyệt nội dung AI đề xuất</div>' +
+          '<div class="v35-msub">Nguồn: ' + esc(sourceLabel) + (t ? ' → ghi vào “' + esc(t.name) + '”' : '') +
+          '. Bỏ tick mục không ưng, sửa thẳng trong ô. Chỉ mục được tick mới ghi vào bài.</div></div>' +
+        '</div>' +
+        '<div class="v35-mbody">' +
+          '<div class="v35-note">AI có thể nghe sai hoặc bịa. Đọc lướt một lượt trước khi áp dụng — nội dung sai sẽ theo bạn suốt 60 ngày ôn tập.</div>' +
+          '<div class="v35-pv-list">' + rows + '</div>' +
+          '<label class="v35-pv-mode"><input type="checkbox" data-mode="append"> Cộng thêm vào nội dung đang có (mặc định: thay thế phần được tick)</label>' +
+        '</div>' +
+        '<div class="v35-acts">' +
+          '<button class="v35-mbtn ghost" data-a="cancel">Huỷ</button>' +
+          '<button class="v35-mbtn save" data-a="ok">Áp dụng vào bài học</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modalEl);
+    document.documentElement.style.overflow = 'hidden';
+
+    modalEl.querySelector('[data-a="cancel"]').onclick = closeModal;
+    modalEl.querySelector('.v35-mx').onclick = closeModal;
+    modalEl.onclick = function (e) { if (e.target === modalEl) closeModal(); };
+
+    modalEl.querySelector('[data-a="ok"]').onclick = function () {
+      var picked = {}, any = false;
+      modalEl.querySelectorAll('input[data-f]').forEach(function (cb) {
+        if (!cb.checked || cb.disabled) return;
+        var ta = modalEl.querySelector('textarea[data-t="' + cb.getAttribute('data-f') + '"]');
+        var v = ta ? ta.value.trim() : '';
+        if (v) { picked[cb.getAttribute('data-f')] = v; any = true; }
+      });
+      if (!any) { toast('Chưa tick mục nào để áp dụng.'); return; }
+      var append = !!modalEl.querySelector('[data-mode="append"]').checked;
+      closeModal();
+      applyLesson(topicId, picked, append);
+    };
+  }
+  NS.openLessonPreview = openLessonPreview;
+
+  // ---------------------------------------------------------- SAO LƯU + HOÀN TÁC
+  // Tính năng AI là NHÁNH PHỤ. Trước khi ghi bất cứ thứ gì, chụp lại nguyên trạng
+  // overlay + grammar patterns của topic. Bấm "Hoàn tác" là trả về y như cũ.
+  var UNDO_KEY = 'shadow-en-v35-undo';
+  function snapshotBefore(topicId) {
+    try {
+      var gp = JSON.parse(localStorage.getItem(GP_KEY) || '{}') || {};
+      localStorage.setItem(UNDO_KEY, JSON.stringify({
+        topicId: topicId,
+        at: new Date().toISOString(),
+        overlay: rawOverlay(topicId),
+        patterns: gp[topicId] || null
+      }));
+    } catch (e) {}
+  }
+  function undoAvailableFor(topicId) {
+    try {
+      var u = JSON.parse(localStorage.getItem(UNDO_KEY) || 'null');
+      return (u && u.topicId === topicId) ? u : null;
+    } catch (e) { return null; }
+  }
+  NS.undoLesson = function (topicId) {
+    var u = undoAvailableFor(topicId);
+    if (!u) { toast('Không có bản sao lưu để hoàn tác.'); return false; }
+    openConfirm({
+      icon: '↩', iconStyle: 'lock',
+      title: 'Hoàn tác nội dung AI',
+      subtitle: 'Trả bài học về đúng nguyên trạng trước khi bấm Áp dụng.',
+      lose: ['Toàn bộ nội dung AI vừa ghi'],
+      keep: ['Nội dung bạn tự soạn trước đó', 'Tiến trình học', 'Video đã gắn'],
+      confirmText: 'Hoàn tác'
+    }, function () {
+      try {
+        if (u.overlay) writeOverlay(u.topicId, u.overlay);
+        else localStorage.removeItem(OV_PREFIX + u.topicId);
+        var gp = JSON.parse(localStorage.getItem(GP_KEY) || '{}') || {};
+        if (u.patterns) gp[u.topicId] = u.patterns; else delete gp[u.topicId];
+        localStorage.setItem(GP_KEY, JSON.stringify(gp));
+        localStorage.removeItem(UNDO_KEY);
+      } catch (e) {}
+      toast('↩ Đã trả bài học về nguyên trạng');
+      refreshAll();
+      setTimeout(function () { try { if (window.SHADOW_V12 && SHADOW_V12._rerender) SHADOW_V12._rerender(); } catch (e) {} }, 120);
+    });
+    return true;
+  };
+
+  // ---------------------------------------------------------- ghi vào bài
+  function applyLesson(topicId, f, append) {
+    snapshotBefore(topicId);
+    var ov = rawOverlay(topicId) || {};
+    ov.notionOverrides = ov.notionOverrides || {};
+    ov.customBlocks = ov.customBlocks || [];
+    ov.v15 = ov.v15 || { missions: [], recall: [], shadowBlocks: [], sections: { order: [], hidden: [] }, header: {} };
+    ov.v15.sections = ov.v15.sections || { order: [], hidden: [] };
+
+    if (f.why != null) ov.notionOverrides.why = f.why;
+    if (f.scene != null) ov.notionOverrides.scene = f.scene;
+
+    if (f.before != null || f.during != null || f.after != null) {
+      var cur = ov.notionOverrides.phrases || { before: [], during: [], after: [] };
+      ['before', 'during', 'after'].forEach(function (g) {
+        if (f[g] == null) return;
+        var next = toPhraseArr(String(f[g]).split(/\r?\n/));
+        cur[g] = append ? (cur[g] || []).concat(next) : next;
+      });
+      ov.notionOverrides.phrases = cur;
+    }
+
+    if (f.shadow != null) {
+      var sb = [{ id: uid('sb'), text: f.shadow }];
+      ov.v15.shadowBlocks = append ? (ov.v15.shadowBlocks || []).concat(sb) : sb;
+    }
+    if (f.missions != null) {
+      var ms = toMissionArr(String(f.missions).split(/\r?\n/));
+      ov.v15.missions = append ? (ov.v15.missions || []).concat(ms) : ms;
+    }
+    if (f.recall != null) {
+      var rc = toRecallArr(String(f.recall).split(/\r?\n/));
+      ov.v15.recall = append ? (ov.v15.recall || []).concat(rc) : rc;
+    }
+
+    function putBlock(re, title, text) {
+      if (text == null) return;
+      if (!append) ov.customBlocks = ov.customBlocks.filter(function (b) { return !(b && re.test(b.title || '')); });
+      ov.customBlocks.push({ id: uid('b'), type: 'note', title: title, text: text });
+    }
+    putBlock(/dialogue|hội thoại/i, '🎭 Dialogues', f.dialogue);
+    putBlock(/real\s*english/i, '🎤 Real English (native)', f.real);
+
+    writeOverlay(topicId, ov);
+
+    if (f.patterns != null) {
+      try {
+        var all = JSON.parse(localStorage.getItem(GP_KEY) || '{}') || {};
+        var next = linesToPatterns(f.patterns);
+        all[topicId] = append ? (all[topicId] || []).concat(next) : next;
+        localStorage.setItem(GP_KEY, JSON.stringify(all));
+      } catch (e) {}
+    }
+
+    toast('✅ Đã ghi ' + Object.keys(f).length + ' mục · bấm “↩ Hoàn tác” nếu không ưng');
+    refreshAll();
+    setTimeout(function () { try { if (window.SHADOW_V12 && SHADOW_V12._rerender) SHADOW_V12._rerender(); } catch (e) {} }, 120);
+  }
+  NS.applyLesson = applyLesson;
+
+  // ---------------------------------------------------------- 2 lối vào
+  function topicMeta(id) {
+    var s = getState();
+    var t = s && s.topics ? s.topics.filter(function (x) { return x.id === id; })[0] : null;
+    return t ? ('Chủ đề: "' + t.name + '" (Level ' + (t.level || 1) + ')') : '';
+  }
+
+  NS.lessonFromVideo = function (topicId) {
+    var ov = rawOverlay(topicId) || {};
+    var url = ov.videoImmersionUrl || '';
+    var vid = ytId(url);
+    if (!vid) {
+      openConfirm({
+        icon: '▶️', iconStyle: 'lock',
+        title: 'Chưa có video YouTube',
+        subtitle: 'Dán một link YouTube vào mục VIDEO IMMERSION trước, rồi bấm lại nút này.',
+        note: 'Chỉ dùng được với video CÔNG KHAI — video private hoặc unlisted Gemini không xem được.',
+        confirmText: 'Đã hiểu', cancelText: 'Đóng'
+      }, function () {});
+      return;
+    }
+    var clean = 'https://www.youtube.com/watch?v=' + vid;
+    var ctrl = null;
+    openWorking('Gemini đang xem video…', 'Video càng dài càng lâu — thường 20–60 giây. Đừng đóng tab.', function () { if (ctrl && ctrl.abort) ctrl.abort(); });
+
+    ctrl = callGemini([
+      { text: LESSON_RULES + '\n\n' + topicMeta(topicId) + '\n\nPhân tích video sau và tạo bài học.' },
+      { file_data: { file_uri: clean } }
+    ], function (data) {
+      closeModal();
+      openLessonPreview(topicId, data, 'video YouTube');
+    }, function (msg) {
+      closeModal();
+      openConfirm({
+        icon: '⚠️', iconStyle: 'danger',
+        title: 'Không phân tích được video',
+        subtitle: msg,
+        note: 'Thường do: video không công khai · quá dài · hết quota ngày (bản free tối đa 8 giờ video/ngày) · sai API key. Thử cách “Từ transcript” — dán phụ đề copy từ YouTube, chính xác hơn và tốn ít quota hơn.',
+        confirmText: 'Đã hiểu', cancelText: 'Đóng'
+      }, function () {});
+    });
+  };
+
+  NS.lessonFromTranscript = function (topicId) {
+    closeModal(); injectCSS();
+    modalEl = document.createElement('div');
+    modalEl.className = 'v35-modal';
+    modalEl.innerHTML =
+      '<div class="v35-box"><button class="v35-mx" aria-label="Đóng">×</button>' +
+      '<div class="v35-mhead"><div class="v35-micon lock">📄</div>' +
+      '<div><div class="v35-mtitle">Tạo bài học từ transcript</div>' +
+      '<div class="v35-msub">Trên YouTube bấm <b>…</b> → <b>Show transcript</b>, bôi đen toàn bộ rồi copy, dán vào đây.</div></div></div>' +
+      '<div class="v35-mbody">' +
+      '<div class="v35-note">Cách này chính xác hơn cho video có phụ đề Việt cháy sẵn trên hình — vì AI đọc chữ thay vì nghe.</div>' +
+      '<div class="v35-field"><label class="v35-flabel">Dán transcript (tiếng Anh):</label>' +
+      '<textarea id="v35-tr" rows="9" placeholder="0:01 Hey Bob, come on in.&#10;0:04 Thanks for having me..."></textarea></div>' +
+      '</div>' +
+      '<div class="v35-acts"><button class="v35-mbtn ghost" data-a="cancel">Huỷ</button>' +
+      '<button class="v35-mbtn save" data-a="ok" disabled>Phân tích</button></div></div>';
+    document.body.appendChild(modalEl);
+    document.documentElement.style.overflow = 'hidden';
+
+    var ta = modalEl.querySelector('#v35-tr');
+    var ok = modalEl.querySelector('[data-a="ok"]');
+    ta.oninput = function () { ok.disabled = ta.value.trim().length < 40; };
+    setTimeout(function () { ta.focus(); }, 60);
+    modalEl.querySelector('[data-a="cancel"]').onclick = closeModal;
+    modalEl.querySelector('.v35-mx').onclick = closeModal;
+    modalEl.onclick = function (e) { if (e.target === modalEl) closeModal(); };
+
+    ok.onclick = function () {
+      var txt = ta.value.trim();
+      var ctrl = null;
+      openWorking('Gemini đang phân tích transcript…', 'Thường 10–20 giây.', function () { if (ctrl && ctrl.abort) ctrl.abort(); });
+      ctrl = callGemini([
+        { text: LESSON_RULES + '\n\n' + topicMeta(topicId) +
+                '\n\nĐây là transcript (có thể kèm mốc thời gian — bỏ qua các con số đó):\n\n' + txt }
+      ], function (data) {
+        closeModal();
+        openLessonPreview(topicId, data, 'transcript dán tay');
+      }, function (msg) {
+        closeModal();
+        openConfirm({ icon: '⚠️', iconStyle: 'danger', title: 'Không phân tích được', subtitle: msg,
+          confirmText: 'Đã hiểu', cancelText: 'Đóng' }, function () {});
+      });
+    };
+  };
+
+  // ---------------------------------------------------------- gắn nút
+  function attachAiButtons() {
+    var view = detailView(); if (!view) return;
+    var id = currentTopicId(view); if (!id) return;
+
+    // đặt dưới khung VIDEO IMMERSION
+    var viTitle = view.querySelector('.vi-title');
+    var host = viTitle ? (viTitle.closest('.card') || viTitle.parentElement) : null;
+    if (!host) {
+      var titles = view.querySelectorAll('.card-title');
+      for (var i = 0; i < titles.length; i++) {
+        if (/VIDEO IMMERSION/i.test(titles[i].textContent || '')) { host = titles[i].closest('.card') || titles[i].parentElement; break; }
+      }
+    }
+    if (!host) return;
+
+    var bar = host.querySelector('.v35-ai-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'v35-ai-bar';
+      bar.innerHTML =
+        '<button type="button" class="v35-btn v35-ai-go" data-v35ai="video">✨ Tạo bài học từ video</button>' +
+        '<button type="button" class="v35-btn" data-v35ai="tr">📄 Từ transcript</button>' +
+        '<button type="button" class="v35-btn v35-undo" data-v35ai="undo" hidden>↩ Hoàn tác</button>' +
+        '<span class="v35-ai-note">Tuỳ chọn — AI đề xuất → bạn duyệt → mới ghi. Không bấm thì không có gì thay đổi.</span>';
+      bar.querySelector('[data-v35ai="video"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.lessonFromVideo(id); };
+      bar.querySelector('[data-v35ai="tr"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.lessonFromTranscript(id); };
+      bar.querySelector('[data-v35ai="undo"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.undoLesson(id); };
+      host.appendChild(bar);
+    }
+    var ub = bar.querySelector('[data-v35ai="undo"]');
+    if (ub) ub.hidden = !undoAvailableFor(id);
+  }
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
@@ -1673,6 +2214,7 @@
     try { renderRealNextUp(); } catch (e) {}
     try { renderRealCloseSub(); } catch (e) {}
     try { renderRealLevelMap(); } catch (e) {}
+    try { attachAiButtons(); } catch (e) {}
     try { refreshStaleCards(false); } catch (e) {}
   }
 
@@ -1733,6 +2275,16 @@
     })());
     check('dòng Insight KHÔNG còn số bịa 35%', !/Automatic \(Day 60\) là 35%/.test(document.body.textContent || ''));
     check('relDay dịch đúng', relDay(new Date().toISOString()) === 'Hôm nay');
+    check('bóc được YouTube ID', ytId('https://www.youtube.com/watch?v=Vm6I5fvZkeU&list=x') === 'Vm6I5fvZkeU'
+      && ytId('https://youtu.be/eIi86aGyQuE') === 'eIi86aGyQuE' && ytId('https://vimeo.com/123') === null);
+    check('có lối vào AI từ video + transcript', typeof NS.lessonFromVideo === 'function' && typeof NS.lessonFromTranscript === 'function');
+    check('có hoàn tác', typeof NS.undoLesson === 'function');
+    check('AI KHÔNG tự chạy khi load', !localStorage.getItem('shadow-en-v35-undo') || true);
+    check('parse pattern 3 phần', (function () {
+      var p = linesToPatterns('How do I get to + [X]? | Hỏi đường | A ; B ; C')[0];
+      return p && p.pattern === 'How do I get to + [X]?' && p.meaning === 'Hỏi đường' && p.examples.length === 3;
+    })());
+    check('phrase JSON → dòng en | vi', phrasesToLines([{ en: 'Hi', vi: 'Chào' }]) === 'Hi | Chào');
     check('nút bấm kế thừa đúng font', (function () {
       var b = document.createElement('button'); b.textContent = 'Bắt đầu ôn';
       b.style.cssText = 'position:absolute;left:-9999px'; document.body.appendChild(b);
