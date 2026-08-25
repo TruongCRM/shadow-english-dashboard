@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.10.1';
+  NS.version = '35.11.1';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -381,6 +381,9 @@
       '.v35-ai-note{font-size:11px;color:#7b7599;flex:1;min-width:180px}',
       /* .v35-btn dùng display:inline-flex nên đè mất thuộc tính [hidden] mặc định của HTML */
       '.v35-btn[hidden],.v35-help[hidden]{display:none!important}',
+      '.v35-key.need{border-color:rgba(250,204,21,.6)!important;color:#fde047!important;',
+      'background:rgba(250,204,21,.14)!important;animation:v35glow 2.2s ease-in-out infinite}',
+      '@keyframes v35glow{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,0)}50%{box-shadow:0 0 0 4px rgba(250,204,21,.14)}}',
 
       '.v35-box-wide{width:min(680px,100%)}',
       '.v35-spin{animation:v35pulse 1.4s ease-in-out infinite}',
@@ -867,15 +870,15 @@
           field +
         '</div>' +
         '<div class="v35-acts">' +
-          '<button class="v35-mbtn ghost" data-a="cancel">' + esc(opts.cancelText || 'Huỷ') + '</button>' +
-          '<button class="v35-mbtn go" data-a="ok"' + (needInput ? ' disabled' : '') + '>' +
+          '<button class="v35-mbtn ghost" data-v35a="cancel">' + esc(opts.cancelText || 'Huỷ') + '</button>' +
+          '<button class="v35-mbtn go" data-v35a="ok"' + (needInput ? ' disabled' : '') + '>' +
           esc(opts.confirmText || 'Xác nhận') + '</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(modalEl);
     document.documentElement.style.overflow = 'hidden';
 
-    var okBtn = modalEl.querySelector('[data-a="ok"]');
+    var okBtn = modalEl.querySelector('[data-v35a="ok"]');
     var input = modalEl.querySelector('input');
     var err = modalEl.querySelector('.v35-err');
 
@@ -909,7 +912,7 @@
       setTimeout(function () { input.focus(); }, 60);
     }
     okBtn.onclick = submit;
-    modalEl.querySelector('[data-a="cancel"]').onclick = closeModal;
+    modalEl.querySelector('[data-v35a="cancel"]').onclick = closeModal;
     modalEl.querySelector('.v35-mx').onclick = closeModal;
     modalEl.onclick = function (e) { if (e.target === modalEl) closeModal(); };
   }
@@ -1253,8 +1256,8 @@
           '<div class="v35-note">Máy nào có giọng nào là do hệ điều hành. Giọng có chữ <b>Natural</b> hoặc <b>Online</b> nghe thật nhất — nếu máy bạn có thì nên chọn.</div>' +
         '</div>' +
         '<div class="v35-acts">' +
-          '<button class="v35-mbtn ghost" data-a="cancel">Huỷ</button>' +
-          '<button class="v35-mbtn save" data-a="ok">Lưu giọng đọc</button>' +
+          '<button class="v35-mbtn ghost" data-v35a="cancel">Huỷ</button>' +
+          '<button class="v35-mbtn save" data-v35a="ok">Lưu giọng đọc</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(modalEl);
@@ -1297,7 +1300,7 @@
       });
     });
 
-    modalEl.querySelector('[data-a="ok"]').onclick = function () {
+    modalEl.querySelector('[data-v35a="ok"]').onclick = function () {
       try {
         localStorage.setItem(VOICE_KEY, selectedName());
         localStorage.setItem(PITCH_KEY, String(parseFloat(pitchEl.value)));
@@ -1307,7 +1310,7 @@
       closeModal();
       toast('🎙 Đã đổi giọng đọc: ' + selectedName());
     };
-    modalEl.querySelector('[data-a="cancel"]').onclick = function () { try { speechSynthesis.cancel(); } catch (e) {} closeModal(); };
+    modalEl.querySelector('[data-v35a="cancel"]').onclick = function () { try { speechSynthesis.cancel(); } catch (e) {} closeModal(); };
     modalEl.querySelector('.v35-mx').onclick = function () { try { speechSynthesis.cancel(); } catch (e) {} closeModal(); };
     modalEl.onclick = function (e) { if (e.target === modalEl) { try { speechSynthesis.cancel(); } catch (e2) {} closeModal(); } };
   }
@@ -1823,7 +1826,7 @@
 
   function callGemini(parts, onDone, onErr) {
     var k = geminiKey();
-    if (!k) { onErr('Chưa có Gemini API key. Bấm nút “🔑 Gemini” trong Topics Database để nhập key.'); return null; }
+    if (!k) { onErr('__NOKEY__'); return null; }
 
     var body = {
       contents: [{ role: 'user', parts: parts }],
@@ -1879,10 +1882,10 @@
         '<div class="v35-msub">' + esc(note) + '</div></div>' +
       '</div>' +
       '<div class="v35-mbody"><div class="v35-bar"><span></span></div></div>' +
-      '<div class="v35-acts"><button class="v35-mbtn ghost" data-a="cancel">Huỷ</button></div></div>';
+      '<div class="v35-acts"><button class="v35-mbtn ghost" data-v35a="cancel">Huỷ</button></div></div>';
     document.body.appendChild(modalEl);
     document.documentElement.style.overflow = 'hidden';
-    modalEl.querySelector('[data-a="cancel"]').onclick = function () { if (onCancel) onCancel(); closeModal(); };
+    modalEl.querySelector('[data-v35a="cancel"]').onclick = function () { if (onCancel) onCancel(); closeModal(); };
   }
 
   // ---------------------------------------------------------- NGẮT DÒNG TỰ ĐỘNG
@@ -2074,18 +2077,18 @@
           '<label class="v35-pv-mode"><input type="checkbox" data-mode="append"> Cộng thêm vào nội dung đang có (mặc định: thay thế phần được tick)</label>' +
         '</div>' +
         '<div class="v35-acts">' +
-          '<button class="v35-mbtn ghost" data-a="cancel">Huỷ</button>' +
-          '<button class="v35-mbtn save" data-a="ok">Áp dụng vào bài học</button>' +
+          '<button class="v35-mbtn ghost" data-v35a="cancel">Huỷ</button>' +
+          '<button class="v35-mbtn save" data-v35a="ok">Áp dụng vào bài học</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(modalEl);
     document.documentElement.style.overflow = 'hidden';
 
-    modalEl.querySelector('[data-a="cancel"]').onclick = closeModal;
+    modalEl.querySelector('[data-v35a="cancel"]').onclick = closeModal;
     modalEl.querySelector('.v35-mx').onclick = closeModal;
     modalEl.onclick = function (e) { if (e.target === modalEl) closeModal(); };
 
-    modalEl.querySelector('[data-a="ok"]').onclick = function () {
+    modalEl.querySelector('[data-v35a="ok"]').onclick = function () {
       var picked = {}, any = false;
       modalEl.querySelectorAll('input[data-f]').forEach(function (cb) {
         if (!cb.checked || cb.disabled) return;
@@ -2261,6 +2264,7 @@
       openLessonPreview(topicId, data, 'video YouTube');
     }, function (msg) {
       closeModal();
+      if (msg === '__NOKEY__') return openGeminiKeyModal();
       openConfirm({
         icon: '⚠️', iconStyle: 'danger',
         title: 'Không phân tích được video',
@@ -2285,16 +2289,16 @@
       '<div class="v35-field"><label class="v35-flabel">Dán transcript (tiếng Anh):</label>' +
       '<textarea id="v35-tr" rows="9" placeholder="0:01 Hey Bob, come on in.&#10;0:04 Thanks for having me..."></textarea></div>' +
       '</div>' +
-      '<div class="v35-acts"><button class="v35-mbtn ghost" data-a="cancel">Huỷ</button>' +
-      '<button class="v35-mbtn save" data-a="ok" disabled>Phân tích</button></div></div>';
+      '<div class="v35-acts"><button class="v35-mbtn ghost" data-v35a="cancel">Huỷ</button>' +
+      '<button class="v35-mbtn save" data-v35a="ok" disabled>Phân tích</button></div></div>';
     document.body.appendChild(modalEl);
     document.documentElement.style.overflow = 'hidden';
 
     var ta = modalEl.querySelector('#v35-tr');
-    var ok = modalEl.querySelector('[data-a="ok"]');
+    var ok = modalEl.querySelector('[data-v35a="ok"]');
     ta.oninput = function () { ok.disabled = ta.value.trim().length < 40; };
     setTimeout(function () { ta.focus(); }, 60);
-    modalEl.querySelector('[data-a="cancel"]').onclick = closeModal;
+    modalEl.querySelector('[data-v35a="cancel"]').onclick = closeModal;
     modalEl.querySelector('.v35-mx').onclick = closeModal;
     modalEl.onclick = function (e) { if (e.target === modalEl) closeModal(); };
 
@@ -2310,6 +2314,7 @@
         openLessonPreview(topicId, data, 'transcript dán tay');
       }, function (msg) {
         closeModal();
+        if (msg === '__NOKEY__') return openGeminiKeyModal();
         openConfirm({ icon: '⚠️', iconStyle: 'danger', title: 'Không phân tích được', subtitle: msg,
           confirmText: 'Đã hiểu', cancelText: 'Đóng' }, function () {});
       });
@@ -2346,6 +2351,90 @@
   }
   NS.tuneYouTubeEmbeds = tuneYouTubeEmbeds;
 
+  // ============================================================
+  // I. CÀI ĐẶT GEMINI API KEY
+  // ------------------------------------------------------------
+  // Key nằm trong localStorage của ĐÚNG trình duyệt trên ĐÚNG máy đang dùng.
+  //   • KHÔNG nằm trong mã nguồn → ai tải repo về cũng không thấy key của bạn
+  //   • KHÔNG đi kèm file Export Backup (backup chỉ chứa state + overlays)
+  //   • KHÔNG gửi lên server nào — trình duyệt gọi thẳng Google
+  // → Người khác mở app sẽ thấy ô trống và phải tự nhập key của họ.
+  // ============================================================
+  function hasGeminiKey() { return !!geminiKey(); }
+  NS.hasGeminiKey = hasGeminiKey;
+
+  function openGeminiKeyModal() {
+    closeModal(); injectCSS();
+    var cur = geminiKey();
+
+    modalEl = document.createElement('div');
+    modalEl.className = 'v35-modal';
+    modalEl.innerHTML =
+      '<div class="v35-box"><button class="v35-mx" aria-label="Đóng">×</button>' +
+      '<div class="v35-mhead"><div class="v35-micon lock">🔑</div>' +
+      '<div><div class="v35-mtitle">Gemini API key</div>' +
+      '<div class="v35-msub">' +
+      (cur ? 'Máy này đã có key — dán key mới để thay, hoặc bấm Xoá key.'
+           : 'Chưa có key trên máy này. Các tính năng AI sẽ nằm im cho tới khi bạn nhập.') +
+      '</div></div></div>' +
+      '<div class="v35-mbody">' +
+        '<div class="v35-panels">' +
+          '<div class="v35-panel keep"><span class="v35-plabel">KEY NÀY NẰM Ở ĐÂU</span><ul>' +
+            '<li>Chỉ trong trình duyệt của máy này</li>' +
+            '<li>KHÔNG có trong mã nguồn trên GitHub</li>' +
+            '<li>KHÔNG đi kèm file Export Backup</li>' +
+            '<li>Mỗi người dùng phải tự nhập key riêng</li>' +
+          '</ul></div>' +
+          '<div class="v35-panel lose"><span class="v35-plabel">CẦN NHỚ</span><ul>' +
+            '<li>Xoá dữ liệu duyệt web là mất key</li>' +
+            '<li>Đổi máy phải nhập lại</li>' +
+            '<li>Đừng dùng chung máy với key của bạn</li>' +
+          '</ul></div>' +
+        '</div>' +
+        '<div class="v35-note">Lấy key miễn phí tại <b>aistudio.google.com/apikey</b> — đăng nhập Google, bấm Create API key, copy dán vào đây.</div>' +
+        '<div class="v35-field"><label class="v35-flabel">Dán API key:</label>' +
+        '<input type="password" autocomplete="off" spellcheck="false" placeholder="' +
+        (cur ? '•••••••••• (đã có key, dán mới để thay)' : 'AIza…') + '">' +
+        '<div class="v35-err"></div></div>' +
+      '</div>' +
+      '<div class="v35-acts">' +
+        (cur ? '<button class="v35-mbtn ghost" data-v35a="del" style="margin-right:auto">Xoá key khỏi máy này</button>' : '') +
+        '<button class="v35-mbtn ghost" data-v35a="cancel">Đóng</button>' +
+        '<button class="v35-mbtn save" data-v35a="ok">Lưu key</button>' +
+      '</div></div>';
+    document.body.appendChild(modalEl);
+    document.documentElement.style.overflow = 'hidden';
+
+    var input = modalEl.querySelector('input');
+    var err = modalEl.querySelector('.v35-err');
+    setTimeout(function () { input.focus(); }, 60);
+
+    function save() {
+      var v = input.value.trim();
+      if (!v) { err.textContent = '✕ Chưa dán key.'; input.classList.add('bad');
+        setTimeout(function () { input.classList.remove('bad'); }, 320); return; }
+      if (v.length < 20) { err.textContent = '✕ Key trông quá ngắn — kiểm tra lại.'; input.classList.add('bad');
+        setTimeout(function () { input.classList.remove('bad'); }, 320); return; }
+      try { localStorage.setItem('shadow-en-gemini-key', v); } catch (e) {}
+      try { if (window.SHADOW_V19 && SHADOW_V19.setKey) SHADOW_V19.setKey(v); } catch (e) {}
+      closeModal();
+      toast('🔑 Đã lưu Gemini key trên máy này');
+      tick();
+    }
+    modalEl.querySelector('[data-v35a="ok"]').onclick = save;
+    input.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); save(); } };
+    modalEl.querySelector('[data-v35a="cancel"]').onclick = closeModal;
+    modalEl.querySelector('.v35-mx').onclick = closeModal;
+    modalEl.onclick = function (e) { if (e.target === modalEl) closeModal(); };
+    var del = modalEl.querySelector('[data-v35a="del"]');
+    if (del) del.onclick = function () {
+      try { localStorage.removeItem('shadow-en-gemini-key'); } catch (e) {}
+      try { if (window.SHADOW_V19 && SHADOW_V19.clearKey) SHADOW_V19.clearKey(); } catch (e) {}
+      closeModal(); toast('🔑 Đã xoá key khỏi máy này'); tick();
+    };
+  }
+  NS.openGeminiKeyModal = openGeminiKeyModal;
+
   // ---------------------------------------------------------- gắn nút
   function attachAiButtons() {
     var view = detailView(); if (!view) return;
@@ -2371,6 +2460,7 @@
         '<button type="button" class="v35-btn v35-ai-go" data-v35ai="video">✨ Tạo bài học từ video</button>' +
         '<button type="button" class="v35-btn" data-v35ai="tr">📄 Từ transcript</button>' +
         '<button type="button" class="v35-btn v35-undo" data-v35ai="undo" hidden>↩ Hoàn tác</button>' +
+        '<button type="button" class="v35-btn v35-key" data-v35ai="key">🔑 Gemini key</button>' +
         '<span class="v35-ai-note">Tuỳ chọn — AI đề xuất → bạn duyệt → mới ghi. Không bấm thì không có gì thay đổi.</span>';
       (function (hb) {
         if (hb) hb.onclick = function (e) { e.preventDefault(); e.stopPropagation(); openPop(hb, GUIDE_AI); };
@@ -2378,10 +2468,21 @@
       bar.querySelector('[data-v35ai="video"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.lessonFromVideo(id); };
       bar.querySelector('[data-v35ai="tr"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.lessonFromTranscript(id); };
       bar.querySelector('[data-v35ai="undo"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.undoLesson(id); };
+      bar.querySelector('[data-v35ai="key"]').onclick = function (e) { e.preventDefault(); e.stopPropagation(); openGeminiKeyModal(); };
       host.appendChild(bar);
     }
     var ub = bar.querySelector('[data-v35ai="undo"]');
     if (ub) ub.hidden = !undoAvailableFor(id);
+
+    // Nút key đổi màu theo trạng thái — chưa có key thì nổi bật lên để dễ thấy
+    var kb = bar.querySelector('[data-v35ai="key"]');
+    if (kb) {
+      var on = hasGeminiKey();
+      var label = on ? '🔑 Gemini: đã có key' : '🔑 Nhập Gemini key';
+      if (kb.innerHTML !== label) kb.innerHTML = label;
+      kb.classList.toggle('need', !on);
+      kb.title = on ? 'Đổi hoặc xoá key trên máy này' : 'Chưa có key — AI chưa dùng được. Bấm để nhập.';
+    }
   }
 
   // ============================================================
@@ -2502,6 +2603,21 @@
     check('bỏ markdown ** mà app không render', tidyText('**Who is it?** - abc', 'list').indexOf('*') === -1);
     check('mỗi câu một dòng cho shadow script', tidyText('One two. Three four. Five six.', 'sentences').split('\n').length === 3);
     check('có làm sạch khung video', typeof NS.tuneYouTubeEmbeds === 'function');
+    check('có bảng cài Gemini key', typeof NS.openGeminiKeyModal === 'function');
+    check('key KHÔNG nằm trong mã nguồn', (function () {
+      // nếu key bị hard-code trong file này thì đây là lỗi nghiêm trọng
+      return String(NS.openGeminiKeyModal).indexOf('AIzaSy') === -1;
+    })());
+    check('key KHÔNG đi kèm Export Backup', (function () {
+      // Chỉ ĐỌC, tuyệt đối không ghi/xoá — selfTest không được đụng vào key thật.
+      try {
+        var s = getState(); if (!s) return true;
+        var backupShape = { schema: 'shadow-en-backup-v1', state: s, overlays: {}, archived: [] };
+        var k = geminiKey();
+        if (!k) return true;                       // chưa có key thì không có gì để lộ
+        return JSON.stringify(backupShape).indexOf(k) === -1;
+      } catch (e) { return true; }
+    })());
     check('schema buộc có mọi mục suy ra', ['why', 'scene', 'phrases', 'shadow_script', 'real_english',
       'grammar_patterns', 'missions', 'active_recall', 'connected_speech']
       .every(function (k) { return LESSON_SCHEMA.required.indexOf(k) !== -1; }));
