@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.12.0';
+  NS.version = '35.13.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -381,6 +381,12 @@
       '.v35-ai-note{font-size:11px;color:#7b7599;flex:1;min-width:180px}',
       /* .v35-btn dùng display:inline-flex nên đè mất thuộc tính [hidden] mặc định của HTML */
       '.v35-btn[hidden],.v35-help[hidden]{display:none!important}',
+      /* K. đi lại trong buổi học */
+      '.step-btn.v35-prev{margin-right:8px;opacity:.85}',
+      '.step-btn.v35-prev:hover{opacity:1}',
+      '.session-step[data-v35nav="jump"]{transition:background .15s}',
+      '.session-step[data-v35nav="jump"]:hover{background:rgba(124,92,255,.10)}',
+      '.session-step .step-btn[data-v35nav="reopen"]{cursor:pointer;opacity:.9}',
       '.v35-key.need{border-color:rgba(250,204,21,.6)!important;color:#fde047!important;',
       'background:rgba(250,204,21,.14)!important;animation:v35glow 2.2s ease-in-out infinite}',
       '@keyframes v35glow{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,0)}50%{box-shadow:0 0 0 4px rgba(250,204,21,.14)}}',
@@ -2684,10 +2690,118 @@
   NS.backfillSamples = backfillSamples;
 
   // ============================================================
+  // K. ĐI LẠI TRONG BUỔI HỌC — "← Bước trước"
+  // ------------------------------------------------------------
+  // Trước đây bước nào đã ✓ Done thì bị khoá, không xem lại được.
+  // Thêm nút lùi + cho bấm thẳng vào bước đã học để mở lại.
+  // KHÔNG đổi luật hoàn thành buổi học, KHÔNG đổi XP:
+  // đi lùi rồi tiến lại sẽ không được cộng XP lần hai.
+  // ============================================================
+  function sessionState() {
+    var s = getState();
+    return (s && s.currentSession) ? s : null;
+  }
+
+  /* Bọc advanceStep để chặn cộng XP trùng khi học lại bước cũ.
+     Phần còn lại vẫn do hàm gốc của app.js chạy — không thay logic. */
+  function wrapAdvanceStep() {
+    if (typeof window.advanceStep !== 'function' || window.advanceStep.__v35) return;
+    var orig = window.advanceStep;
+    window.advanceStep = function () {
+      var s = getState();
+      var cs = s && s.currentSession;
+      var reached = cs ? (cs.v35max || cs.step) : 0;
+      var replay = !!cs && (cs.step + 1) <= reached;   // đang đi lại đoạn đã học
+      var xp = window.awardXP;
+      if (replay && typeof xp === 'function') window.awardXP = function () {};
+      try { return orig.apply(this, arguments); }
+      finally {
+        if (replay && typeof xp === 'function') window.awardXP = xp;
+        try {
+          var s2 = getState(), c2 = s2 && s2.currentSession;
+          if (c2) { c2.v35max = Math.max(reached, c2.step); saveState(s2); }
+        } catch (e) {}
+      }
+    };
+    window.advanceStep.__v35 = true;
+    log('advanceStep đã bọc — không cộng XP trùng khi xem lại bước cũ');
+  }
+
+  NS.gotoStep = function (n) {
+    var s = sessionState(); if (!s) return;
+    var cs = s.currentSession;
+    var reached = cs.v35max || cs.step;
+    n = Math.max(1, Math.min(n, reached));            // chỉ đi tới bước đã mở
+    if (n === cs.step) return;
+    cs.v35max = reached;
+    cs.step = n;
+    saveState(s);
+    try { if (typeof window.renderSessionView === 'function') window.renderSessionView(); } catch (e) {}
+    try { if (typeof window.render === 'function') window.render(); } catch (e) {}
+  };
+  NS.prevStep = function () {
+    var s = sessionState(); if (!s) return;
+    NS.gotoStep(s.currentSession.step - 1);
+  };
+
+  function attachStepNav() {
+    var view = document.getElementById('view-session');
+    if (!view || !view.classList.contains('active')) return;
+    var s = sessionState(); if (!s) return;
+    var cs = s.currentSession;
+    if (!cs.v35max || cs.v35max < cs.step) { cs.v35max = cs.step; }
+
+    // 1) nút "← Bước trước" đặt cạnh nút Next của bước đang mở
+    var nextBtn = view.querySelector('[data-action="next-step"]');
+    if (nextBtn && cs.step > 1) {
+      var host = nextBtn.parentNode;
+      var back = host.querySelector('[data-v35nav="prev"]');
+      if (!back) {
+        back = document.createElement('button');
+        back.type = 'button';
+        back.className = 'step-btn v35-prev';
+        back.setAttribute('data-v35nav', 'prev');
+        back.textContent = '← Bước trước';
+        back.title = 'Quay lại bước ' + (cs.step - 1) + ' để xem/nghe lại';
+        back.onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.prevStep(); };
+        host.insertBefore(back, nextBtn);
+      }
+    }
+
+    // 2) bước đã ✓ Done: bấm được để mở lại
+    var steps = view.querySelectorAll('.session-step');
+    Array.prototype.forEach.call(steps, function (el, i) {
+      var n = i + 1;
+      var done = el.classList.contains('done');
+      var btn = el.querySelector('.step-btn[disabled]');
+      if (done) {
+        if (!el.getAttribute('data-v35nav')) {
+          el.setAttribute('data-v35nav', 'jump');
+          el.style.cursor = 'pointer';
+          el.title = 'Bấm để xem lại bước ' + n;
+          el.addEventListener('click', function (ev) {
+            if (ev.target.closest('button')) return;
+            NS.gotoStep(n);
+          });
+        }
+        if (btn && btn.getAttribute('data-v35nav') !== 'reopen') {
+          btn.setAttribute('data-v35nav', 'reopen');
+          btn.disabled = false;
+          btn.textContent = '↩ Xem lại';
+          btn.onclick = function (e) { e.preventDefault(); e.stopPropagation(); NS.gotoStep(n); };
+        }
+      }
+    });
+  }
+  NS.attachStepNav = attachStepNav;
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
     try { installBridge(); } catch (e) {}
+    try { wrapAdvanceStep(); } catch (e) {}
+    try { attachStepNav(); } catch (e) {}
     try { dedupeDialogueCard(); } catch (e) {}
     try { injectCSS(); } catch (e) {}
     try { attachHelp(); } catch (e) {}
@@ -2881,6 +2995,18 @@
         if (/DIALOGUES|HỘI THOẠI/i.test(t) && c.style.display !== 'none') shown++;
       });
       return shown === 0;
+    })());
+    check('advanceStep đã được bọc chống XP trùng', !!(window.advanceStep && window.advanceStep.__v35));
+    check('gotoStep không vượt quá bước đã mở', (function () {
+      var s = getState(); if (!s) return true;
+      var keep = s.currentSession;
+      s.currentSession = { topicId: 'L1-01', step: 2, v35max: 3 };
+      NS.gotoStep(8);
+      var capped = s.currentSession.step === 3;
+      NS.gotoStep(-5);
+      var floored = s.currentSession.step === 1;
+      s.currentSession = keep; saveState(s);
+      return capped && floored;
     })());
     check('bridge không sinh câu rỗng trong phrase bank', (function () {
       try { return window.SHADOW_CONTENT.getAllPhrases().every(function (p) { return !!String(p.en).trim(); }); }
