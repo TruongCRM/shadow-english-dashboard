@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.16.1';
+  NS.version = '35.17.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -410,6 +410,36 @@
       '.v35-fill-s{font-size:13px;line-height:1.5;color:rgba(255,255,255,.6)}',
       '.v35-fill-go{align-self:flex-start;margin-top:4px}',
       '@media (max-width:680px){.v35-fill{grid-column:1/-1!important}}',
+      /* N. buổi học đầy đủ — khối gập lại + nhóm cụm từ */
+      '.v35-det{margin-top:12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;' +
+        'background:rgba(255,255,255,.03);font-family:var(--v35-font);overflow:hidden}',
+      '.v35-det>summary{cursor:pointer;padding:11px 14px;font-weight:600;font-size:13.5px;' +
+        'color:rgba(255,255,255,.85);list-style:none;user-select:none}',
+      '.v35-det>summary::-webkit-details-marker{display:none}',
+      '.v35-det>summary::before{content:"▸ ";color:rgba(160,140,255,.9)}',
+      '.v35-det[open]>summary::before{content:"▾ "}',
+      '.v35-det>summary:hover{background:rgba(255,255,255,.04)}',
+      '.v35-det-body{padding:4px 14px 14px}',
+      '.v35-grp{margin-top:12px}',
+      '.v35-grp-h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;' +
+        'color:rgba(180,160,255,.85);margin-bottom:6px;font-family:var(--v35-font)}',
+      '.v35-grp-h span{color:rgba(255,255,255,.4);font-weight:500;letter-spacing:0}',
+      '.v35-pat{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}',
+      '.v35-pat:last-child{border-bottom:0}',
+      '.v35-pat-p{font-weight:700;color:#fff;font-size:14px}',
+      '.v35-pat-m{font-size:12.5px;color:rgba(255,255,255,.6);margin:3px 0 6px}',
+      '.v35-ex{display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.8);padding:2px 0}',
+      '.v35-lkrow{display:flex;gap:10px;align-items:flex-start;padding:8px 0;' +
+        'border-bottom:1px solid rgba(255,255,255,.07)}',
+      '.v35-lkrow:last-child{border-bottom:0}',
+      '.v35-lksent{font-size:13.5px;color:rgba(255,255,255,.88);margin-bottom:4px}',
+      '.v35-lk{display:inline-block;margin:0 8px 4px 0;font-size:12.5px;color:rgba(255,255,255,.62)}',
+      '.v35-lk b{color:#ffd166;font-weight:600}',
+      '.v35-re{font-size:13px;line-height:1.55;color:rgba(255,255,255,.78);padding:5px 0;' +
+        'border-bottom:1px solid rgba(255,255,255,.06)}',
+      '.v35-re:last-child{border-bottom:0}',
+      '.v35-vid{position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden}',
+      '.v35-vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}',
       '.v35-key.need{border-color:rgba(250,204,21,.6)!important;color:#fde047!important;',
       'background:rgba(250,204,21,.14)!important;animation:v35glow 2.2s ease-in-out infinite}',
       '@keyframes v35glow{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,0)}50%{box-shadow:0 0 0 4px rgba(250,204,21,.14)}}',
@@ -3391,11 +3421,184 @@
   NS.patchReviewEngine = patchReviewEngine;
 
   // ============================================================
+  // N. BUỔI HỌC = BÀI HỌC ĐẦY ĐỦ (v35.17)
+  // ------------------------------------------------------------
+  // PHÂN VAI:  📚 Topic Detail = nơi SOẠN + tra cứu
+  //            ▶️ Today Session = nơi HỌC → không được thiếu nội dung nào
+  //
+  // Thiết kế gốc (v6) đã định luồng 8 bước WARM-UP→…→REFLECTION là TOÀN BỘ
+  // việc học. Nhưng suốt v12→v35, bốn loại nội dung được gắn thêm vào trang
+  // bài mà KHÔNG lần nào nối vào luồng học: video (v12), mẫu ngữ pháp (v26),
+  // nối âm (v34), Real English (v35). Cộng thêm `phraseAll.slice(0,8)` trong
+  // app_v8 — một dòng viết tạm thời bài chỉ có 7-8 câu, rồi ở lại luôn.
+  // Kết quả: buổi học chỉ hiện khoảng 1/3 bài.
+  //
+  // Sửa: KHÔNG thêm bước, KHÔNG bày hết ra một lúc (làm vậy là giết mất thứ
+  // tự và sự tập trung — đúng cái Session sinh ra để có). Mỗi thứ đặt vào
+  // đúng bước nó có tác dụng, phần phụ nằm trong khối gập lại:
+  //   1 WARM-UP ← video · 2 LISTEN ← Real English · 3 SHADOW ← nối âm
+  //   4 REPEAT  ← TOÀN BỘ câu + ngữ pháp · 5 RECALL ← hội thoại + nhiệm vụ
+  // ============================================================
+  function det(title, inner, open) {
+    return '<details class="v35-det"' + (open ? ' open' : '') + '>' +
+           '<summary>' + esc(title) + '</summary>' +
+           '<div class="v35-det-body">' + inner + '</div></details>';
+  }
+
+  /* audio.js bắt sự kiện uỷ quyền trên .audio-btn và đọc data-audio,
+     nên nút nào dựng theo đúng khuôn này là tự có tiếng, không cần nối tay. */
+  function audioBtn(text) {
+    return '<button type="button" class="audio-btn" data-audio="' + esc(text) + '">▶</button>';
+  }
+
+  function phraseRows(arr) {
+    return (arr || []).map(function (p) {
+      var en = Array.isArray(p) ? p[0] : (p && p.en) || '';
+      var vi = Array.isArray(p) ? p[1] : (p && p.vi) || '';
+      if (!String(en).trim()) return '';
+      return '<div class="phrase-row">' + audioBtn(en) +
+             '<span class="phrase-en">' + esc(en) + '</span>' +
+             '<span class="phrase-vi">' + esc(vi) + '</span></div>';
+    }).join('');
+  }
+
+  function countPhrases(arr) {
+    return (arr || []).filter(function (p) {
+      var en = Array.isArray(p) ? p[0] : (p && p.en);
+      return String(en || '').trim();
+    }).length;
+  }
+
+  /* Bước 4 — dựng lại hoàn toàn: KHÔNG cắt câu nào. */
+  function fullPhraseStep(c) {
+    var ph = (c && c.phrases) || {};
+    var groups = [
+      { k: 'before', label: 'TRƯỚC KHI VÀO TÌNH HUỐNG' },
+      { k: 'during', label: 'TRONG TÌNH HUỐNG' },
+      { k: 'after',  label: 'KẾT THÚC · RỜI ĐI' }
+    ];
+    var total = 0, html = '';
+    groups.forEach(function (g) {
+      var n = countPhrases(ph[g.k]);
+      if (!n) return;
+      total += n;
+      html += '<div class="v35-grp"><div class="v35-grp-h">' + esc(g.label) +
+              ' <span>' + n + ' câu</span></div>' +
+              '<div class="phrase-list">' + phraseRows(ph[g.k]) + '</div></div>';
+    });
+    if (!total) return '';
+    return '<div class="step-content">' +
+           '<div class="lesson-block"><b>🔁 REPEAT — Đọc to từng câu. Cả ' + total +
+           ' câu, không bỏ câu nào.</b></div>' + html +
+           '<div class="step-tip">💡 Câu nào không nói ra miệng thì câu đó chưa thuộc.</div></div>';
+  }
+
+  function grammarHtml(topicId) {
+    var gp = {};
+    try { gp = JSON.parse(localStorage.getItem('shadow-en-grammar-patterns') || '{}'); } catch (e) {}
+    var list = gp[topicId] || [];
+    if (!list.length) return '';
+    var inner = list.map(function (p) {
+      var ex = (p.examples || []).map(function (e) {
+        return '<div class="v35-ex">' + audioBtn(e) + '<span>' + esc(e) + '</span></div>';
+      }).join('');
+      return '<div class="v35-pat"><div class="v35-pat-p">' + esc(p.pattern || '') + '</div>' +
+             (p.meaning ? '<div class="v35-pat-m">' + esc(p.meaning) + '</div>' : '') + ex + '</div>';
+    }).join('');
+    return det('📐 Mẫu ngữ pháp đang luyện (' + list.length + ')', inner, false);
+  }
+
+  function linkingHtml(topicId) {
+    var lk = {};
+    try { lk = JSON.parse(localStorage.getItem('shadow-en-linking-' + topicId) || '{}'); } catch (e) {}
+    var keys = Object.keys(lk);
+    if (!keys.length) return '';
+    var inner = keys.map(function (sent) {
+      var words = String(sent).split(/\s+/);
+      var marks = (lk[sent] || []).map(function (m) {
+        var a = m.a || 0, b = (m.b == null ? a : m.b);
+        var pair = words.slice(a, b + 1).join(' ');
+        return '<span class="v35-lk"><b>' + esc(pair) + '</b> → ' + esc(m.ipa || '') + '</span>';
+      }).join('');
+      return '<div class="v35-lkrow">' + audioBtn(sent) +
+             '<div><div class="v35-lksent">' + esc(sent) + '</div>' + marks + '</div></div>';
+    }).join('');
+    // mở sẵn: đây là thứ phải nhại NGAY lúc đang shadow, không phải để tra cứu
+    return det('🔗 Nối âm — chỗ dính chữ phải nhại đúng (' + keys.length + ' câu)', inner, true);
+  }
+
+  function realEnglishHtml(c) {
+    var t = String((c && c.real_english) || '').trim();
+    if (!t) return '';
+    var inner = t.split(/\r?\n/).filter(Boolean).map(function (l) {
+      return '<div class="v35-re">' + esc(l) + '</div>';
+    }).join('');
+    return det('🎤 Người bản xứ nói thật ra sao', inner, false);
+  }
+
+  function dialoguesHtml(c) {
+    var d = ((c && c.dialogues) || [])[0];
+    if (!d || !(d.lines || []).length) return '';
+    var inner = d.lines.map(function (l) {
+      return '<div class="dialogue-line">' + audioBtn(l[1] || '') +
+             '<b>' + esc(l[0] || '') + ':</b> ' + esc(l[1] || '') + '</div>';
+    }).join('');
+    return det('🎭 Hội thoại — nói lại cả hai vai (' + d.lines.length + ' lượt)', inner, false);
+  }
+
+  function missionsHtml(c) {
+    var ms = (c && c.missions) || [];
+    if (!ms.length) return '';
+    var inner = '<ul class="mission-checklist">' + ms.map(function (m, i) {
+      return '<li><label><input type="checkbox" data-v35mission="' + i + '"/> ' + esc(m) + '</label></li>';
+    }).join('') + '</ul><div class="step-tip">💡 Phrase chưa dùng với người thật = chưa thuộc.</div>';
+    return det('🌍 Nhiệm vụ đời thật trong 24h (' + ms.length + ')', inner, false);
+  }
+
+  function videoHtml(topicId) {
+    var ov = rawOverlay(topicId);
+    var url = ov && ov.videoImmersionUrl;
+    var vid = url ? ytId(url) : null;
+    if (!vid) return '';
+    var src = 'https://www.youtube-nocookie.com/embed/' + vid +
+              '?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&cc_load_policy=1';
+    return det('▶ Video nhập vai — xem trước khi vào bước nghe',
+      '<div class="v35-vid"><iframe src="' + src + '" frameborder="0" allowfullscreen ' +
+      'allow="accelerometer; encrypted-media; picture-in-picture"></iframe></div>', false);
+  }
+
+  function enrichStep(n, topic, c, html) {
+    var id = topic && topic.id;
+    if (n === 1) return html + videoHtml(id);
+    if (n === 2) return html + realEnglishHtml(c);
+    if (n === 3) return html + linkingHtml(id);
+    if (n === 4) { var full = fullPhraseStep(c); return (full || html) + grammarHtml(id); }
+    if (n === 5) return html + dialoguesHtml(c) + missionsHtml(c);
+    return html;
+  }
+  NS._enrichStep = enrichStep;
+  NS._fullPhraseStep = fullPhraseStep;
+
+  var _wrappedStep = false;
+  function wrapStepRender() {
+    if (typeof window.renderStepV8 !== 'function' || _wrappedStep) return;
+    _wrappedStep = true;
+    var orig = window.renderStepV8;
+    window.renderStepV8 = function (n, topic, c) {
+      var html;
+      try { html = orig.apply(this, arguments); } catch (e) { html = ''; }
+      try { return enrichStep(n, topic, c, html); } catch (e) { return html; }
+    };
+    log('buổi học hiện ĐỦ nội dung bài — không cắt câu, không bỏ mục');
+  }
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
     try { installBridge(); } catch (e) {}
     try { wrapAdvanceStep(); } catch (e) {}
+    try { wrapStepRender(); } catch (e) {}
     try { wrapFeedback(); } catch (e) {}
     try { attachFxButton(); } catch (e) {}
     try { patchReviewEngine(); } catch (e) {}
@@ -3437,6 +3640,7 @@
     try { backfillSamples(); } catch (e) {}
     try { installBridge(); } catch (e) {}
     try { armAudioUnlock(); } catch (e) {}
+    try { wrapStepRender(); } catch (e) {}
     try { wrapFeedback(); } catch (e) {}
 
     tick();
@@ -3645,6 +3849,52 @@
       var f1 = window.completeSession;
       wrapFeedback(); wrapFeedback(); wrapFeedback();
       return window.completeSession === f1;                 // không được bọc chồng
+    })());
+    // ---- N. buổi học đầy đủ ----
+    check('renderStepV8 đã được bọc', !!_wrappedStep && typeof window.renderStepV8 === 'function');
+    check('bọc đúng một lần dù gọi lại', (function () {
+      var f = window.renderStepV8;
+      wrapStepRender(); wrapStepRender();
+      return window.renderStepV8 === f;
+    })());
+    check('bước REPEAT không cắt câu nào', (function () {
+      var c = { phrases: { before: [['a1', 'x'], ['a2', 'x'], ['a3', 'x']],
+                           during: [['b1', 'x'], ['b2', 'x'], ['b3', 'x'], ['b4', 'x'], ['b5', 'x'], ['b6', 'x']],
+                           after:  [['c1', 'x'], ['c2', 'x'], ['c3', 'x'], ['c4', 'x']] } };
+      var h = fullPhraseStep(c);
+      var rows = (h.match(/class="phrase-row"/g) || []).length;
+      return rows === 13 && /Cả 13 câu/.test(h);      // 13 > trần cũ 8
+    })());
+    check('bỏ dòng trống, không dựng nút câm', (function () {
+      var h = fullPhraseStep({ phrases: { before: [['hi', 'chào'], ['', 'rỗng'], [' ', '']], during: [], after: [] } });
+      return (h.match(/class="phrase-row"/g) || []).length === 1;
+    })());
+    check('mỗi câu đều có nút nghe đúng nội dung', (function () {
+      var h = fullPhraseStep({ phrases: { before: [["It's far.", 'Xa']], during: [], after: [] } });
+      return h.indexOf('data-audio="It&#39;s far."') > -1 || /data-audio="It.{0,6}s far\."/.test(h);
+    })());
+    check('bài rỗng thì không dựng bước REPEAT giả', fullPhraseStep({ phrases: { before: [], during: [], after: [] } }) === '');
+    check('nối âm mở sẵn, ngữ pháp gập lại', (function () {
+      try {
+        localStorage.setItem('shadow-en-linking-__t', JSON.stringify({ 'I want to go': [{ a: 1, b: 2, ipa: '/wanna/' }] }));
+        var lk = linkingHtml('__t');
+        localStorage.removeItem('shadow-en-linking-__t');
+        return /<details class="v35-det" open>/.test(lk) && /want to/.test(lk) && /wanna/.test(lk);
+      } catch (e) { return false; }
+    })());
+    check('không có nội dung thì không hiện khối rỗng', (function () {
+      return linkingHtml('__khong_co__') === '' && grammarHtml('__khong_co__') === '' &&
+             realEnglishHtml({}) === '' && dialoguesHtml({}) === '' && missionsHtml({}) === '' &&
+             videoHtml('__khong_co__') === '';
+    })());
+    check('5 bước đều nhận đúng phần bổ sung', (function () {
+      var c = { real_english: 'abc', dialogues: [{ title: 'D', lines: [['A', 'hi']] }], missions: ['m1'],
+                phrases: { before: [['x', 'y']], during: [], after: [] } };
+      var t = { id: '__none__' };
+      return enrichStep(2, t, c, '@').indexOf('Người bản xứ') > -1 &&
+             enrichStep(4, t, c, '@').indexOf('phrase-row') > -1 &&
+             enrichStep(5, t, c, '@').indexOf('Hội thoại') > -1 &&
+             enrichStep(5, t, c, '@').indexOf('Nhiệm vụ') > -1;
     })());
     // ---- M. Review Engine ----
     check('đếm đúng "chưa học" và "tới hạn ôn"', (function () {
