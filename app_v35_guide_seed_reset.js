@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.17.0';
+  NS.version = '35.18.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -440,6 +440,44 @@
       '.v35-re:last-child{border-bottom:0}',
       '.v35-vid{position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden}',
       '.v35-vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}',
+      /* O. thanh điều khiển buổi học */
+      '.v35-learnbar{grid-column:1/-1;position:sticky;top:0;z-index:60;display:flex;flex-wrap:wrap;gap:12px;' +
+        'align-items:center;justify-content:space-between;padding:12px 18px;margin-bottom:14px;' +
+        'border-radius:14px;font-family:var(--v35-font);' +
+        'background:linear-gradient(135deg,rgba(124,92,255,.96),rgba(91,63,214,.96));' +
+        'box-shadow:0 8px 28px rgba(0,0,0,.45);backdrop-filter:blur(8px)}',
+      '.v35-lb-left{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}',
+      '.v35-lb-dot{width:9px;height:9px;border-radius:50%;background:#4ade80;flex:none;' +
+        'box-shadow:0 0 0 0 rgba(74,222,128,.7);animation:v35pulse 2s infinite}',
+      '@keyframes v35pulse{70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}',
+      '@media (prefers-reduced-motion: reduce){.v35-lb-dot{animation:none}}',
+      '.v35-lb-t{color:#fff;font-weight:700;font-size:14px;letter-spacing:.02em}',
+      '.v35-lb-sub{color:rgba(255,255,255,.72);font-size:12.5px}',
+      '.v35-lb-right{display:flex;gap:8px;flex:none}',
+      '.v35-lb-btn{border:0;border-radius:10px;padding:9px 16px;font-weight:600;font-size:13.5px;' +
+        'cursor:pointer;font-family:var(--v35-font)}',
+      '.v35-lb-btn.ghost{background:rgba(255,255,255,.15);color:#fff}',
+      '.v35-lb-btn.ghost:hover{background:rgba(255,255,255,.25)}',
+      '.v35-lb-btn.go{background:#fff;color:#4c2fd0}',
+      '.v35-lb-btn.go:hover{background:#f2eeff}',
+      /* O. đang học thì ẩn hết công cụ sửa — không lỡ tay xoá mất nội dung */
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v12-phrase-actions,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v12-block-actions,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v12-add-block-bar,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v12-add-phrase-btn,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v12-section-edit-btn,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v15-sec-tools,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v15-item-actions,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v15-edit-only,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v15-btn,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .gp-actions,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .gp-del,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .mm-actions,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .v35-ai-bar,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail [data-v35="reset-topic"],' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .topic-hero .mission-btn,' +
+      'body.' + LEARN_CLASS + ' #view-topic-detail .topic-hero .step-btn' +
+      '{display:none!important}',
       '.v35-key.need{border-color:rgba(250,204,21,.6)!important;color:#fde047!important;',
       'background:rgba(250,204,21,.14)!important;animation:v35glow 2.2s ease-in-out infinite}',
       '@keyframes v35glow{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,0)}50%{box-shadow:0 0 0 4px rgba(250,204,21,.14)}}',
@@ -3593,12 +3631,169 @@
   }
 
   // ============================================================
+  // O. BUỔI HỌC DÙNG CHÍNH TRANG BÀI (v35.18)
+  // ------------------------------------------------------------
+  // MỘT BÀI, MỘT BẢN THIẾT KẾ. Bài soạn ở Topic Detail thế nào thì lúc học
+  // phải thấy đúng như thế — thứ tự mục, mục đã ẩn, khối tự tạo, thẻ ngữ pháp
+  // kèm IPA, mindmap, word order… tất cả.
+  //
+  // TẠI SAO KHÔNG VẼ LẠI GIAO DIỆN ĐÓ BÊN TRONG #view-session:
+  // 15 file đang gắn CỨNG vào '#view-topic-detail' (v9 blocks, v12 editor,
+  // v24/25 word order, v26 grammar, v27 mindmap, v34 nối âm…) — chúng chỉ biết
+  // vẽ vào đúng id đó. Nhân bản DOM thì mất sự kiện; viết lại 15 module thì
+  // rủi ro cao và chắc chắn lệch. Nên: DÙNG CHÍNH TRANG ĐÓ, gắn thanh điều
+  // khiển buổi học vào. Được thêm một thứ: v15 đã lưu sections.order và
+  // sections.hidden theo từng topic, nên thứ tự và mục ẩn TỰ ĐỘNG đúng.
+  //
+  // Lúc học thì ẩn hết công cụ sửa — chỉ đọc và nói. Thoát là hiện lại.
+  // ============================================================
+  var LEARN_CLASS = 'v35-learning';
+
+  function currentSess() {
+    var s = getState();
+    return (s && s.currentSession) ? s.currentSession : null;
+  }
+
+  /* Chủ đề hôm nay: ưu tiên bài tới hạn ôn, không có thì bài mới đầu tiên. */
+  function pickTodayTopic(s) {
+    if (!s) return null;
+    var ts = s.topics || [], now = Date.now(), i;
+    for (i = 0; i < ts.length; i++) {
+      if (!isNewTopic(ts[i]) && ts[i].nextReview &&
+          new Date(ts[i].nextReview).getTime() <= now) return ts[i].id;
+    }
+    for (i = 0; i < ts.length; i++) if (isNewTopic(ts[i])) return ts[i].id;
+    return ts.length ? ts[0].id : null;
+  }
+  NS._pickTodayTopic = pickTodayTopic;
+
+  NS.startLearn = function (topicId) {
+    var s = getState(); if (!s || !topicId) return;
+    s.currentSession = { topicId: topicId, startedAt: new Date().toISOString(), step: 1, v35full: true };
+    s.currentTopicId = topicId;
+    saveState(s);
+    try { if (typeof window.navigate === 'function') window.navigate('topic-detail'); } catch (e) {}
+    try { if (typeof window.render === 'function') window.render(); } catch (e) {}
+    setTimeout(function () { try { window.scrollTo(0, 0); } catch (e) {} }, 60);
+  };
+
+  NS.exitLearn = function () {
+    var s = getState(); if (!s) return;
+    s.currentSession = null;
+    saveState(s);
+    document.body.classList.remove(LEARN_CLASS);
+    var b = document.getElementById('v35-learnbar'); if (b) b.remove();
+    try { if (typeof window.render === 'function') window.render(); } catch (e) {}
+  };
+
+  NS.finishLearn = function () {
+    var cs = currentSess(); if (!cs) return;
+    var id = cs.topicId;
+    document.body.classList.remove(LEARN_CLASS);
+    var b = document.getElementById('v35-learnbar'); if (b) b.remove();
+    try { if (typeof window.completeSession === 'function') window.completeSession(id); } catch (e) {}
+    setTimeout(function () {           // để băng chúc mừng kịp hiện rồi mới rời trang
+      try { if (typeof window.navigate === 'function') window.navigate('dashboard'); } catch (e) {}
+    }, 1300);
+  };
+
+  function elapsedText(startedAt) {
+    var t0 = startedAt ? new Date(startedAt).getTime() : 0;
+    if (!t0) return '';
+    var m = Math.max(0, Math.floor((Date.now() - t0) / 60000));
+    return m < 1 ? 'vừa bắt đầu' : (m + ' phút');
+  }
+  NS._elapsedText = elapsedText;
+
+  /* Thanh điều khiển buổi học — dán dính trên đầu trang bài. */
+  function attachLearnBar() {
+    var view = document.getElementById('view-topic-detail');
+    var cs = currentSess();
+    var onDetail = view && view.classList.contains('active');
+    var id = onDetail ? currentTopicId(view) : null;
+    var active = !!(cs && id && cs.topicId === id);
+
+    if (!active) {
+      if (document.body.classList.contains(LEARN_CLASS)) document.body.classList.remove(LEARN_CLASS);
+      var old = document.getElementById('v35-learnbar'); if (old) old.remove();
+      return;
+    }
+    document.body.classList.add(LEARN_CLASS);
+
+    var t = topicById(id);
+    var bar = document.getElementById('v35-learnbar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'v35-learnbar';
+      bar.className = 'v35-learnbar';
+      bar.innerHTML =
+        '<div class="v35-lb-left"><span class="v35-lb-dot"></span>' +
+        '<span class="v35-lb-t"></span><span class="v35-lb-sub"></span></div>' +
+        '<div class="v35-lb-right">' +
+        '<button type="button" class="v35-lb-btn ghost" data-v35lb="exit">Thoát</button>' +
+        '<button type="button" class="v35-lb-btn go" data-v35lb="done">✅ Hoàn thành buổi học</button>' +
+        '</div>';
+      bar.querySelector('[data-v35lb="exit"]').onclick = function (e) {
+        e.preventDefault(); e.stopPropagation(); NS.exitLearn();
+      };
+      bar.querySelector('[data-v35lb="done"]').onclick = function (e) {
+        e.preventDefault(); e.stopPropagation(); NS.finishLearn();
+      };
+      view.insertBefore(bar, view.firstChild);
+    } else if (view.firstChild !== bar) {
+      view.insertBefore(bar, view.firstChild);        // v12/v13 vẽ lại thì đưa về đầu
+    }
+
+    var title = 'ĐANG HỌC · ' + ((t && t.name) || '');
+    var sub = (t ? (t.reviewStage + ' · ' + String(t.memoryStatus || '').toUpperCase()) : '') +
+              ' · ' + elapsedText(cs.startedAt);
+    var tEl = bar.querySelector('.v35-lb-t'), sEl = bar.querySelector('.v35-lb-sub');
+    if (tEl.textContent !== title) tEl.textContent = title;
+    if (sEl.textContent !== sub) sEl.textContent = sub;
+  }
+  NS.attachLearnBar = attachLearnBar;
+
+  /* Mọi lối vào "học bài" đều đi qua đây. */
+  var _wrapNav = false;
+  function wrapNavigation() {
+    if (_wrapNav) return;
+    _wrapNav = true;
+
+    if (typeof window.startSession === 'function') {
+      window.startSession = function (topicId) { NS.startLearn(topicId); };
+    }
+
+    // Bấm "Today Session" ở thanh trái → mở đúng trang bài của hôm nay
+    if (typeof window.navigate === 'function') {
+      var origNav = window.navigate;
+      window.navigate = function (viewName) {
+        if (viewName === 'session') {
+          var s = getState();
+          var cs = s && s.currentSession;
+          var id = cs ? cs.topicId : pickTodayTopic(s);
+          if (id && s) {
+            if (!cs) s.currentSession = { topicId: id, startedAt: new Date().toISOString(), step: 1, v35full: true };
+            s.currentTopicId = id;
+            saveState(s);
+            return origNav.call(this, 'topic-detail');
+          }
+        }
+        return origNav.apply(this, arguments);
+      };
+      window.navigate.__v35 = true;
+    }
+    log('buổi học dùng chính trang bài — một bài, một bản thiết kế');
+  }
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
     try { installBridge(); } catch (e) {}
     try { wrapAdvanceStep(); } catch (e) {}
     try { wrapStepRender(); } catch (e) {}
+    try { wrapNavigation(); } catch (e) {}
+    try { attachLearnBar(); } catch (e) {}
     try { wrapFeedback(); } catch (e) {}
     try { attachFxButton(); } catch (e) {}
     try { patchReviewEngine(); } catch (e) {}
@@ -3641,6 +3836,7 @@
     try { installBridge(); } catch (e) {}
     try { armAudioUnlock(); } catch (e) {}
     try { wrapStepRender(); } catch (e) {}
+    try { wrapNavigation(); } catch (e) {}
     try { wrapFeedback(); } catch (e) {}
 
     tick();
@@ -3849,6 +4045,39 @@
       var f1 = window.completeSession;
       wrapFeedback(); wrapFeedback(); wrapFeedback();
       return window.completeSession === f1;                 // không được bọc chồng
+    })());
+    // ---- O. buổi học dùng chính trang bài ----
+    check('startSession chuyển sang mở trang bài', typeof window.startSession === 'function' && _wrapNav);
+    check('navigate đã được bọc đúng một lần', (function () {
+      var f = window.navigate;
+      wrapNavigation(); wrapNavigation();
+      return window.navigate === f && !!window.navigate.__v35;
+    })());
+    check('chọn đúng bài của hôm nay', (function () {
+      var due = { id: 'D', lastReview: '2026-01-01', reviewStage: 'Day 1',
+                  nextReview: new Date(Date.now() - 3600000).toISOString() };
+      var fresh = { id: 'N', lastReview: null, reviewStage: 'Day 0' };
+      return pickTodayTopic({ topics: [fresh, due] }) === 'D' &&   // ôn tới hạn được ưu tiên
+             pickTodayTopic({ topics: [fresh] }) === 'N' &&
+             pickTodayTopic({ topics: [] }) === null;
+    })());
+    check('không ở trong buổi học thì không dán nhãn learning', (function () {
+      var cs = currentSess();
+      if (cs) return true;                       // đang học thật thì bỏ qua phép này
+      attachLearnBar();
+      return !document.body.classList.contains(LEARN_CLASS) && !document.getElementById('v35-learnbar');
+    })());
+    check('đếm đúng thời gian đã học', (function () {
+      return elapsedText(new Date(Date.now() - 5 * 60000).toISOString()) === '5 phút' &&
+             elapsedText(new Date().toISOString()) === 'vừa bắt đầu' &&
+             elapsedText(null) === '';
+    })());
+    check('có luật CSS ẩn công cụ sửa lúc học', (function () {
+      var st = document.querySelector('style[id^="v35-styles-"]');
+      var css = st ? st.textContent : '';
+      return /v35-learning[^{]*gp-del/.test(css) &&
+             /v35-learning[^{]*v12-phrase-actions/.test(css) &&
+             /v35-learning[^{]*v35-ai-bar/.test(css);
     })());
     // ---- N. buổi học đầy đủ ----
     check('renderStepV8 đã được bọc', !!_wrappedStep && typeof window.renderStepV8 === 'function');
