@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.14.0';
+  NS.version = '35.15.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -387,6 +387,20 @@
       '.session-step[data-v35nav="jump"]{transition:background .15s}',
       '.session-step[data-v35nav="jump"]:hover{background:rgba(124,92,255,.10)}',
       '.session-step .step-btn[data-v35nav="reopen"]{cursor:pointer;opacity:.9}',
+      /* L. âm thanh + ăn mừng */
+      '.v35-fx-btn.off{opacity:.55}',
+      '.v35-banner{position:fixed;left:50%;top:78px;transform:translate(-50%,-24px);z-index:2147483100;' +
+        'background:linear-gradient(135deg,#7c5cff,#5b3fd6);color:#fff;padding:14px 26px;border-radius:14px;' +
+        'box-shadow:0 12px 40px rgba(0,0,0,.45);text-align:center;max-width:min(560px,92vw);' +
+        'opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;font-family:var(--v35-font)}',
+      '.v35-banner.go{opacity:1;transform:translate(-50%,0)}',
+      '.v35-bn-t{font-weight:700;font-size:16px;line-height:1.35}',
+      '.v35-bn-s{font-size:13px;opacity:.9;margin-top:4px;line-height:1.45}',
+      '.v35-xpfloat{position:fixed;z-index:2147483100;pointer-events:none;color:#ffd166;font-weight:700;' +
+        'font-size:15px;font-family:var(--v35-font);text-shadow:0 2px 8px rgba(0,0,0,.6);' +
+        'animation:v35rise 1.4s ease-out forwards}',
+      '@keyframes v35rise{0%{opacity:0;transform:translateY(6px)}18%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}',
+      '@media (prefers-reduced-motion: reduce){.v35-xpfloat{animation:none;opacity:0}}',
       '.v35-key.need{border-color:rgba(250,204,21,.6)!important;color:#fde047!important;',
       'background:rgba(250,204,21,.14)!important;animation:v35glow 2.2s ease-in-out infinite}',
       '@keyframes v35glow{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,0)}50%{box-shadow:0 0 0 4px rgba(250,204,21,.14)}}',
@@ -2850,11 +2864,385 @@
   NS.attachStepNav = attachStepNav;
 
   // ============================================================
+  // L. ÂM THANH + ĂN MỪNG (v35.15)
+  // ------------------------------------------------------------
+  // NGUYÊN TẮC: thưởng đúng chỗ. Hiệu ứng không phải trang trí — nó dạy não
+  // biết hành vi nào đáng lặp lại. Nếu ăn mừng đều nhau ở mọi nơi, não học
+  // rằng "bấm Next = có thưởng" thay vì "nhớ được = có thưởng".
+  //
+  // Trong hệ thống giãn cách, thứ đáng ăn mừng nhất KHÔNG phải học bài mới
+  // (dễ, ai cũng làm được) mà là ÔN QUA MỐC DÀI HƠN — bằng chứng của trí nhớ.
+  //
+  // Chỉ 3 mốc được ăn mừng:
+  //   1. Xong buổi học          — 1 lần/ngày, đáng kể
+  //   2. Giữ streak sang ngày mới — hành vi cần lặp nhất
+  //   3. Ôn qua mốc dài hơn (Day 7/21/60, hoặc lên Automatic) — mạnh nhất
+  // Bước nhỏ chỉ có số +XP bay lên, KHÔNG có tiếng, KHÔNG confetti.
+  //
+  // Âm thanh TỔNG HỢP tại chỗ bằng Web Audio — không tải file nào.
+  // Lý do: app từng treo 3 phút vì chờ chart.js từ CDN. Thêm file âm thanh là
+  // thêm một điểm chết. Tổng hợp tại chỗ = 0 KB, chạy được cả khi mất mạng.
+  // ============================================================
+  var FX_KEY = 'shadow-en-fx';
+  var FX_MODES = ['full', 'light', 'off'];
+  var FX_LABEL = { full: '🔔 Hiệu ứng: Đầy đủ', light: '🔔 Hiệu ứng: Nhẹ', off: '🔕 Hiệu ứng: Tắt' };
+
+  function fxMode() {
+    try {
+      var m = localStorage.getItem(FX_KEY);
+      return FX_MODES.indexOf(m) > -1 ? m : 'light';   // mặc định Nhẹ, không phải Đầy đủ
+    } catch (e) { return 'light'; }
+  }
+  function setFxMode(m) { try { localStorage.setItem(FX_KEY, m); } catch (e) {} }
+  NS.fxMode = fxMode;
+
+  function reducedMotion() {
+    try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch (e) { return false; }
+  }
+
+  // ---- Web Audio: bối cảnh tạo LƯỜI, mở khoá ở cú chạm đầu tiên ----
+  var _ac = null, _acUnlocked = false;
+  function audioCtx() {
+    if (_ac) return _ac;
+    var C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return null;
+    try { _ac = new C(); } catch (e) { return null; }
+    return _ac;
+  }
+  function unlockAudio() {
+    if (_acUnlocked) return;
+    var c = audioCtx(); if (!c) return;
+    if (c.state === 'suspended') { try { c.resume(); } catch (e) {} }
+    _acUnlocked = true;
+  }
+  NS.unlockAudio = unlockAudio;
+
+  /* Một nốt: sóng sine + đường bao lên/xuống mượt để không bị "cụp" tai. */
+  function tone(freq, startMs, durMs, vol, type) {
+    var c = audioCtx(); if (!c) return;
+    var t0 = c.currentTime + (startMs || 0) / 1000;
+    var dur = (durMs || 200) / 1000;
+    var osc = c.createOscillator(), g = c.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + 0.015);            // lên nhanh
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);      // tắt dần
+    osc.connect(g); g.connect(c.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+  }
+
+  /* KHÔNG BAO GIỜ đè lên giọng đọc — đang đọc thì bỏ qua tiếng hiệu ứng. */
+  function speaking() {
+    try { return !!(window.speechSynthesis && window.speechSynthesis.speaking); } catch (e) { return false; }
+  }
+
+  function canPlay() {
+    if (fxMode() === 'off') return false;
+    if (speaking()) return false;
+    return !!audioCtx();
+  }
+
+  var SFX = {
+    // xong buổi học — 3 nốt đi lên C5-E5-G5
+    session: function (soft) {
+      if (!canPlay()) return;
+      var v = soft ? 0.10 : 0.17;
+      tone(523.25, 0, 220, v);
+      tone(659.25, 130, 220, v);
+      tone(783.99, 260, 420, v * 1.05);
+    },
+    // giữ streak — 2 nốt ngắn, ấm, cảm giác "vẫn đang cháy"
+    streak: function (soft) {
+      if (!canPlay()) return;
+      var v = soft ? 0.09 : 0.14;
+      tone(587.33, 0, 150, v, 'triangle');
+      tone(880.00, 110, 260, v, 'triangle');
+    },
+    // ôn qua mốc dài hơn — mạnh nhất: nền trầm + arpeggio 4 nốt
+    milestone: function (soft) {
+      if (!canPlay()) return;
+      var v = soft ? 0.10 : 0.16;
+      tone(196.00, 0, 900, v * 0.55, 'sine');                   // nền trầm giữ nhịp
+      [523.25, 659.25, 783.99, 1046.50].forEach(function (f, i) {
+        tone(f, 90 * i, i === 3 ? 620 : 260, v);
+      });
+    }
+  };
+  NS.sfx = SFX;
+
+  // ---- Confetti: canvas tự viết, tự huỷ, không thư viện ----
+  var CONF_COLORS = ['#7c5cff', '#ffd166', '#06d6a0', '#ef476f', '#4cc9f0'];
+  function confetti(count, ms) {
+    if (fxMode() === 'off') return;
+    if (reducedMotion()) return;                                 // tôn trọng cài đặt hệ thống
+    var old = document.getElementById('v35-conf'); if (old) old.remove();
+    var cv = document.createElement('canvas');
+    cv.id = 'v35-conf';
+    cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2147483000';
+    cv.width = window.innerWidth; cv.height = window.innerHeight;
+    document.body.appendChild(cv);
+    var ctx = cv.getContext('2d');
+    var N = count || 90, life = ms || 2200, t0 = null, parts = [];
+    for (var i = 0; i < N; i++) {
+      parts.push({
+        x: cv.width * (0.25 + Math.random() * 0.5),
+        y: cv.height * 0.28 + Math.random() * 40,
+        vx: (Math.random() - 0.5) * 9,
+        vy: -6 - Math.random() * 8,
+        w: 5 + Math.random() * 6, h: 8 + Math.random() * 8,
+        rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
+        c: CONF_COLORS[i % CONF_COLORS.length]
+      });
+    }
+    function frame(ts) {
+      if (t0 === null) t0 = ts;
+      var el = ts - t0;
+      if (el > life || !cv.isConnected) { cv.remove(); return; }
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      var fade = el > life * 0.65 ? 1 - (el - life * 0.65) / (life * 0.35) : 1;
+      ctx.globalAlpha = Math.max(0, fade);
+      parts.forEach(function (p) {
+        p.vy += 0.28; p.x += p.vx; p.y += p.vy; p.vx *= 0.995; p.rot += p.vr;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  NS.confetti = confetti;
+
+  // ---- Băng chúc mừng: một dòng chữ NÓI RÕ vừa đạt được cái gì ----
+  function banner(title, sub) {
+    if (fxMode() === 'off') return;
+    var old = document.getElementById('v35-banner'); if (old) old.remove();
+    var d = document.createElement('div');
+    d.id = 'v35-banner';
+    d.className = 'v35-banner';
+    d.innerHTML = '<div class="v35-bn-t">' + esc(title) + '</div>' +
+                  (sub ? '<div class="v35-bn-s">' + esc(sub) + '</div>' : '');
+    document.body.appendChild(d);
+    setTimeout(function () { d.classList.add('go'); }, 20);
+    setTimeout(function () { d.classList.remove('go'); }, 3400);
+    setTimeout(function () { if (d.isConnected) d.remove(); }, 4000);
+  }
+  NS.banner = banner;
+
+  // ---- Số XP bay lên (bước nhỏ chỉ được cái này, không tiếng) ----
+  function xpFloat(amount) {
+    if (fxMode() === 'off') return;
+    if (reducedMotion()) return;
+    var host = document.querySelector('.xp-bar');
+    var d = document.createElement('div');
+    d.className = 'v35-xpfloat';
+    d.textContent = '+' + amount + ' XP';
+    if (host) {
+      var r = host.getBoundingClientRect();
+      d.style.left = Math.round(r.right - 150) + 'px';
+      d.style.top = Math.round(r.top + r.height / 2 - 10) + 'px';
+    } else {
+      d.style.right = '24px'; d.style.top = '90px';
+    }
+    document.body.appendChild(d);
+    setTimeout(function () { if (d.isConnected) d.remove(); }, 1400);
+  }
+
+  // ---- Nhận diện 3 mốc ----
+  var LONG_STAGES = { 'Day 7': 1, 'Day 21': 1, 'Day 60': 1 };
+
+  function topicById(id) {
+    var s = getState(); if (!s) return null;
+    var i, ts = s.topics || [];
+    for (i = 0; i < ts.length; i++) if (ts[i].id === id) return ts[i];
+    return null;
+  }
+  function snapTopic(id) {
+    var t = topicById(id);
+    return t ? { stage: t.reviewStage, mem: t.memoryStatus, name: t.name } : null;
+  }
+
+  /* Trả về true nếu chủ đề vừa VƯỢT QUA một mốc dài hơn — đây là mốc mạnh nhất. */
+  function celebrateStageJump(before, id) {
+    var t = topicById(id); if (!t || !before) return false;
+    if (t.reviewStage === before.stage) return false;
+    var soft = fxMode() === 'light';
+    if (t.memoryStatus === 'Automatic' && before.mem !== 'Automatic') {
+      SFX.milestone(soft);
+      confetti(140, 2800);
+      banner('🏆 ' + t.name + ' đã TỰ ĐỘNG HOÁ', 'Nói ra không cần nghĩ. Đây là đích của cả hành trình.');
+      return true;
+    }
+    if (LONG_STAGES[t.reviewStage]) {
+      SFX.milestone(soft);
+      confetti(120, 2500);                                       // mốc hiếm — kể cả chế độ Nhẹ vẫn có confetti
+      banner('🧠 Nhớ thật rồi: ' + t.name,
+             'Qua được mốc ' + t.reviewStage + '. Đây mới là bằng chứng của trí nhớ, không phải học bài mới.');
+      return true;
+    }
+    return false;
+  }
+
+  function celebrateStreak(before, after) {
+    if (!(after > before && after >= 1)) return false;
+    var soft = fxMode() === 'light';
+    SFX.streak(soft);
+    if (fxMode() === 'full') confetti(50, 1500);
+    banner('🔥 Streak ' + after + ' ngày', 'Đều đặn ăn đứt bùng nổ. Giữ được chuỗi này là thắng.');
+    return true;
+  }
+
+  /* Xong buổi học. Nếu streak cũng tăng thì GHÉP vào dòng phụ —
+     một sự kiện, một tiếng, một băng chữ. Không chồng hai lần ăn mừng. */
+  function celebrateSession(name, stage, streakNow, streakUp) {
+    var soft = fxMode() === 'light';
+    SFX.session(soft);
+    if (fxMode() === 'full') confetti(80, 2000);
+    var sub = stage ? ('Chủ đề chuyển sang ' + stage + '. Hẹn gặp lại đúng lịch ôn.') : '';
+    if (streakUp) sub = '🔥 Streak ' + streakNow + ' ngày — đều đặn ăn đứt bùng nổ. ' + sub;
+    banner('✅ Xong buổi: ' + name, sub);
+  }
+
+  // ---- Gắn vào hệ thống: BỌC, không sửa hàm gốc ----
+  /* Cờ nằm ở MODULE, không gắn lên hàm.
+     Lý do: app_v10 và app_v14 cũng bọc completeSession. Nếu chúng bọc lại SAU
+     mình thì cờ trên hàm biến mất, tick sau mình bọc chồng lần nữa → một sự
+     kiện kêu 2-3 lần. Cờ ở module thì mỗi lần tải trang chỉ bọc đúng một lần. */
+  var _wrapped = { session: false, review: false, xp: false };
+
+  function wrapFeedback() {
+    // 1) XONG BUỔI HỌC (+ có thể kèm vượt mốc)
+    if (typeof window.completeSession === 'function' && !_wrapped.session) {
+      _wrapped.session = true;
+      var oc = window.completeSession;
+      window.completeSession = function (topicId) {
+        var s = getState();
+        var before = snapTopic(topicId);
+        var stk0 = (s && s.user) ? (s.user.streak || 0) : 0;
+        var r = oc.apply(this, arguments);
+        try {
+          var s2 = getState();
+          var stk1 = (s2 && s2.user) ? (s2.user.streak || 0) : 0;
+          var t = topicById(topicId);
+          // mốc dài mạnh hơn — nếu vượt mốc thì chỉ ăn mừng mốc, không kêu thêm
+          if (!celebrateStageJump(before, topicId)) {
+            celebrateSession(before ? before.name : (t ? t.name : 'chủ đề'),
+                             t ? t.reviewStage : '', stk1, stk1 > stk0);
+          }
+        } catch (e) {}
+        return r;
+      };
+    }
+
+    // 2) ÔN XONG — chỗ duy nhất chứng minh trí nhớ thật
+    if (typeof window.completeReview === 'function' && !_wrapped.review) {
+      _wrapped.review = true;
+      var orv = window.completeReview;
+      window.completeReview = function (topicId, confidence) {
+        var s = getState();
+        var before = snapTopic(topicId);
+        var stk0 = (s && s.user) ? (s.user.streak || 0) : 0;
+        var r = orv.apply(this, arguments);
+        try {
+          var s2 = getState();
+          var stk1 = (s2 && s2.user) ? (s2.user.streak || 0) : 0;
+          if (!celebrateStageJump(before, topicId)) celebrateStreak(stk0, stk1);
+        } catch (e) {}
+        return r;
+      };
+    }
+
+    // 3) XP bay lên — bước nhỏ chỉ được cái này, không có tiếng
+    if (typeof window.awardXP === 'function' && !_wrapped.xp) {
+      _wrapped.xp = true;
+      var ox = window.awardXP;
+      window.awardXP = function (amount, reason) {
+        try { if (amount > 0) xpFloat(amount); } catch (e) {}
+        return ox.apply(this, arguments);
+      };
+    }
+  }
+  NS._fxWrapped = _wrapped;
+
+  // ---- Nút bật/tắt, đặt ngay cạnh thanh SPEED ----
+  function cycleFx() {
+    var i = FX_MODES.indexOf(fxMode());
+    var next = FX_MODES[(i + 1) % FX_MODES.length];
+    setFxMode(next);
+    unlockAudio();
+    if (next !== 'off') SFX.streak(next === 'light');            // nghe thử ngay
+    toast(FX_LABEL[next]);
+    try { attachFxButton(); } catch (e) {}
+  }
+  NS.cycleFx = cycleFx;
+
+  function paintFxBtn(b) {
+    var m = fxMode();
+    var label = FX_LABEL[m];
+    if (b.innerHTML !== label) b.innerHTML = label;
+    b.title = 'Đầy đủ = tiếng + confetti · Nhẹ = tiếng nhỏ, confetti chỉ ở mốc hiếm · Tắt = im hoàn toàn';
+    b.classList.toggle('off', m === 'off');
+  }
+
+  function attachFxButton() {
+    // trong màn buổi học — cạnh thanh SPEED, đúng chỗ dễ thấy
+    var ac = document.querySelector('#view-session .audio-controls');
+    if (ac) {
+      var g = ac.querySelector('.audio-control-group:last-of-type') || ac;
+      var b = ac.querySelector('[data-v35="fx"]');
+      if (!b) {
+        b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ac-btn v35-fx-btn';
+        b.setAttribute('data-v35', 'fx');
+        b.onclick = function (e) { e.preventDefault(); e.stopPropagation(); cycleFx(); };
+        g.appendChild(b);
+      }
+      paintFxBtn(b);
+    }
+    // cạnh nút Giọng đọc trong Topics Database
+    var tv = document.getElementById('view-topics');
+    if (tv && tv.classList.contains('active')) {
+      var tb = tv.querySelector('.v17-toolbar');
+      if (tb) {
+        var b2 = tb.querySelector('[data-v35="fx2"]');
+        if (!b2) {
+          b2 = document.createElement('button');
+          b2.type = 'button';
+          b2.className = 'v35-btn';
+          b2.setAttribute('data-v35', 'fx2');
+          b2.onclick = function (e) { e.preventDefault(); e.stopPropagation(); cycleFx(); };
+          tb.appendChild(b2);
+        }
+        paintFxBtn(b2);
+      }
+    }
+  }
+
+  /* Trình duyệt khoá âm thanh tới cú chạm ĐẦU TIÊN của người dùng.
+     Mở khoá ở đó, không phải lúc load trang — nếu không sẽ im lặng mãi. */
+  function armAudioUnlock() {
+    if (window.__v35AudioArmed) return;
+    window.__v35AudioArmed = true;
+    var go = function () {
+      unlockAudio();
+      document.removeEventListener('pointerdown', go, true);
+      document.removeEventListener('keydown', go, true);
+    };
+    document.addEventListener('pointerdown', go, true);
+    document.addEventListener('keydown', go, true);
+  }
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
     try { installBridge(); } catch (e) {}
     try { wrapAdvanceStep(); } catch (e) {}
+    try { wrapFeedback(); } catch (e) {}
+    try { attachFxButton(); } catch (e) {}
     try { trimSessionSteps(); } catch (e) {}
     try { attachStepNav(); } catch (e) {}
     try { dedupeDialogueCard(); } catch (e) {}
@@ -2892,6 +3280,8 @@
     try { if (localStorage.getItem(SEED_FLAG) !== NS.version) NS.seedSamples(false); } catch (e) { NS.seedSamples(false); }
     try { backfillSamples(); } catch (e) {}
     try { installBridge(); } catch (e) {}
+    try { armAudioUnlock(); } catch (e) {}
+    try { wrapFeedback(); } catch (e) {}
 
     tick();
     try {
@@ -3052,6 +3442,58 @@
       return shown === 0;
     })());
     check('advanceStep đã được bọc chống XP trùng', !!(window.advanceStep && window.advanceStep.__v35));
+    // ---- L. âm thanh + ăn mừng ----
+    check('mặc định hiệu ứng là Nhẹ, không phải Đầy đủ', (function () {
+      var keep = null, had = false;
+      try { keep = localStorage.getItem(FX_KEY); had = keep !== null; localStorage.removeItem(FX_KEY); } catch (e) {}
+      var d = fxMode();
+      try { if (had) localStorage.setItem(FX_KEY, keep); } catch (e) {}
+      return d === 'light';
+    })());
+    check('nút hiệu ứng xoay đúng 3 mức', (function () {
+      var keep = fxMode();
+      setFxMode('full');  var a = fxMode();
+      setFxMode('light'); var b = fxMode();
+      setFxMode('off');   var c = fxMode();
+      setFxMode('xyz');   var d = fxMode();          // giá trị lạ phải rơi về mặc định
+      setFxMode(keep);
+      return a === 'full' && b === 'light' && c === 'off' && d === 'light';
+    })());
+    check('tắt hiệu ứng thì không phát tiếng', (function () {
+      var keep = fxMode(); setFxMode('off');
+      var ok = canPlay() === false;
+      setFxMode(keep); return ok;
+    })());
+    check('đang đọc thì không đè tiếng lên giọng', (function () {
+      var keep = fxMode(); setFxMode('full');
+      var ss = window.speechSynthesis;
+      if (!ss) { setFxMode(keep); return true; }
+      var d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ss) || {}, 'speaking');
+      var ok = true;
+      try {
+        Object.defineProperty(ss, 'speaking', { get: function () { return true; }, configurable: true });
+        ok = canPlay() === false;
+        delete ss.speaking;
+      } catch (e) { ok = true; }
+      setFxMode(keep); return ok;
+    })());
+    check('3 hàm ăn mừng đều tồn tại', typeof SFX.session === 'function' &&
+      typeof SFX.streak === 'function' && typeof SFX.milestone === 'function');
+    check('chỉ ăn mừng khi mốc THẬT SỰ đổi', (function () {
+      var t = topicById('L1-01'); if (!t) return true;
+      return celebrateStageJump({ stage: t.reviewStage, mem: t.memoryStatus, name: t.name }, 'L1-01') === false;
+    })());
+    check('streak không tăng thì không ăn mừng', celebrateStreak(3, 3) === false && celebrateStreak(3, 2) === false);
+    check('completeSession & completeReview đã được bọc', _wrapped.session && _wrapped.review && _wrapped.xp);
+    check('bọc đúng MỘT lần dù gọi lại nhiều lần', (function () {
+      var f1 = window.completeSession;
+      wrapFeedback(); wrapFeedback(); wrapFeedback();
+      return window.completeSession === f1;                 // không được bọc chồng
+    })());
+    check('không tải file âm thanh nào từ bên ngoài', (function () {
+      var src = String(NS.sfx.session) + String(NS.sfx.streak) + String(NS.sfx.milestone) + String(tone);
+      return !/https?:|\.mp3|\.wav|\.ogg|new Audio\(/.test(src);
+    })());
     check('buổi học chỉ hiện đúng 5 bước chạy được', (function () {
       var v = document.getElementById('view-session');
       if (!v || !v.classList.contains('active')) return true;      // không ở màn buổi học thì bỏ qua
