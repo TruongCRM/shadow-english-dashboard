@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.18.0';
+  NS.version = '35.19.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -478,6 +478,19 @@
       'body.' + LEARN_CLASS + ' #view-topic-detail .topic-hero .mission-btn,' +
       'body.' + LEARN_CLASS + ' #view-topic-detail .topic-hero .step-btn' +
       '{display:none!important}',
+      /* Focus: thanh điều khiển buổi học vẫn phải thấy được */
+      'body.focus-mode #v35-learnbar{display:flex!important}',
+      'body.focus-mode #view-topic-detail{padding-top:0}',
+      /* P. cài đặt nhịp học */
+      '.v35-set-lb{font-size:13px;color:rgba(255,255,255,.8);margin:6px 0 8px;font-family:var(--v35-font)}',
+      '.v35-segs{display:flex;flex-wrap:wrap;gap:8px}',
+      '.v35-seg{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);' +
+        'color:rgba(255,255,255,.75);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;' +
+        'cursor:pointer;font-family:var(--v35-font)}',
+      '.v35-seg:hover{background:rgba(255,255,255,.09)}',
+      '.v35-seg.on{background:#7c5cff;border-color:#7c5cff;color:#fff}',
+      '.v35-set-note{font-size:12.5px;color:rgba(255,255,255,.62);margin-top:8px;font-family:var(--v35-font)}',
+      '.v35-set-note.dim{color:rgba(255,255,255,.42);line-height:1.5}',
       '.v35-key.need{border-color:rgba(250,204,21,.6)!important;color:#fde047!important;',
       'background:rgba(250,204,21,.14)!important;animation:v35glow 2.2s ease-in-out infinite}',
       '@keyframes v35glow{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,0)}50%{box-shadow:0 0 0 4px rgba(250,204,21,.14)}}',
@@ -3138,7 +3151,8 @@
   }
   function snapTopic(id) {
     var t = topicById(id);
-    return t ? { stage: t.reviewStage, mem: t.memoryStatus, name: t.name } : null;
+    return t ? { stage: t.reviewStage, mem: t.memoryStatus, name: t.name,
+                 wasNew: !t.lastReview && t.reviewStage === 'Day 0' } : null;
   }
 
   /* Trả về true nếu chủ đề vừa VƯỢT QUA một mốc dài hơn — đây là mốc mạnh nhất. */
@@ -3203,6 +3217,8 @@
           var s2 = getState();
           var stk1 = (s2 && s2.user) ? (s2.user.streak || 0) : 0;
           var t = topicById(topicId);
+          // ghi nhận: đây là một chủ đề MỚI vừa học xong → tính vào trần hôm nay
+          if (before && before.wasNew) { try { NS._markNewLearned(topicId); } catch (e3) {} }
           // mốc dài mạnh hơn — nếu vượt mốc thì chỉ ăn mừng mốc, không kêu thêm
           if (!celebrateStageJump(before, topicId)) {
             celebrateSession(before ? before.name : (t ? t.name : 'chủ đề'),
@@ -3338,9 +3354,13 @@
       if (isNewTopic(t)) { fresh++; return; }
       if (t.nextReview && new Date(t.nextReview).getTime() <= now) due++;
     });
-    (s.sessionsLog || []).forEach(function (e) {
-      if (e && e.type === 'session' && e.at && new Date(e.at).getTime() >= t0) learnedToday++;
-    });
+    // đếm CHỦ ĐỀ MỚI đã học xong hôm nay — cùng một nguồn với trần ở mục P,
+    // để hai chỗ không bao giờ nói khác nhau
+    try { learnedToday = NS.newLearnedToday(); } catch (e) {
+      (s.sessionsLog || []).forEach(function (ev) {
+        if (ev && ev.type === 'session' && ev.at && new Date(ev.at).getTime() >= t0) learnedToday++;
+      });
+    }
     var next = null;
     for (var i = 0; i < ts.length; i++) if (isNewTopic(ts[i])) { next = ts[i]; break; }
     return { due: due, fresh: fresh, total: ts.length, learnedToday: learnedToday, nextNew: next };
@@ -3408,14 +3428,16 @@
 
     // nội dung tấm lấp chỗ — luôn là việc tiếp theo nên làm
     var title, sub, btn = null;
-    if (st.learnedToday >= 1) {
+    var cap = NS.maxNewPerDay();
+    if (cap > 0 && st.learnedToday >= cap) {
       if (st.due === 0) {
         title = '🎉 Hôm nay xong việc rồi';
-        sub = 'Đã học 1 chủ đề mới, và không còn bài nào tới hạn ôn. Nghỉ được rồi — ' +
+        sub = 'Đã học đủ ' + cap + ' chủ đề mới, và không còn bài nào tới hạn ôn. Nghỉ được rồi — ' +
               'quay lại đúng lịch ngày mai thì trí nhớ mới bám. Học cố thêm hôm nay không làm bạn nhớ lâu hơn.';
       } else {
-        title = '✅ Hôm nay đã học đủ 1 chủ đề mới';
-        sub = 'Trần cứng là 1 bài mới/ngày. Việc còn lại là ' + st.due + ' bài ôn bên cạnh — xong là đủ cho hôm nay.';
+        title = '✅ Hôm nay đã học đủ ' + cap + ' chủ đề mới';
+        sub = 'Việc còn lại là ' + st.due + ' bài ôn bên cạnh — xong là đủ cho hôm nay. ' +
+              'Đổi trần trong ⚙️ Cài đặt → Nhịp học.';
       }
     } else if (st.nextNew) {
       title = '📘 Việc tiếp theo: ' + st.nextNew.name;
@@ -3669,6 +3691,8 @@
 
   NS.startLearn = function (topicId) {
     var s = getState(); if (!s || !topicId) return;
+    // TRẦN BÀI MỚI: chặn thật, không chỉ ghi trong tài liệu (xem mục P)
+    if (blockedByCap(topicId)) { showCapModal(); return; }
     s.currentSession = { topicId: topicId, startedAt: new Date().toISOString(), step: 1, v35full: true };
     s.currentTopicId = topicId;
     saveState(s);
@@ -3730,14 +3754,22 @@
         '<div class="v35-lb-left"><span class="v35-lb-dot"></span>' +
         '<span class="v35-lb-t"></span><span class="v35-lb-sub"></span></div>' +
         '<div class="v35-lb-right">' +
+        '<button type="button" class="v35-lb-btn ghost" data-v35lb="focus">🧘 Focus</button>' +
         '<button type="button" class="v35-lb-btn ghost" data-v35lb="exit">Thoát</button>' +
         '<button type="button" class="v35-lb-btn go" data-v35lb="done">✅ Hoàn thành buổi học</button>' +
         '</div>';
+      bar.querySelector('[data-v35lb="focus"]').onclick = function (e) {
+        e.preventDefault(); e.stopPropagation(); NS.toggleFocus();
+      };
       bar.querySelector('[data-v35lb="exit"]').onclick = function (e) {
-        e.preventDefault(); e.stopPropagation(); NS.exitLearn();
+        e.preventDefault(); e.stopPropagation();
+        if (document.body.classList.contains('focus-mode')) NS.toggleFocus(false);
+        NS.exitLearn();
       };
       bar.querySelector('[data-v35lb="done"]').onclick = function (e) {
-        e.preventDefault(); e.stopPropagation(); NS.finishLearn();
+        e.preventDefault(); e.stopPropagation();
+        if (document.body.classList.contains('focus-mode')) NS.toggleFocus(false);
+        NS.finishLearn();
       };
       view.insertBefore(bar, view.firstChild);
     } else if (view.firstChild !== bar) {
@@ -3750,8 +3782,28 @@
     var tEl = bar.querySelector('.v35-lb-t'), sEl = bar.querySelector('.v35-lb-sub');
     if (tEl.textContent !== title) tEl.textContent = title;
     if (sEl.textContent !== sub) sEl.textContent = sub;
+
+    var fb = bar.querySelector('[data-v35lb="focus"]');
+    if (fb) {
+      var on = document.body.classList.contains('focus-mode');
+      var lb = on ? '🧘 Thoát Focus' : '🧘 Focus';
+      if (fb.textContent !== lb) fb.textContent = lb;
+      fb.title = on ? 'Hiện lại thanh bên (Esc)' : 'Ẩn thanh bên và thanh trên — chỉ còn bài học (phím F)';
+    }
   }
   NS.attachLearnBar = attachLearnBar;
+
+  /* Focus: ẩn sidebar/topbar, chỉ còn bài học. Dùng lại focus-mode có sẵn
+     của app_v8 nên phím F và Esc vẫn chạy như cũ. */
+  NS.toggleFocus = function (force) {
+    var on = typeof force === 'boolean' ? force : !document.body.classList.contains('focus-mode');
+    try {
+      if (typeof window.toggleFocusMode === 'function') window.toggleFocusMode(on);
+      else document.body.classList.toggle('focus-mode', on);
+    } catch (e) { document.body.classList.toggle('focus-mode', on); }
+    window.focusMode = on;
+    try { attachLearnBar(); } catch (e) {}
+  };
 
   /* Mọi lối vào "học bài" đều đi qua đây. */
   var _wrapNav = false;
@@ -3786,6 +3838,152 @@
   }
 
   // ============================================================
+  // P. TRẦN BÀI MỚI MỖI NGÀY — có thật, và chỉnh được (v35.19)
+  // ------------------------------------------------------------
+  // Trước đây trần "1 bài mới/ngày" chỉ tồn tại trong app_v20 lúc XẾP kế hoạch
+  // — nó không CHẶN gì cả. Màn "Session Complete" vẫn mời "Học topic tiếp
+  // theo →", bấm là học bài mới thứ hai, thứ ba. Luật ghi một đằng, hệ thống
+  // cho làm một nẻo — như vậy không phải luật.
+  //
+  // Ở đây trần được thi hành thật. Và vì mỗi người mỗi giai đoạn mỗi khác nên
+  // nó nằm trong ⚙️ Cài đặt, không chôn trong code.
+  //
+  // ĐẾM CÁI GÌ: chỉ đếm chủ đề MỚI đã HỌC XONG hôm nay (Day 0 → Day 1).
+  //   • Không đếm bài ôn — ôn bao nhiêu cũng được, đó là việc nên khuyến khích.
+  //   • Không đếm lúc bắt đầu — mở ra rồi thoát thì không bị tính.
+  // ============================================================
+  var MAXNEW_KEY = 'shadow-en-max-new';      // 0 = không giới hạn
+  var NEWLOG_KEY = 'shadow-en-newlog';       // { 'YYYY-M-D': [topicId…] }
+
+  function maxNewPerDay() {
+    try {
+      var n = parseInt(localStorage.getItem(MAXNEW_KEY), 10);
+      if (isNaN(n)) return 1;
+      return n <= 0 ? 0 : Math.min(20, n);
+    } catch (e) { return 1; }
+  }
+  function setMaxNewPerDay(n) { try { localStorage.setItem(MAXNEW_KEY, String(n)); } catch (e) {} }
+  NS.maxNewPerDay = maxNewPerDay;
+  NS.setMaxNewPerDay = setMaxNewPerDay;
+
+  function dayKey(d) { d = d || new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function readNewLog() { try { return JSON.parse(localStorage.getItem(NEWLOG_KEY) || '{}'); } catch (e) { return {}; } }
+  function newLearnedToday() { return (readNewLog()[dayKey()] || []).length; }
+  NS.newLearnedToday = newLearnedToday;
+
+  function markNewLearned(id) {
+    var l = readNewLog(), k = dayKey();
+    l[k] = l[k] || [];
+    if (l[k].indexOf(id) === -1) l[k].push(id);
+    var keys = Object.keys(l);                       // giữ ~30 ngày gần nhất
+    if (keys.length > 40) keys.slice(0, keys.length - 30).forEach(function (x) { delete l[x]; });
+    try { localStorage.setItem(NEWLOG_KEY, JSON.stringify(l)); } catch (e) {}
+  }
+  NS._markNewLearned = markNewLearned;
+
+  function capReached() {
+    var m = maxNewPerDay();
+    return m > 0 && newLearnedToday() >= m;
+  }
+  NS.capReached = capReached;
+
+  function blockedByCap(topicId) {
+    var t = topicById(topicId);
+    return !!(t && isNewTopic(t) && capReached());
+  }
+  NS._blockedByCap = blockedByCap;
+
+  function dueCount() {
+    var s = getState(); if (!s) return 0;
+    return (s.topics || []).filter(function (t) {
+      return !isNewTopic(t) && t.nextReview && new Date(t.nextReview).getTime() <= Date.now();
+    }).length;
+  }
+
+  function showCapModal() {
+    var m = maxNewPerDay(), due = dueCount();
+    openConfirm({
+      icon: '🛑',
+      title: 'Hôm nay đã đủ ' + m + ' chủ đề mới',
+      subtitle: 'Đây là trần bạn tự đặt trong ⚙️ Cài đặt → Nhịp học.',
+      note: 'Học thêm bài mới hôm nay không làm bạn nhớ nhiều hơn — nó chỉ dồn thêm thứ chưa kịp ngấm. ' +
+            'Trí nhớ hình thành ở lần ÔN, không ở lần học đầu.',
+      keep: due
+        ? ['Còn ' + due + ' bài tới hạn ôn — ôn không bị giới hạn', 'Ôn mới là chỗ trí nhớ thật hình thành']
+        : ['Hôm nay xong việc rồi — mai quay lại đúng lịch', 'Muốn đổi trần: ⚙️ Cài đặt → Nhịp học'],
+      cancelText: 'Đóng',
+      confirmText: due ? 'Đi ôn bài tới hạn →' : 'Đã hiểu'
+    }, function () {
+      if (due) { try { window.navigate('review'); } catch (e) {} }
+    });
+  }
+  NS.showCapModal = showCapModal;
+
+  // ---- ⚙️ Cài đặt: nhịp học + hiệu ứng ----
+  var NEW_CHOICES = [1, 2, 3, 5, 0];
+  function choiceLabel(n) { return n === 0 ? 'Không giới hạn' : (n + ' bài'); }
+
+  function settingsHtml() {
+    var cur = maxNewPerDay(), done = newLearnedToday(), fx = fxMode();
+    var chips = NEW_CHOICES.map(function (n) {
+      return '<button type="button" class="v35-seg' + (n === cur ? ' on' : '') +
+             '" data-v35set="new" data-n="' + n + '">' + esc(choiceLabel(n)) + '</button>';
+    }).join('');
+    var fxChips = ['full', 'light', 'off'].map(function (k) {
+      var lb = { full: 'Đầy đủ', light: 'Nhẹ', off: 'Tắt' }[k];
+      return '<button type="button" class="v35-seg' + (k === fx ? ' on' : '') +
+             '" data-v35set="fx" data-k="' + k + '">' + lb + '</button>';
+    }).join('');
+    var status = cur === 0
+      ? ('Không giới hạn · hôm nay đã học ' + done + ' bài mới')
+      : ('Hôm nay: ' + done + '/' + cur + ' bài mới' + (done >= cur ? ' — đã đủ' : ''));
+    return '<div class="modal-section-title">🎯 NHỊP HỌC</div>' +
+      '<div class="v35-set-lb">Tối đa bao nhiêu <b>chủ đề mới</b> mỗi ngày?</div>' +
+      '<div class="v35-segs">' + chips + '</div>' +
+      '<div class="v35-set-note">' + esc(status) + '</div>' +
+      '<div class="v35-set-note dim">Ôn bài <b>không</b> bị giới hạn — chỉ chặn học bài mới. ' +
+      'Trí nhớ hình thành ở lần ôn, không ở lần học đầu.</div>' +
+      '<div class="v35-set-lb" style="margin-top:16px">Âm thanh &amp; ăn mừng</div>' +
+      '<div class="v35-segs">' + fxChips + '</div>' +
+      '<div class="v35-set-note dim">Đầy đủ = tiếng + confetti · Nhẹ = tiếng nhỏ · Tắt = im hoàn toàn.</div>';
+  }
+
+  function injectSettings() {
+    var m = document.querySelector('.modal.settings-modal');
+    if (!m) return;
+    var box = m.querySelector('[data-v35s="learn"]');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'modal-section';
+      box.setAttribute('data-v35s', 'learn');
+      var first = m.querySelector('.modal-section');
+      if (first) m.insertBefore(box, first); else m.appendChild(box);
+    }
+    var html = settingsHtml();
+    if (box.getAttribute('data-sig') === html) return;
+    box.setAttribute('data-sig', html);
+    box.innerHTML = html;
+    Array.prototype.forEach.call(box.querySelectorAll('[data-v35set]'), function (b) {
+      b.onclick = function (e) {
+        e.preventDefault(); e.stopPropagation();
+        if (b.getAttribute('data-v35set') === 'new') {
+          setMaxNewPerDay(parseInt(b.getAttribute('data-n'), 10));
+          toast('Trần bài mới: ' + choiceLabel(maxNewPerDay()) + '/ngày');
+        } else {
+          setFxMode(b.getAttribute('data-k'));
+          unlockAudio();
+          if (fxMode() !== 'off') SFX.streak(fxMode() === 'light');
+          toast(FX_LABEL[fxMode()]);
+        }
+        box.removeAttribute('data-sig');
+        injectSettings();
+        try { refreshStaleCards(true); } catch (e2) {}
+      };
+    });
+  }
+  NS.injectSettings = injectSettings;
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
@@ -3794,6 +3992,7 @@
     try { wrapStepRender(); } catch (e) {}
     try { wrapNavigation(); } catch (e) {}
     try { attachLearnBar(); } catch (e) {}
+    try { injectSettings(); } catch (e) {}
     try { wrapFeedback(); } catch (e) {}
     try { attachFxButton(); } catch (e) {}
     try { patchReviewEngine(); } catch (e) {}
@@ -4045,6 +4244,59 @@
       var f1 = window.completeSession;
       wrapFeedback(); wrapFeedback(); wrapFeedback();
       return window.completeSession === f1;                 // không được bọc chồng
+    })());
+    // ---- P. trần bài mới + cài đặt ----
+    check('mặc định trần là 1 bài mới/ngày', (function () {
+      var keep = null, had = false;
+      try { keep = localStorage.getItem(MAXNEW_KEY); had = keep !== null; localStorage.removeItem(MAXNEW_KEY); } catch (e) {}
+      var d = maxNewPerDay();
+      try { if (had) localStorage.setItem(MAXNEW_KEY, keep); } catch (e) {}
+      return d === 1;
+    })());
+    check('trần chỉnh được và 0 = không giới hạn', (function () {
+      var keep = maxNewPerDay();
+      setMaxNewPerDay(3); var a = maxNewPerDay();
+      setMaxNewPerDay(0); var b = maxNewPerDay(), bCap = capReached();
+      setMaxNewPerDay(99); var c = maxNewPerDay();          // chặn trên ở 20
+      setMaxNewPerDay(keep);
+      return a === 3 && b === 0 && bCap === false && c === 20;
+    })());
+    check('chỉ đếm chủ đề MỚI học xong, không đếm bài ôn', (function () {
+      return snapTopic('__khong_co__') === null &&
+             (function () {
+               var t = topicById('L1-01');
+               if (!t) return true;
+               var s1 = snapTopic('L1-01');
+               return typeof s1.wasNew === 'boolean';
+             })();
+    })());
+    check('ghi nhận bài mới không bị trùng', (function () {
+      var raw = null;
+      try { raw = localStorage.getItem(NEWLOG_KEY); } catch (e) {}
+      try { localStorage.removeItem(NEWLOG_KEY); } catch (e) {}
+      markNewLearned('__x__'); markNewLearned('__x__'); markNewLearned('__y__');
+      var n = newLearnedToday();
+      try { if (raw === null) localStorage.removeItem(NEWLOG_KEY); else localStorage.setItem(NEWLOG_KEY, raw); } catch (e) {}
+      return n === 2;
+    })());
+    check('trần chặn bài MỚI, không chặn bài ôn', (function () {
+      var keepMax = maxNewPerDay(), raw = null;
+      try { raw = localStorage.getItem(NEWLOG_KEY); localStorage.removeItem(NEWLOG_KEY); } catch (e) {}
+      setMaxNewPerDay(1); markNewLearned('__a__');
+      var s = getState();
+      var fresh = (s.topics || []).filter(isNewTopic)[0];
+      var old = (s.topics || []).filter(function (t) { return !isNewTopic(t); })[0];
+      var blockNew = fresh ? blockedByCap(fresh.id) : true;
+      var blockOld = old ? blockedByCap(old.id) : false;
+      setMaxNewPerDay(keepMax);
+      try { if (raw === null) localStorage.removeItem(NEWLOG_KEY); else localStorage.setItem(NEWLOG_KEY, raw); } catch (e) {}
+      return blockNew === true && blockOld === false;
+    })());
+    check('có công tắc Focus trong buổi học', typeof NS.toggleFocus === 'function');
+    check('cài đặt dựng đủ mục nhịp học + hiệu ứng', (function () {
+      var h = settingsHtml();
+      return /NHỊP HỌC/.test(h) && /Không giới hạn/.test(h) && /data-v35set="fx"/.test(h) &&
+             /data-v35set="new"/.test(h);
     })());
     // ---- O. buổi học dùng chính trang bài ----
     check('startSession chuyển sang mở trang bài', typeof window.startSession === 'function' && _wrapNav);

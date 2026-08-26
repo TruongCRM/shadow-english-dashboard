@@ -188,12 +188,20 @@
    * DAILY STUDY PLAN - ordered: due reviews -> rescue -> new. Minutes + total.
    * Capped to ~6 items / ~40 min so the daily load stays realistic.
    *
-   * MAX_NEW_PER_DAY = trần cứng số chủ đề MỚI mỗi ngày.
+   * MAX_NEW_PER_DAY = số chủ đề MỚI tối đa mỗi ngày (chỉnh trong ⚙️ Cài đặt).
    * Ôn luôn được xếp trước và không bị giới hạn; học mới vào sau cùng và bị
    * chặn ở con số này. Đây là chỗ duy nhất quyết định "học nhiều hay ôn nhiều".
    * Đổi số này là đổi toàn hệ thống — câu Coach và Kế hoạch hôm nay tự tính theo.
    * ======================================================================== */
-  var MAX_NEW_PER_DAY = 1;
+  /* Trần này KHÔNG còn cứng: người dùng chỉnh được trong ⚙️ Cài đặt.
+   * 0 hoặc âm = không giới hạn. Mặc định 1 bài mới/ngày. */
+  function MAX_NEW_PER_DAY() {
+    try {
+      var n = parseInt(localStorage.getItem('shadow-en-max-new'), 10);
+      if (isNaN(n)) return 1;
+      return n <= 0 ? 999 : Math.min(20, n);
+    } catch (e) { return 1; }
+  }
 
   function dailyPlan() {
     var s = getState();
@@ -215,8 +223,8 @@
     // b) rescue (at-risk, maybe not due yet)
     rescueList().forEach(function (r) { add(r.topic, 'review', 'Rescue'); });
 
-    // c) learn new — vào cuối cùng, trần cứng MAX_NEW_PER_DAY
-    s.topics.filter(isNew).slice(0, MAX_NEW_PER_DAY).forEach(function (t) { add(t, 'learn', 'Learn'); });
+    // c) learn new — vào cuối cùng, chặn ở MAX_NEW_PER_DAY()
+    s.topics.filter(isNew).slice(0, MAX_NEW_PER_DAY()).forEach(function (t) { add(t, 'learn', 'Learn'); });
 
     // cap
     var capped = [], total = 0;
@@ -539,8 +547,8 @@
     check('dailyPlan returns items[] + total', Array.isArray(plan.items) && typeof plan.total === 'number');
     check('plan total == sum(item.min)', plan.items.reduce(function (a, i) { return a + i.min; }, 0) === plan.total);
     check('plan capped <= 6 items', plan.items.length <= 6);
-    check('new topics capped at MAX_NEW_PER_DAY (' + MAX_NEW_PER_DAY + ')',
-      plan.items.filter(function (i) { return i.mode === 'learn'; }).length <= MAX_NEW_PER_DAY);
+    check('new topics capped at MAX_NEW_PER_DAY (' + MAX_NEW_PER_DAY() + ')',
+      plan.items.filter(function (i) { return i.mode === 'learn'; }).length <= MAX_NEW_PER_DAY());
     check('reviews always come before new in the plan', (function () {
       var lastReview = -1, firstLearn = -1;
       plan.items.forEach(function (i, idx) {
