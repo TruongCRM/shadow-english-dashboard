@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.16.0';
+  NS.version = '35.16.1';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -3305,6 +3305,18 @@
         : 'Tất cả chủ đề đều đã bắt đầu học';
       if (n.textContent !== txt) n.textContent = txt;
     }
+
+    /* "Est. ~208 min total" đang cộng thời gian của CẢ 35 chủ đề — kể cả 33 cái
+       chưa học. Không ai học 208 phút trong một ngày. Ước lượng đúng việc hôm nay:
+       mỗi bài ôn ~4 phút, cộng 1 chủ đề mới ~8 phút (trần 1 bài mới/ngày). */
+    var time = document.querySelector('#view-review .v13r-summary-time');
+    if (time) {
+      var mins = st.due * 4 + (st.learnedToday >= 1 || !st.nextNew ? 0 : 8);
+      var t2 = mins > 0
+        ? ('⏱ Việc hôm nay ~' + mins + ' phút')
+        : '⏱ Hôm nay không còn việc bắt buộc';
+      if (time.textContent !== t2) time.textContent = t2;
+    }
   }
 
   /* Lấp các ô trống của lưới bằng một việc CỤ THỂ, bấm được. */
@@ -3329,9 +3341,14 @@
     // nội dung tấm lấp chỗ — luôn là việc tiếp theo nên làm
     var title, sub, btn = null;
     if (st.learnedToday >= 1) {
-      title = '✅ Hôm nay đã học đủ 1 chủ đề mới';
-      sub = 'Trần cứng là 1 bài mới/ngày. Học thêm chỉ làm đầy đầu, không làm chắc trí nhớ. ' +
-            'Xong ' + st.due + ' bài ôn ở đây là đủ cho hôm nay.';
+      if (st.due === 0) {
+        title = '🎉 Hôm nay xong việc rồi';
+        sub = 'Đã học 1 chủ đề mới, và không còn bài nào tới hạn ôn. Nghỉ được rồi — ' +
+              'quay lại đúng lịch ngày mai thì trí nhớ mới bám. Học cố thêm hôm nay không làm bạn nhớ lâu hơn.';
+      } else {
+        title = '✅ Hôm nay đã học đủ 1 chủ đề mới';
+        sub = 'Trần cứng là 1 bài mới/ngày. Việc còn lại là ' + st.due + ' bài ôn bên cạnh — xong là đủ cho hôm nay.';
+      }
     } else if (st.nextNew) {
       title = '📘 Việc tiếp theo: ' + st.nextNew.name;
       sub = st.due
