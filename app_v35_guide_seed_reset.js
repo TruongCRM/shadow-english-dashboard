@@ -19,7 +19,7 @@
   if (window.SHADOW_V35) return;
 
   var NS = window.SHADOW_V35 = {};
-  NS.version = '35.15.0';
+  NS.version = '35.16.0';
 
   // ---------------------------------------------------------- hằng số
   var STATE_KEY = 'shadow-en-state-v3';
@@ -401,6 +401,15 @@
         'animation:v35rise 1.4s ease-out forwards}',
       '@keyframes v35rise{0%{opacity:0;transform:translateY(6px)}18%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}',
       '@media (prefers-reduced-motion: reduce){.v35-xpfloat{animation:none;opacity:0}}',
+      /* M. Review Engine — lấp chỗ trống + dòng ghi chú số liệu */
+      '.v35-rev-note{margin-top:8px;font-size:12px;color:rgba(255,255,255,.55);font-family:var(--v35-font)}',
+      '.v35-fill{display:flex;flex-direction:column;justify-content:center;gap:8px;' +
+        'padding:16px 18px;border-radius:14px;font-family:var(--v35-font);' +
+        'border:1px dashed rgba(140,120,255,.35);background:rgba(124,92,255,.06)}',
+      '.v35-fill-t{font-weight:700;font-size:15px;color:rgba(255,255,255,.92)}',
+      '.v35-fill-s{font-size:13px;line-height:1.5;color:rgba(255,255,255,.6)}',
+      '.v35-fill-go{align-self:flex-start;margin-top:4px}',
+      '@media (max-width:680px){.v35-fill{grid-column:1/-1!important}}',
       '.v35-key.need{border-color:rgba(250,204,21,.6)!important;color:#fde047!important;',
       'background:rgba(250,204,21,.14)!important;animation:v35glow 2.2s ease-in-out infinite}',
       '@keyframes v35glow{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,0)}50%{box-shadow:0 0 0 4px rgba(250,204,21,.14)}}',
@@ -3236,6 +3245,135 @@
   }
 
   // ============================================================
+  // M. REVIEW ENGINE — lấp khoảng trống + số liệu trung thực (v35.16)
+  // ------------------------------------------------------------
+  // HAI LỖI CÙNG MỘT GỐC: màn này đang hiển thị CẢ KHO thay vì việc của hôm nay.
+  //
+  //  1. Con số to ghi "Today's Review Queue — 35 topics" nhưng 34 trong số đó
+  //     là chủ đề CHƯA HỌC BAO GIỜ. Chưa học thì không phải "ôn". Ngay bên
+  //     cạnh nó tự khai "0 urgent · 33 new" — hai chỗ nói ngược nhau.
+  //
+  //  2. Lưới thẻ là repeat(auto-fill, minmax(300px,1fr)) → LUÔN 4 cột.
+  //     Hôm nào chỉ có 1-2 bài tới hạn thì 2-3 ô còn lại bỏ trống, nhìn như
+  //     trang bị lỗi chưa tải xong.
+  //
+  // Sửa: nói đúng con số, và lấp chỗ trống bằng VIỆC TIẾP THEO cụ thể
+  // (bấm được), thay vì kéo giãn thẻ cho đầy.
+  // ============================================================
+  function isNewTopic(t) { return !t.lastReview && t.reviewStage === 'Day 0'; }
+
+  function reviewStats() {
+    var s = getState(); if (!s) return null;
+    var ts = s.topics || [], now = Date.now(), t0 = startOfToday();
+    var due = 0, fresh = 0, learnedToday = 0;
+    ts.forEach(function (t) {
+      if (isNewTopic(t)) { fresh++; return; }
+      if (t.nextReview && new Date(t.nextReview).getTime() <= now) due++;
+    });
+    (s.sessionsLog || []).forEach(function (e) {
+      if (e && e.type === 'session' && e.at && new Date(e.at).getTime() >= t0) learnedToday++;
+    });
+    var next = null;
+    for (var i = 0; i < ts.length; i++) if (isNewTopic(ts[i])) { next = ts[i]; break; }
+    return { due: due, fresh: fresh, total: ts.length, learnedToday: learnedToday, nextNew: next };
+  }
+
+  /* Con số to phải nói đúng: bao nhiêu bài THẬT SỰ tới hạn ôn hôm nay. */
+  function fixReviewSummary(st) {
+    var box = document.querySelector('#view-review .v13r-summary-count');
+    if (!box) return;
+    var want = String(st.due);
+    var unit = st.due === 1 ? ' bài cần ôn hôm nay' : ' bài cần ôn hôm nay';
+    var html = want + '<span>' + unit + '</span>';
+    if (box.innerHTML !== html) box.innerHTML = html;
+
+    var title = document.querySelector('#view-review .v13r-summary-title');
+    if (title && title.textContent !== 'Việc ôn của hôm nay') title.textContent = 'Việc ôn của hôm nay';
+
+    // dòng phụ: nói rõ phần còn lại là CHƯA HỌC, không phải chờ ôn
+    var left = document.querySelector('#view-review .v13r-summary-left');
+    if (left) {
+      var n = left.querySelector('[data-v35="rev-note"]');
+      if (!n) {
+        n = document.createElement('div');
+        n.setAttribute('data-v35', 'rev-note');
+        n.className = 'v35-rev-note';
+        left.appendChild(n);
+      }
+      var txt = st.fresh
+        ? ('+ ' + st.fresh + ' chủ đề chưa học bao giờ — chưa học thì chưa tính là ôn')
+        : 'Tất cả chủ đề đều đã bắt đầu học';
+      if (n.textContent !== txt) n.textContent = txt;
+    }
+  }
+
+  /* Lấp các ô trống của lưới bằng một việc CỤ THỂ, bấm được. */
+  function fillReviewGrid(st) {
+    var view = document.getElementById('view-review');
+    if (!view || !view.classList.contains('active')) return;
+    var grid = view.querySelector('.v13r-cards');
+    if (!grid) return;
+
+    var cols = (getComputedStyle(grid).gridTemplateColumns || '').split(' ').filter(Boolean).length;
+    if (cols < 2) { var o0 = grid.querySelector('[data-v35="fill"]'); if (o0) o0.remove(); return; }
+
+    var real = 0;
+    Array.prototype.forEach.call(grid.children, function (c) {
+      if (c.getAttribute && c.getAttribute('data-v35') === 'fill') return;
+      real++;
+    });
+    var span = cols - (real % cols || cols);
+    var old = grid.querySelector('[data-v35="fill"]');
+    if (real === 0 || span <= 0 || span === cols) { if (old) old.remove(); return; }
+
+    // nội dung tấm lấp chỗ — luôn là việc tiếp theo nên làm
+    var title, sub, btn = null;
+    if (st.learnedToday >= 1) {
+      title = '✅ Hôm nay đã học đủ 1 chủ đề mới';
+      sub = 'Trần cứng là 1 bài mới/ngày. Học thêm chỉ làm đầy đầu, không làm chắc trí nhớ. ' +
+            'Xong ' + st.due + ' bài ôn ở đây là đủ cho hôm nay.';
+    } else if (st.nextNew) {
+      title = '📘 Việc tiếp theo: ' + st.nextNew.name;
+      sub = st.due
+        ? ('Xong ' + st.due + ' bài ôn bên cạnh trước, rồi học 1 chủ đề mới này (~8 phút).')
+        : 'Không có bài nào tới hạn ôn. Học 1 chủ đề mới này là đủ cho hôm nay (~8 phút).';
+      btn = { label: 'Bắt đầu học →', id: st.nextNew.id };
+    } else {
+      title = '🎉 Hết chủ đề mới';
+      sub = 'Bạn đã bắt đầu học toàn bộ ' + st.total + ' chủ đề. Từ giờ việc chính là ôn đúng lịch.';
+    }
+
+    var sig = title + '|' + sub + '|' + span + '|' + (btn ? btn.id : '');
+    if (old && old.getAttribute('data-sig') === sig) return;
+    if (old) old.remove();
+
+    var el = document.createElement('div');
+    el.className = 'v35-fill';
+    el.setAttribute('data-v35', 'fill');
+    el.setAttribute('data-sig', sig);
+    el.style.gridColumn = 'span ' + span;
+    el.innerHTML = '<div class="v35-fill-t">' + esc(title) + '</div>' +
+                   '<div class="v35-fill-s">' + esc(sub) + '</div>' +
+                   (btn ? '<button type="button" class="v35-btn v35-fill-go">' + esc(btn.label) + '</button>' : '');
+    if (btn) {
+      el.querySelector('.v35-fill-go').onclick = function (e) {
+        e.preventDefault(); e.stopPropagation();
+        try { if (typeof window.startSession === 'function') window.startSession(btn.id); } catch (e2) {}
+      };
+    }
+    grid.appendChild(el);
+  }
+
+  function patchReviewEngine() {
+    var view = document.getElementById('view-review');
+    if (!view || !view.classList.contains('active')) return;
+    var st = reviewStats(); if (!st) return;
+    fixReviewSummary(st);
+    fillReviewGrid(st);
+  }
+  NS.patchReviewEngine = patchReviewEngine;
+
+  // ============================================================
   // BOOT — chạy lại mỗi khi DOM đổi (không phụ thuộc thứ tự load)
   // ============================================================
   function tick() {
@@ -3243,6 +3381,7 @@
     try { wrapAdvanceStep(); } catch (e) {}
     try { wrapFeedback(); } catch (e) {}
     try { attachFxButton(); } catch (e) {}
+    try { patchReviewEngine(); } catch (e) {}
     try { trimSessionSteps(); } catch (e) {}
     try { attachStepNav(); } catch (e) {}
     try { dedupeDialogueCard(); } catch (e) {}
@@ -3489,6 +3628,37 @@
       var f1 = window.completeSession;
       wrapFeedback(); wrapFeedback(); wrapFeedback();
       return window.completeSession === f1;                 // không được bọc chồng
+    })());
+    // ---- M. Review Engine ----
+    check('đếm đúng "chưa học" và "tới hạn ôn"', (function () {
+      var st = reviewStats(); if (!st) return true;
+      var s = getState();
+      var manualNew = (s.topics || []).filter(isNewTopic).length;
+      return st.fresh === manualNew && st.due + st.fresh <= st.total;
+    })());
+    check('chủ đề chưa học KHÔNG bị tính là bài ôn', (function () {
+      return isNewTopic({ lastReview: null, reviewStage: 'Day 0' }) === true &&
+             isNewTopic({ lastReview: '2026-08-01', reviewStage: 'Day 0' }) === false &&
+             isNewTopic({ lastReview: null, reviewStage: 'Day 3' }) === false;
+    })());
+    check('tấm lấp chỗ không nhân bản khi vẽ lại', (function () {
+      var v = document.getElementById('view-review');
+      if (!v || !v.classList.contains('active')) return true;
+      patchReviewEngine(); patchReviewEngine(); patchReviewEngine();
+      var g = v.querySelector('.v13r-cards');
+      return !g || g.querySelectorAll('[data-v35="fill"]').length <= 1;
+    })());
+    check('lưới đủ thẻ thì không chèn tấm lấp', (function () {
+      var v = document.getElementById('view-review');
+      if (!v || !v.classList.contains('active')) return true;
+      var g = v.querySelector('.v13r-cards'); if (!g) return true;
+      var cols = (getComputedStyle(g).gridTemplateColumns || '').split(' ').filter(Boolean).length;
+      var real = 0;
+      Array.prototype.forEach.call(g.children, function (c) {
+        if (!(c.getAttribute && c.getAttribute('data-v35') === 'fill')) real++;
+      });
+      var hasFill = !!g.querySelector('[data-v35="fill"]');
+      return (real % cols === 0) ? !hasFill : true;
     })());
     check('không tải file âm thanh nào từ bên ngoài', (function () {
       var src = String(NS.sfx.session) + String(NS.sfx.streak) + String(NS.sfx.milestone) + String(tone);
